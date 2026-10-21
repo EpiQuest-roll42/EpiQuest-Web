@@ -1,5 +1,10 @@
 {
   "name": "@lanterne/rules-engine",
   "version": "0.0.0",
-  "private": true
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p .",
+    "typecheck": "tsc -p . --noEmit"
+  }
 }

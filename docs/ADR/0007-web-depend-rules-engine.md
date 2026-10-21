@@ -1,8 +1,8 @@
 # ADR 0007 - Le web dépend du moteur de règles, sans jamais faire autorité
 
-- **Statut** : proposé
+- **Statut** : accepté
 - **Date** : 2026-10-21
-- **Décideurs** : Killian (à valider par Vivien et Alexandre)
+- **Décideurs** : Vivien, Alexandre, Killian
 - **Tâche** : P1-03 (#3)
 
 ## Contexte

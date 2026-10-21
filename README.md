@@ -51,7 +51,7 @@ Le projet suit une architecture **MVVM** côté clients, avec un serveur qui fai
 | `apps/web` | React, TypeScript, TanStack Query | Vue MJ et vue joueurs |
 | `packages/rules-engine` | TypeScript pur | Moteur de règles et de dés, partagé par l'API et le web |
 
-Les choix techniques sont expliqués dans le [journal des décisions d'architecture](docs/adr/).
+Les choix techniques sont expliqués dans le [journal des décisions d'architecture](docs/ADR/).
 
 ## Prérequis
 
@@ -144,7 +144,7 @@ Les issues marquées `good first issue` sont un bon point de départ.
 
 | Document | Contenu |
 | --- | --- |
-| [`docs/adr/`](docs/adr/) | Journal des décisions d'architecture |
+| [`docs/ADR/`](docs/ADR/) | Journal des décisions d'architecture |
 | `docs/utilisateur/` | Guides du MJ et du joueur, aide-mémoire des dés, FAQ (_à venir_) |
 | `docs/technique/` | Architecture, modèle de données, moteur de règles, synchronisation, exploitation (_à venir_) |
 | Swagger | Documentation de l'API, servie par l'API sur `/api/docs` |
@@ -159,7 +159,7 @@ Conformément au sujet, l'équipe déclare ici les outils d'IA utilisés :
 
 | Outil | Usage |
 | --- | --- |
-| Claude (Anthropic) | Conseil d'architecture, découpage des tâches, revue de code, rédaction de documentation (README, ADR). Le code applicatif est écrit par l'équipe ; les règles suivies par l'assistant sont dans [`CLAUDE.md`](CLAUDE.md). |
+| Claude (Anthropic) | Conseil d'architecture, découpage des tâches, revue de code, rédaction de documentation (README, ADR). Le code applicatif est écrit par l'équipe ; les règles suivies par l'assistant sont dans [`CLAUDE.md`](.claude/CLAUDE.md). |
 
 Chaque membre est responsable de ce qui est livré et peut expliquer n'importe quelle partie du code.
 
