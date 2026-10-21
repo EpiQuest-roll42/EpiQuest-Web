@@ -1,0 +1,50 @@
+# =============================================================================
+# Fins de ligne
+# L'équipe travaille sous Windows et sous Linux : tous les fichiers texte sont
+# stockés en LF dans le dépôt et extraits en LF, pour éviter les diffs
+# parasites et les scripts shell cassés dans Docker et en CI.
+# =============================================================================
+* text=auto eol=lf
+
+# Scripts Windows : CRLF obligatoire pour qu'ils s'exécutent correctement
+*.bat  text eol=crlf
+*.cmd  text eol=crlf
+*.ps1  text eol=crlf
+
+# Scripts shell et fichiers lus dans les conteneurs : toujours LF
+*.sh          text eol=lf
+Dockerfile    text eol=lf
+*.dockerfile  text eol=lf
+
+# =============================================================================
+# Fichiers binaires : ni conversion de fin de ligne ni diff texte
+# =============================================================================
+*.png    binary
+*.jpg    binary
+*.jpeg   binary
+*.gif    binary
+*.webp   binary
+*.ico    binary
+*.avif   binary
+*.pdf    binary
+*.woff   binary
+*.woff2  binary
+*.ttf    binary
+*.otf    binary
+*.eot    binary
+*.mp3    binary
+*.ogg    binary
+*.wav    binary
+*.mp4    binary
+*.webm   binary
+*.zip    binary
+*.gz     binary
+*.tar    binary
+
+# Les SVG sont du texte : on garde le diff
+*.svg  text eol=lf
+
+# =============================================================================
+# Fichiers générés : repliés dans les diffs de pull request sur GitHub
+# =============================================================================
+pnpm-lock.yaml  linguist-generated=true -diff

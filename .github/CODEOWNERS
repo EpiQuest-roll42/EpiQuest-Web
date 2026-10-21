@@ -1,0 +1,10 @@
+# Relecteurs par dossier : GitHub les ajoute automatiquement aux PR.
+# Le dernier motif qui correspond l'emporte.
+
+*                          @RainproDash @ShireXela2 @Krio18
+
+/apps/web/                 @RainproDash @Krio18
+/apps/api/                 @RainproDash @ShireXela2 @Krio18
+/packages/rules-engine/    @RainproDash @ShireXela2 @Krio18
+/.github/                  @RainproDash
+/docker-compose*.yml       @RainproDash

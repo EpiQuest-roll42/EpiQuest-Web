@@ -1,0 +1,46 @@
+name: Fonctionnalité
+description: Une user story ou une tâche de développement
+labels: ["type:feature"]
+body:
+  - type: textarea
+    id: story
+    attributes:
+      label: User story
+      description: En tant que …, je veux …, afin de …
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Zone
+      multiple: true
+      options:
+        - API (NestJS)
+        - Web (React)
+        - Rules-engine
+        - Mobile (Flutter)
+        - CI / Docker
+    validations:
+      required: true
+  - type: input
+    id: figma
+    attributes:
+      label: Maquette Figma
+      description: Lien vers l'écran concerné, s'il y en a un
+  - type: textarea
+    id: criteria
+    attributes:
+      label: Critères d'acceptation
+      value: |
+        - [ ]
+        - [ ]
+    validations:
+      required: true
+  - type: checkboxes
+    id: dod
+    attributes:
+      label: Definition of Done
+      options:
+        - label: Tests écrits et CI verte
+        - label: PR relue et approuvée
+        - label: Swagger / README à jour si concerné
