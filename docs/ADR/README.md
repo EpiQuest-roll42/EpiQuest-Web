@@ -11,5 +11,7 @@ Pour en ajouter une : copier `0000-modele.md`, prendre le numéro suivant, l'ouv
 | [0003](0003-mobile-android.md) | Android comme plateforme mobile cible | Accepté |
 | [0004](0004-hebergement-ovh.md) | Déploiement continu sur un VPS OVHcloud avec Docker | Accepté |
 | [0005](0005-source-srd.md) | SRD 5.1, importé depuis la D&D 5e API | Accepté |
+| [0006](0006-deux-depots.md) | Deux dépôts : EpiQuest-Web et EpiQuest-Mobile | Accepté |
+| [0007](0007-web-depend-rules-engine.md) | Le web dépend du moteur de règles, sans jamais faire autorité | Accepté |
 
 Ce journal couvre les décisions qui concernent tout le projet, y compris le mobile. Les décisions propres à l'application Flutter sont consignées dans `docs/adr/` du repo EpiQuest-Mobile.
