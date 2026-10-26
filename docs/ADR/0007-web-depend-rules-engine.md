@@ -21,11 +21,11 @@ Deux règles du projet limitent cet usage :
 
 ## Options envisagées
 
-| Option | Avantages | Inconvénients |
-| --- | --- | --- |
-| **Le web ne dépend pas du moteur** | Impossible d'utiliser le moteur dans le navigateur par erreur | Types et fonctions d'affichage dupliqués dans le web, avec le risque qu'ils divergent du moteur |
-| **Le web dépend du moteur, avec une limite d'usage documentée et vérifiée** | Une seule source de vérité pour les types et le format des données ; aperçus sans attendre l'API | Il faut empêcher le web d'appeler les fonctions qui font autorité (jets, résolution d'actions) |
-| **Un paquet de types séparé** (`packages/shared-types`) | Séparation nette entre types et logique | Un paquet de plus à maintenir pour trois personnes ; les fonctions d'affichage n'y ont pas leur place |
+| Option                                                                      | Avantages                                                                                        | Inconvénients                                                                                         |
+| --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------- |
+| **Le web ne dépend pas du moteur**                                          | Impossible d'utiliser le moteur dans le navigateur par erreur                                    | Types et fonctions d'affichage dupliqués dans le web, avec le risque qu'ils divergent du moteur       |
+| **Le web dépend du moteur, avec une limite d'usage documentée et vérifiée** | Une seule source de vérité pour les types et le format des données ; aperçus sans attendre l'API | Il faut empêcher le web d'appeler les fonctions qui font autorité (jets, résolution d'actions)        |
+| **Un paquet de types séparé** (`packages/shared-types`)                     | Séparation nette entre types et logique                                                          | Un paquet de plus à maintenir pour trois personnes ; les fonctions d'affichage n'y ont pas leur place |
 
 ## Décision
 

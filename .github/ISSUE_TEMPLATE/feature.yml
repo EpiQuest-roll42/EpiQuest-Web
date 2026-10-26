@@ -1,6 +1,6 @@
 name: Fonctionnalité
 description: Une user story ou une tâche de développement
-labels: ["type:feature"]
+labels: ['type:feature']
 body:
   - type: textarea
     id: story

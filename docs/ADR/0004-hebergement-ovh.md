@@ -13,10 +13,10 @@ Le produit comprend une API NestJS avec une gateway WebSocket, une application w
 
 ## Options envisagées
 
-| Option | Avantages | Inconvénients |
-| --- | --- | --- |
-| **Offres gratuites de type PaaS** | Aucun coût | Mise en veille après inactivité, limites sur les WebSocket ou sur la base selon les offres, conditions qui changent souvent |
-| **VPS OVHcloud avec Docker Compose** | La même configuration Docker qu'en local ; WebSocket et PostgreSQL sans limite d'offre ; serveur toujours allumé pour la démo ; coût le plus bas parmi les offres payantes étudiées | Coût mensuel ; serveur à administrer et à sécuriser nous-mêmes |
+| Option                               | Avantages                                                                                                                                                                           | Inconvénients                                                                                                               |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| **Offres gratuites de type PaaS**    | Aucun coût                                                                                                                                                                          | Mise en veille après inactivité, limites sur les WebSocket ou sur la base selon les offres, conditions qui changent souvent |
+| **VPS OVHcloud avec Docker Compose** | La même configuration Docker qu'en local ; WebSocket et PostgreSQL sans limite d'offre ; serveur toujours allumé pour la démo ; coût le plus bas parmi les offres payantes étudiées | Coût mensuel ; serveur à administrer et à sécuriser nous-mêmes                                                              |
 
 ## Décision
 

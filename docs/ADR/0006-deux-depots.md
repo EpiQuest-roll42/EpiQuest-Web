@@ -19,11 +19,11 @@ La fiche parle « du dépôt » au singulier (livrable « Dépôt GitHub », tes
 
 ## Options envisagées
 
-| Option | Avantages | Inconvénients |
-| --- | --- | --- |
-| **Un seul dépôt** (`apps/api`, `apps/web`, `apps/mobile`, `packages/rules-engine`) | Un seul clone, une seule CI, un seul historique, correspond à la lettre de la fiche | Deux écosystèmes dans un même dépôt (pnpm et Flutter), CI plus complexe à filtrer, historique et revues mélangés |
-| **Deux dépôts** : EpiQuest-Web (monorepo TypeScript) et EpiQuest-Mobile (Flutter) | Chaque dépôt a un seul écosystème, sa CI, ses issues et son historique ; correspond au schéma d'architecture | Deux clones et deux CI ; le partage entre web et mobile doit être explicite ; à faire valider au regard de la fiche |
-| **Trois dépôts** : API, web et mobile séparés | Séparation maximale | Le moteur de règles partagé par l'API et le web devrait être publié ou dupliqué ; coordination lourde pour trois personnes |
+| Option                                                                             | Avantages                                                                                                    | Inconvénients                                                                                                              |
+| ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| **Un seul dépôt** (`apps/api`, `apps/web`, `apps/mobile`, `packages/rules-engine`) | Un seul clone, une seule CI, un seul historique, correspond à la lettre de la fiche                          | Deux écosystèmes dans un même dépôt (pnpm et Flutter), CI plus complexe à filtrer, historique et revues mélangés           |
+| **Deux dépôts** : EpiQuest-Web (monorepo TypeScript) et EpiQuest-Mobile (Flutter)  | Chaque dépôt a un seul écosystème, sa CI, ses issues et son historique ; correspond au schéma d'architecture | Deux clones et deux CI ; le partage entre web et mobile doit être explicite ; à faire valider au regard de la fiche        |
+| **Trois dépôts** : API, web et mobile séparés                                      | Séparation maximale                                                                                          | Le moteur de règles partagé par l'API et le web devrait être publié ou dupliqué ; coordination lourde pour trois personnes |
 
 ## Décision
 

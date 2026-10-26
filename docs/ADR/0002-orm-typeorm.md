@@ -18,9 +18,9 @@ Il nous faut :
 
 ## Options envisagées
 
-| Option | Avantages | Inconvénients |
-| --- | --- | --- |
-| **Prisma** | Schéma unique très lisible, client généré entièrement typé, migrations simples | Intégration NestJS par un service maison, un fichier de schéma et un langage à part, moins proche du style NestJS |
+| Option      | Avantages                                                                                                                           | Inconvénients                                                                                                              |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| **Prisma**  | Schéma unique très lisible, client généré entièrement typé, migrations simples                                                      | Intégration NestJS par un service maison, un fichier de schéma et un langage à part, moins proche du style NestJS          |
 | **TypeORM** | Module officiel `@nestjs/typeorm`, entités en classes TypeScript à décorateurs (style identique à NestJS), pattern Repository natif | Typage des résultats moins strict, pièges connus (synchronisation automatique du schéma, relations chargées implicitement) |
 
 ## Décision

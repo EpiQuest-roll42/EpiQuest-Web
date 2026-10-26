@@ -13,10 +13,10 @@ L'application est écrite en **Flutter**. Elle doit être compatible avec le lec
 
 ## Options envisagées
 
-| Option | Avantages | Inconvénients |
-| --- | --- | --- |
-| **Android** | Build et émulateur sur Windows, macOS et Linux ; APK installable directement sur un téléphone ; build en CI sur un runner Linux gratuit ; TalkBack disponible sur tout appareil | Diversité des appareils et des versions d'Android à tester |
-| **iOS** | Écosystème homogène, VoiceOver très abouti | Build et simulateur réservés à macOS ; installation sur un vrai iPhone soumise à un compte développeur Apple ; runners macOS en CI plus rares et plus lents |
+| Option      | Avantages                                                                                                                                                                       | Inconvénients                                                                                                                                               |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Android** | Build et émulateur sur Windows, macOS et Linux ; APK installable directement sur un téléphone ; build en CI sur un runner Linux gratuit ; TalkBack disponible sur tout appareil | Diversité des appareils et des versions d'Android à tester                                                                                                  |
+| **iOS**     | Écosystème homogène, VoiceOver très abouti                                                                                                                                      | Build et simulateur réservés à macOS ; installation sur un vrai iPhone soumise à un compte développeur Apple ; runners macOS en CI plus rares et plus lents |
 
 ## Décision
 

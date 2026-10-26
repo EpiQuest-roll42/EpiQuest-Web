@@ -12,9 +12,9 @@ Quel problème faut-il résoudre ? Quelles contraintes s'appliquent (fiche proje
 ## Options envisagées
 
 | Option | Avantages | Inconvénients |
-| --- | --- | --- |
-| | | |
-| | | |
+| ------ | --------- | ------------- |
+|        |           |               |
+|        |           |               |
 
 ## Décision
 

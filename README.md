@@ -45,22 +45,22 @@ _À ajouter au fil des phases : vue MJ, vue joueurs, assistant de création._
 
 Le projet suit une architecture **MVVM** côté clients, avec un serveur qui fait autorité.
 
-| Partie | Technologie | Rôle |
-| --- | --- | --- |
-| `apps/api` | NestJS, TypeScript, PostgreSQL, TypeORM | API REST documentée par Swagger, gateway WebSocket, projection des données par spectateur |
-| `apps/web` | React, TypeScript, TanStack Query | Vue MJ et vue joueurs |
-| `packages/rules-engine` | TypeScript pur | Moteur de règles et de dés, partagé par l'API et le web |
+| Partie                  | Technologie                             | Rôle                                                                                      |
+| ----------------------- | --------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `apps/api`              | NestJS, TypeScript, PostgreSQL, TypeORM | API REST documentée par Swagger, gateway WebSocket, projection des données par spectateur |
+| `apps/web`              | React, TypeScript, TanStack Query       | Vue MJ et vue joueurs                                                                     |
+| `packages/rules-engine` | TypeScript pur                          | Moteur de règles et de dés, partagé par l'API et le web                                   |
 
 Les choix techniques sont expliqués dans le [journal des décisions d'architecture](docs/ADR/).
 
 ## Prérequis
 
-| Outil | Version | Installation |
-| --- | --- | --- |
-| Git | récente | https://git-scm.com |
-| Docker et Docker Compose | récente | https://docs.docker.com/get-docker/ |
-| Node.js | voir [`.nvmrc`](.nvmrc) | https://nodejs.org |
-| pnpm | voir le champ `packageManager` du `package.json` | `corepack enable` |
+| Outil                    | Version                                          | Installation                        |
+| ------------------------ | ------------------------------------------------ | ----------------------------------- |
+| Git                      | récente                                          | https://git-scm.com                 |
+| Docker et Docker Compose | récente                                          | https://docs.docker.com/get-docker/ |
+| Node.js                  | voir [`.nvmrc`](.nvmrc)                          | https://nodejs.org                  |
+| pnpm                     | voir le champ `packageManager` du `package.json` | `corepack enable`                   |
 
 ## Installation
 
@@ -83,12 +83,12 @@ docker compose up
 
 Cette commande démarre PostgreSQL, l'API et le web, applique les migrations, importe le SRD et charge la campagne de démonstration.
 
-| Service | Adresse |
-| --- | --- |
-| Application web | http://localhost:5173 |
-| API | http://localhost:3000 |
-| Documentation Swagger | http://localhost:3000/api/docs |
-| Adminer (base de données) | http://localhost:8080 |
+| Service                   | Adresse                        |
+| ------------------------- | ------------------------------ |
+| Application web           | http://localhost:5173          |
+| API                       | http://localhost:3000          |
+| Documentation Swagger     | http://localhost:3000/api/docs |
+| Adminer (base de données) | http://localhost:8080          |
 
 _Les ports sont à confirmer lors de la mise en place du Docker Compose (tâche P1-04)._
 
@@ -103,8 +103,14 @@ pnpm dev                # API et web avec rechargement automatique
 
 ```bash
 pnpm test               # tous les tests du dépôt, en une seule commande
-pnpm lint               # lint et formatage
+pnpm lint               # ESLint sur tous les paquets
+pnpm typecheck          # vérification des types TypeScript
+pnpm format:check       # vérifie le formatage Prettier (utilisé par la CI)
+pnpm format             # corrige le formatage Prettier
+pnpm build              # compile tous les paquets
 ```
+
+Ces commandes passent par Turborepo (sauf Prettier, lancé directement à la racine) : les paquets sont traités dans l'ordre de leurs dépendances, et un paquet qui n'a pas changé est repris depuis le cache.
 
 Les tests couvrent notamment l'analyseur de dés (y compris la distribution statistique), le moteur de règles, la ligne de vue, le brouillard de guerre, les rencontres, la résolution des combats et le filtrage des données envoyées à la vue joueurs.
 
@@ -142,12 +148,12 @@ Les issues marquées `good first issue` sont un bon point de départ.
 
 ## Documentation
 
-| Document | Contenu |
-| --- | --- |
-| [`docs/ADR/`](docs/ADR/) | Journal des décisions d'architecture |
-| `docs/utilisateur/` | Guides du MJ et du joueur, aide-mémoire des dés, FAQ (_à venir_) |
-| `docs/technique/` | Architecture, modèle de données, moteur de règles, synchronisation, exploitation (_à venir_) |
-| Swagger | Documentation de l'API, servie par l'API sur `/api/docs` |
+| Document                 | Contenu                                                                                      |
+| ------------------------ | -------------------------------------------------------------------------------------------- |
+| [`docs/ADR/`](docs/ADR/) | Journal des décisions d'architecture                                                         |
+| `docs/utilisateur/`      | Guides du MJ et du joueur, aide-mémoire des dés, FAQ (_à venir_)                             |
+| `docs/technique/`        | Architecture, modèle de données, moteur de règles, synchronisation, exploitation (_à venir_) |
+| Swagger                  | Documentation de l'API, servie par l'API sur `/api/docs`                                     |
 
 ## Accessibilité
 
@@ -157,19 +163,19 @@ Lanterne vise le niveau **AA des WCAG 2.2** : navigation complète au clavier, c
 
 Conformément au sujet, l'équipe déclare ici les outils d'IA utilisés :
 
-| Outil | Usage |
-| --- | --- |
+| Outil              | Usage                                                                                                                                                                                                                             |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Claude (Anthropic) | Conseil d'architecture, découpage des tâches, revue de code, rédaction de documentation (README, ADR). Le code applicatif est écrit par l'équipe ; les règles suivies par l'assistant sont dans [`CLAUDE.md`](.claude/CLAUDE.md). |
 
 Chaque membre est responsable de ce qui est livré et peut expliquer n'importe quelle partie du code.
 
 ## Équipe
 
-| Membre | GitHub | Rôle |
-| --- | --- | --- |
-| Vivien | [@RainproDash](https://github.com/RainproDash) | Web, mobile, serveur |
-| Alexandre | [@ShireXela2](https://github.com/ShireXela2) | Mobile, serveur |
-| Killian | [@Krio18](https://github.com/Krio18) | Web, serveur |
+| Membre    | GitHub                                         | Rôle                 |
+| --------- | ---------------------------------------------- | -------------------- |
+| Vivien    | [@RainproDash](https://github.com/RainproDash) | Web, mobile, serveur |
+| Alexandre | [@ShireXela2](https://github.com/ShireXela2)   | Mobile, serveur      |
+| Killian   | [@Krio18](https://github.com/Krio18)           | Web, serveur         |
 
 ## Licence et attribution
 
