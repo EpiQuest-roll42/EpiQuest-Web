@@ -25,18 +25,18 @@ Elles ne sont pas compatibles entre elles : il faut en choisir une seule.
 
 ### Version
 
-| Option | Avantages | Inconvénients |
-| --- | --- | --- |
-| **SRD 5.1** | Correspond aux maquettes (Haut-elfe, rôdeur avec ennemi juré et explorateur-né) ; données structurées déjà disponibles et éprouvées | Un seul historique disponible dans ce SRD |
-| **SRD 5.2** | Règles les plus récentes, plusieurs historiques | Maquettes à revoir ; jeux de données structurées encore peu matures |
+| Option      | Avantages                                                                                                                           | Inconvénients                                                       |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| **SRD 5.1** | Correspond aux maquettes (Haut-elfe, rôdeur avec ennemi juré et explorateur-né) ; données structurées déjà disponibles et éprouvées | Un seul historique disponible dans ce SRD                           |
+| **SRD 5.2** | Règles les plus récentes, plusieurs historiques                                                                                     | Maquettes à revoir ; jeux de données structurées encore peu matures |
 
 ### Source de l'import
 
-| Option | Avantages | Inconvénients |
-| --- | --- | --- |
-| **Document officiel du SRD (PDF)** | Source primaire de Wizards of the Coast | Aucune donnée structurée : il faudrait extraire et retaper tout le contenu à la main |
-| **D&D 5e API (projet 5e-bits)** | Données SRD 5.1 en JSON structuré, version 2014 stable, contenu limité au SRD | Format propre au projet, à convertir vers notre format de règles |
-| **Open5e** | API ouverte, nombreuses ressources | Mélange le SRD avec d'autres contenus sous licence ouverte : filtre obligatoire sur le document SRD de Wizards of the Coast |
+| Option                             | Avantages                                                                     | Inconvénients                                                                                                               |
+| ---------------------------------- | ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| **Document officiel du SRD (PDF)** | Source primaire de Wizards of the Coast                                       | Aucune donnée structurée : il faudrait extraire et retaper tout le contenu à la main                                        |
+| **D&D 5e API (projet 5e-bits)**    | Données SRD 5.1 en JSON structuré, version 2014 stable, contenu limité au SRD | Format propre au projet, à convertir vers notre format de règles                                                            |
+| **Open5e**                         | API ouverte, nombreuses ressources                                            | Mélange le SRD avec d'autres contenus sous licence ouverte : filtre obligatoire sur le document SRD de Wizards of the Coast |
 
 ## Décision
 

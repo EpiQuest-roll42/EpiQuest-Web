@@ -22,11 +22,11 @@ Il nous faut :
 
 ## Options envisagées
 
-| Option | Avantages | Inconvénients |
-| --- | --- | --- |
-| **pnpm workspaces seul** | Configuration minimale, rapide, liens locaux entre paquets | Aucun cache : chaque commande reconstruit et reteste tout, et l'ordre des builds est à gérer à la main |
-| **pnpm workspaces + Turborepo** | Cache local et en CI, ne relance que ce qui a changé, ordre des tâches déduit des dépendances, une configuration (`turbo.json`) | Un outil de plus à comprendre |
-| **Nx** | Très complet : générateurs, graphe des dépendances, règles de frontières entre paquets | Courbe d'apprentissage forte, beaucoup de conventions propres à Nx, disproportionné pour trois paquets |
+| Option                          | Avantages                                                                                                                       | Inconvénients                                                                                          |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| **pnpm workspaces seul**        | Configuration minimale, rapide, liens locaux entre paquets                                                                      | Aucun cache : chaque commande reconstruit et reteste tout, et l'ordre des builds est à gérer à la main |
+| **pnpm workspaces + Turborepo** | Cache local et en CI, ne relance que ce qui a changé, ordre des tâches déduit des dépendances, une configuration (`turbo.json`) | Un outil de plus à comprendre                                                                          |
+| **Nx**                          | Très complet : générateurs, graphe des dépendances, règles de frontières entre paquets                                          | Courbe d'apprentissage forte, beaucoup de conventions propres à Nx, disproportionné pour trois paquets |
 
 ## Décision
 

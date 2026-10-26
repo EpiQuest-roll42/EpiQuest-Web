@@ -37,6 +37,7 @@ Claude est ici **assistant, conseiller et relecteur**, pas développeur. Si une 
 - Expliquer le « pourquoi » derrière chaque décision technique, et citer la source quand c'est une règle de la fiche projet, du SRD ou d'une norme (WCAG, OWASP).
 
 ## Projet
+- Verifie toujours si le dossier docs est a jours.
 - Table de jeu de rôle virtuelle compatible 5e édition, sujet EpiQuest. La marque du produit est **Lanterne** : jamais le nom ou le logo « Dungeons & Dragons », ni de référence à Epitech dans le produit.
 - Contenu **uniquement SRD 5e sous licence CC BY 4.0**, avec la mention d'attribution. Refuser de reproduire du contenu des livres payants.
 - Monorepo :
