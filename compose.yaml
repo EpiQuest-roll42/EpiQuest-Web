@@ -15,5 +15,15 @@ services:
       timeout: 5s
       retries: 5
 
+  adminer:
+    image: adminer:5.4.1
+    ports:
+      - '127.0.0.1:${ADMINER_PORT:-8080}:8080'
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ADMINER_DEFAULT_SERVER: db
+
 volumes:
   db_data:
