@@ -3,14 +3,14 @@ services:
     image: postgres:17-alpine
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Copie .env.example vers .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Le fichier .env est absent ou POSTGRES_PASSWORD n'est pas renseigné. Copiez .env.example et complétez les variables.}
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - db_data:/var/lib/postgresql/data
     ports:
-      - '${DB_PORT:-5432}:5432'
+      - '127.0.0.1:${DB_PORT:-5432}:5432'
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U -d $${POSTGRES_USER}']
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
       interval: 10s
       timeout: 5s
       retries: 5
