@@ -1,0 +1,182 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  changes:
+    name: Detect application changes
+    runs-on: ubuntu-latest
+    outputs:
+      api: ${{ steps.filter.outputs.api }}
+      web: ${{ steps.filter.outputs.web }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Filter changed paths
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            api:
+              - 'apps/api/**'
+              - 'packages/rules-engine/**'
+              - '{package.json,pnpm-lock.yaml,pnpm-workspace.yaml,turbo.json,tsconfig*.json,eslint.config.mjs,.nvmrc}'
+              - '.github/workflows/**'
+            web:
+              - 'apps/web/**'
+              - 'packages/rules-engine/**'
+              - '{package.json,pnpm-lock.yaml,pnpm-workspace.yaml,turbo.json,tsconfig*.json,eslint.config.mjs,.nvmrc}'
+              - '.github/workflows/**'
+
+  lint:
+    name: Lint
+    needs: changes
+    if: needs.changes.outputs.api == 'true' || needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 12.15.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+  tests:
+    name: Tests
+    needs: changes
+    if: needs.changes.outputs.api == 'true' || needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 12.15.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run tests when configured
+        shell: bash
+        run: |
+          has_tests="$(node -e '
+            const fs = require("node:fs");
+            const path = require("node:path");
+            const manifests = ["package.json"];
+
+            for (const workspace of ["apps", "packages"]) {
+              if (!fs.existsSync(workspace)) continue;
+              for (const entry of fs.readdirSync(workspace, { withFileTypes: true })) {
+                if (entry.isDirectory()) {
+                  manifests.push(path.join(workspace, entry.name, "package.json"));
+                }
+              }
+            }
+
+            const hasTests = manifests.some((manifest) => {
+              if (!fs.existsSync(manifest)) return false;
+              const pkg = JSON.parse(fs.readFileSync(manifest, "utf8"));
+              return Boolean(pkg.scripts?.test);
+            });
+            process.stdout.write(hasTests ? "yes" : "no");
+          ')"
+
+          if [[ "$has_tests" == "yes" ]]; then
+            pnpm -r --include-workspace-root --if-present test
+          else
+            echo "::notice::No test scripts are configured; skipping tests."
+          fi
+
+  docker:
+    name: Docker build
+    needs: changes
+    if: needs.changes.outputs.api == 'true' || needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker images when Dockerfiles are available
+        shell: bash
+        env:
+          API_CHANGED: ${{ needs.changes.outputs.api }}
+          WEB_CHANGED: ${{ needs.changes.outputs.web }}
+        run: |
+          dockerfiles=()
+          if [[ "$API_CHANGED" == "true" && -f apps/api/Dockerfile ]]; then
+            dockerfiles+=(apps/api/Dockerfile)
+          fi
+          if [[ "$WEB_CHANGED" == "true" && -f apps/web/Dockerfile ]]; then
+            dockerfiles+=(apps/web/Dockerfile)
+          fi
+
+          if ((${#dockerfiles[@]} == 0)); then
+            echo "::notice::No changed application has a Dockerfile; skipping Docker builds."
+          else
+            for dockerfile in "${dockerfiles[@]}"; do
+              app="${dockerfile#apps/}"
+              app="${app%/Dockerfile}"
+              docker build --file "$dockerfile" --tag "lanterne-${app}:ci" .
+            done
+          fi
+
+  required:
+    name: Required CI
+    if: always()
+    needs:
+      - changes
+      - lint
+      - tests
+      - docker
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify required jobs
+        env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          LINT_RESULT: ${{ needs.lint.result }}
+          TESTS_RESULT: ${{ needs.tests.result }}
+          DOCKER_RESULT: ${{ needs.docker.result }}
+        run: |
+          if [[ "$CHANGES_RESULT" != "success" ]]; then
+            echo "::error::Path detection did not complete successfully."
+            exit 1
+          fi
+
+          for result in "$LINT_RESULT" "$TESTS_RESULT" "$DOCKER_RESULT"; do
+            if [[ "$result" == "failure" || "$result" == "cancelled" ]]; then
+              echo "::error::A required CI job failed or was cancelled."
+              exit 1
+            fi
+          done
