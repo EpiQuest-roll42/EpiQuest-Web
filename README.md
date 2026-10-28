@@ -71,6 +71,8 @@ cp .env.example .env
 pnpm install
 ```
 
+Ouvrez ensuite `.env` et renseignez au moins `POSTGRES_PASSWORD` : sans lui, `docker compose` refuse de démarrer. Les autres valeurs peuvent être choisies librement en local, car l'utilisateur et la base PostgreSQL sont créés par le conteneur au premier démarrage.
+
 Le fichier `.env` contient la configuration locale. Il n'est jamais commité : seul `.env.example`, sans valeur secrète, est versionné. Chaque variable y est décrite.
 
 ## Lancer le projet
@@ -81,23 +83,37 @@ Le fichier `.env` contient la configuration locale. Il n'est jamais commité : s
 docker compose up
 ```
 
-Cette commande démarre PostgreSQL, l'API et le web, applique les migrations, importe le SRD et charge la campagne de démonstration.
+Cette commande démarre PostgreSQL puis Adminer, une fois la base prête.
 
-| Service                   | Adresse                        |
-| ------------------------- | ------------------------------ |
-| Application web           | http://localhost:5173          |
-| API                       | http://localhost:3000          |
-| Documentation Swagger     | http://localhost:3000/api/docs |
-| Adminer (base de données) | http://localhost:8080          |
+| Service                   | Adresse                        | Disponible                                                                   |
+| ------------------------- | ------------------------------ | ---------------------------------------------------------------------------- |
+| PostgreSQL                | `localhost:5432`               | Oui                                                                          |
+| Adminer (base de données) | http://localhost:8080          | Oui                                                                          |
+| API                       | http://localhost:3000          | À venir ([P2-01](https://github.com/EpiQuest-roll42/EpiQuest-Web/issues/19)) |
+| Documentation Swagger     | http://localhost:3000/api/docs | À venir ([P2-01](https://github.com/EpiQuest-roll42/EpiQuest-Web/issues/19)) |
+| Application web           | http://localhost:5173          | À venir ([P1-14](https://github.com/EpiQuest-roll42/EpiQuest-Web/issues/14)) |
 
-_Les ports sont à confirmer lors de la mise en place du Docker Compose (tâche P1-04)._
+Les ports de PostgreSQL et d'Adminer se changent dans `.env` (`DB_PORT`, `ADMINER_PORT`) si ceux par défaut sont déjà pris. Les services n'écoutent que sur votre machine (`127.0.0.1`) : ils ne sont pas joignables depuis le réseau.
+
+Pour vous connecter à Adminer, choisissez le système **PostgreSQL**, le serveur **`db`** (et non `localhost` : c'est le nom du service dans le réseau Docker) et les identifiants de votre `.env`.
+
+### Arrêter et réinitialiser
+
+```bash
+docker compose down     # arrête les services, les données sont conservées
+docker compose down -v  # arrête les services et EFFACE la base
+```
+
+Les variables `POSTGRES_*` ne sont lues qu'au premier démarrage, quand la base est vide. Si vous les modifiez ensuite, elles n'ont aucun effet : il faut réinitialiser avec `docker compose down -v`, ce qui supprime toutes les données locales.
 
 ### En développement
 
 ```bash
 docker compose up db    # la base seule
-pnpm dev                # API et web avec rechargement automatique
+pnpm dev                # API et web avec rechargement automatique (à venir)
 ```
+
+_`pnpm dev` sera disponible quand l'API et l'application web seront initialisées._
 
 ## Tests
 
@@ -131,7 +147,8 @@ pnpm --filter rules-engine test
 │   └── rules-engine/     # moteur de règles et de dés
 ├── docs/                 # documentation utilisateur et technique, ADR
 ├── .github/              # CI, modèles d'issue et de pull request
-├── docker-compose.yml
+├── .env.example          # variables locales à copier en .env
+├── compose.yaml          # services Docker : PostgreSQL et Adminer
 └── turbo.json
 ```
 
