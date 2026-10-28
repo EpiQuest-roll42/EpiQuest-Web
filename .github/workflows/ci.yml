@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - dev
 
 permissions:
   contents: read
@@ -30,19 +31,13 @@ jobs:
           filters: |
             api:
               - 'apps/api/**'
-              - 'packages/rules-engine/**'
-              - '{package.json,pnpm-lock.yaml,pnpm-workspace.yaml,turbo.json,tsconfig*.json,eslint.config.mjs,.nvmrc}'
-              - '.github/workflows/**'
+              - 'packages/**'
             web:
               - 'apps/web/**'
-              - 'packages/rules-engine/**'
-              - '{package.json,pnpm-lock.yaml,pnpm-workspace.yaml,turbo.json,tsconfig*.json,eslint.config.mjs,.nvmrc}'
-              - '.github/workflows/**'
+              - 'packages/**'
 
   lint:
     name: Lint
-    needs: changes
-    if: needs.changes.outputs.api == 'true' || needs.changes.outputs.web == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -50,8 +45,6 @@ jobs:
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 12.15.0
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -67,8 +60,6 @@ jobs:
 
   tests:
     name: Tests
-    needs: changes
-    if: needs.changes.outputs.api == 'true' || needs.changes.outputs.web == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -76,8 +67,6 @@ jobs:
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 12.15.0
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -94,7 +83,7 @@ jobs:
           has_tests="$(node -e '
             const fs = require("node:fs");
             const path = require("node:path");
-            const manifests = ["package.json"];
+            const manifests = [];
 
             for (const workspace of ["apps", "packages"]) {
               if (!fs.existsSync(workspace)) continue;
@@ -114,7 +103,7 @@ jobs:
           ')"
 
           if [[ "$has_tests" == "yes" ]]; then
-            pnpm -r --include-workspace-root --if-present test
+            pnpm test
           else
             echo "::notice::No test scripts are configured; skipping tests."
           fi
