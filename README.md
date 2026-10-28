@@ -157,9 +157,11 @@ pnpm --filter rules-engine test
 Le déroulé complet est dans [`CONTRIBUTING.md`](CONTRIBUTING.md). En résumé :
 
 1. Prendre une issue dans le [Project](https://github.com/orgs/EpiQuest-roll42/projects) et s'y assigner.
-2. Créer une branche `feat/<n° issue>-<sujet>` ou `fix/<n° issue>-<sujet>`.
+2. Créer depuis `dev` une branche `<type>/<n° issue>-<sujet>` (exemple : `feat/12-parseur-de-des`).
 3. Committer au format [Conventional Commits](https://www.conventionalcommits.org/fr/) (`feat(api): …`, `fix(web): …`).
-4. Ouvrir une pull request reliée à l'issue ; elle est relue par un autre membre avant le merge, et la CI doit être verte.
+4. Ouvrir une pull request vers `dev`, reliée à l'issue ; elle est relue par un autre membre avant le merge, et la CI doit être verte.
+
+`main` ne reçoit que les versions publiées, taguées selon le versionnage sémantique ; leur contenu est décrit dans le [`CHANGELOG.md`](CHANGELOG.md). La participation au projet est encadrée par le [code de conduite](CODE_OF_CONDUCT.md).
 
 Les issues marquées `good first issue` sont un bon point de départ.
 
@@ -178,13 +180,16 @@ Lanterne vise le niveau **AA des WCAG 2.2** : navigation complète au clavier, c
 
 ## Usage de l'IA
 
-Conformément au sujet, l'équipe déclare ici les outils d'IA utilisés :
+Conformément au sujet (bloc 03-D), l'équipe déclare ici les outils d'IA utilisés et pour quoi.
 
-| Outil              | Usage                                                                                                                                                                                                                             |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Claude (Anthropic) | Conseil d'architecture, découpage des tâches, revue de code, rédaction de documentation (README, ADR). Le code applicatif est écrit par l'équipe ; les règles suivies par l'assistant sont dans [`CLAUDE.md`](.claude/CLAUDE.md). |
+| Domaine       | Outil              | Usage                                                                                                                             |
+| ------------- | ------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| Code          | Claude (Anthropic) | Conseil d'architecture, découpage des tâches et revue des pull requests. Le code et la configuration sont écrits par l'équipe.    |
+| Tests         | Claude (Anthropic) | Suggestions de cas à tester lors des revues. Les tests sont écrits par l'équipe.                                                  |
+| Documentation | Claude (Anthropic) | Rédaction et relecture du README, du guide de contribution, des ADR, du CHANGELOG, du code de conduite et des descriptions de PR. |
+| Visuels       | Aucun              | Aucun visuel généré par IA à ce jour.                                                                                             |
 
-Chaque membre est responsable de ce qui est livré et peut expliquer n'importe quelle partie du code.
+Les règles suivies par l'assistant (conseil et relecture uniquement, pas de code applicatif) sont dans [`CLAUDE.md`](.claude/CLAUDE.md). Chaque membre complète ce tableau quand il utilise un nouvel outil ou un nouvel usage. Le code et les contenus produits avec une IA suivent les mêmes règles que le reste : tests, revue en pull request, sécurité, respect des licences. Chaque membre est responsable de ce qui est livré et peut expliquer n'importe quelle partie du code.
 
 ## Équipe
 
@@ -195,6 +200,8 @@ Chaque membre est responsable de ce qui est livré et peut expliquer n'importe q
 | Killian   | [@Krio18](https://github.com/Krio18)           | Web, serveur         |
 
 ## Licence et attribution
+
+Le code, la documentation et les visuels originaux de ce dépôt sont publiés **tous droits réservés** pour consultation dans le cadre d'un projet pédagogique : voir [`LICENSE`](LICENSE). Le contenu issu du SRD 5.1 reste sous licence CC BY 4.0, et les dépendances sous leurs propres licences.
 
 Lanterne est un produit indépendant, compatible 5e édition. Il n'est ni affilié à Wizards of the Coast ni approuvé par cette société.
 
