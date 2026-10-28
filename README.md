@@ -110,8 +110,10 @@ Les variables `POSTGRES_*` ne sont lues qu'au premier démarrage, quand la base 
 
 ```bash
 docker compose up db    # la base seule
-pnpm dev                # API et web avec rechargement automatique
+pnpm dev                # API et web avec rechargement automatique (à venir)
 ```
+
+_`pnpm dev` sera disponible quand l'API et l'application web seront initialisées._
 
 ## Tests
 
@@ -145,7 +147,8 @@ pnpm --filter rules-engine test
 │   └── rules-engine/     # moteur de règles et de dés
 ├── docs/                 # documentation utilisateur et technique, ADR
 ├── .github/              # CI, modèles d'issue et de pull request
-├── docker-compose.yml
+├── .env.example          # variables locales à copier en .env
+├── compose.yaml          # services Docker : PostgreSQL et Adminer
 └── turbo.json
 ```
 
