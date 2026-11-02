@@ -167,12 +167,13 @@ Les issues marquées `good first issue` sont un bon point de départ.
 
 ## Documentation
 
-| Document                 | Contenu                                                                                      |
-| ------------------------ | -------------------------------------------------------------------------------------------- |
-| [`docs/ADR/`](docs/ADR/) | Journal des décisions d'architecture                                                         |
-| `docs/utilisateur/`      | Guides du MJ et du joueur, aide-mémoire des dés, FAQ (_à venir_)                             |
-| `docs/technique/`        | Architecture, modèle de données, moteur de règles, synchronisation, exploitation (_à venir_) |
-| Swagger                  | Documentation de l'API, servie par l'API sur `/api/docs`                                     |
+| Document                                                 | Contenu                                                                                                                               |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| [`docs/ADR/`](docs/ADR/)                                 | Journal des décisions d'architecture                                                                                                  |
+| [`docs/charte-graphique.pdf`](docs/charte-graphique.pdf) | Mini charte graphique (2 pages) : logo, palettes claire et « table de jeu », typographies, couples de contraste autorisés, composants |
+| `docs/utilisateur/`                                      | Guides du MJ et du joueur, aide-mémoire des dés, FAQ (_à venir_)                                                                      |
+| `docs/technique/`                                        | Architecture, modèle de données, moteur de règles, synchronisation, exploitation (_à venir_)                                          |
+| Swagger                                                  | Documentation de l'API, servie par l'API sur `/api/docs`                                                                              |
 
 ## Accessibilité
 
@@ -182,12 +183,12 @@ Lanterne vise le niveau **AA des WCAG 2.2** : navigation complète au clavier, c
 
 Conformément au sujet (bloc 03-D), l'équipe déclare ici les outils d'IA utilisés et pour quoi.
 
-| Domaine       | Outil              | Usage                                                                                                                             |
-| ------------- | ------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
-| Code          | Claude (Anthropic) | Conseil d'architecture, découpage des tâches et revue des pull requests. Le code et la configuration sont écrits par l'équipe.    |
-| Tests         | Claude (Anthropic) | Suggestions de cas à tester lors des revues. Les tests sont écrits par l'équipe.                                                  |
-| Documentation | Claude (Anthropic) | Rédaction et relecture du README, du guide de contribution, des ADR, du CHANGELOG, du code de conduite et des descriptions de PR. |
-| Visuels       | Aucun              | Aucun visuel généré par IA à ce jour.                                                                                             |
+| Domaine       | Outil              | Usage                                                                                                                                                                         |
+| ------------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Code          | Claude (Anthropic) | Conseil d'architecture, découpage des tâches et revue des pull requests. Le code et la configuration sont écrits par l'équipe.                                                |
+| Tests         | Claude (Anthropic) | Suggestions de cas à tester lors des revues. Les tests sont écrits par l'équipe.                                                                                              |
+| Documentation | Claude (Anthropic) | Rédaction et relecture du README, du guide de contribution, des ADR, du CHANGELOG, du code de conduite et des descriptions de PR.                                             |
+| Visuels       | Claude (Anthropic) | Dans Figma : dessin du symbole du logo, mise en page de la charte graphique, intégration du logo et des variables de couleur dans les maquettes. Revu et validé par l'équipe. |
 
 Les règles suivies par l'assistant (conseil et relecture uniquement, pas de code applicatif) sont dans [`CLAUDE.md`](.claude/CLAUDE.md). Chaque membre complète ce tableau quand il utilise un nouvel outil ou un nouvel usage. Le code et les contenus produits avec une IA suivent les mêmes règles que le reste : tests, revue en pull request, sécurité, respect des licences. Chaque membre est responsable de ce qui est livré et peut expliquer n'importe quelle partie du code.
 
