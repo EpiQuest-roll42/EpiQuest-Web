@@ -16,6 +16,11 @@ servers:
 security:
   - bearerAuth: []
   - cookieAuth: []
+tags:
+  - name: Auth
+    description: 'Inscription, connexion et déconnexion (cookie pour le web, jeton pour le mobile).'
+  - name: Utilisateurs
+    description: "Profil de l'utilisateur connecté et profils publics."
 paths:
   /auth/register:
     post:
@@ -142,6 +147,182 @@ paths:
                 type: string
         '401':
           $ref: '#/components/responses/Unauthorized'
+  /auth/forgot-password:
+    post:
+      tags:
+        - Auth
+      operationId: forgotPassword
+      security: []
+      x-phase: P2
+      summary: 'Demander la réinitialisation de son mot de passe.'
+      description: >-
+        Envoie un lien de réinitialisation par e-mail si un compte correspond. Répond toujours 204, avec
+        le même temps de réponse, que l'adresse existe ou non, pour ne pas révéler les comptes inscrits.
+        Dépend d'un service d'envoi d'e-mails (SMTP).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForgotInput'
+      responses:
+        '204':
+          description: 'Demande prise en compte.'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /auth/reset-password:
+    post:
+      tags:
+        - Auth
+      operationId: resetPassword
+      security: []
+      x-phase: P2
+      summary: 'Réinitialiser son mot de passe avec le jeton reçu par e-mail.'
+      description: >-
+        Valide le jeton de réinitialisation et applique newPassword. Un jeton invalide ou expiré renvoie
+        un 400. Invalide toutes les sessions et tous les jetons existants du compte.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetInput'
+      responses:
+        '204':
+          description: 'Mot de passe réinitialisé.'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /users/me:
+    get:
+      tags:
+        - Utilisateurs
+      operationId: getCurrentUser
+      summary: "Lire le profil de l'utilisateur connecté."
+      responses:
+        '200':
+          description: "Profil de l'utilisateur connecté."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentUser'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    patch:
+      tags:
+        - Utilisateurs
+      operationId: updateCurrentUser
+      summary: "Modifier le profil de l'utilisateur connecté."
+      description: >-
+        Met à jour partiellement le pseudo et l'adresse e-mail. Modifier l'adresse e-mail exige
+        currentPassword : s'il manque, la réponse est un 400 avec le code password_required ; s'il est
+        faux, un 400 avec le code invalid_credentials (jamais un 401, qui déconnecterait le client).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserInput'
+      responses:
+        '200':
+          description: 'Profil mis à jour.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentUser'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /users/me/password:
+    post:
+      tags:
+        - Utilisateurs
+      operationId: changePassword
+      summary: 'Changer son mot de passe.'
+      description: >-
+        Vérifie currentPassword puis applique newPassword. Un currentPassword faux renvoie un 400 avec le
+        code invalid_credentials. Invalide toutes les autres sessions et tous les autres jetons du compte.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordInput'
+      responses:
+        '204':
+          description: 'Mot de passe modifié.'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /users/me/deletion:
+    post:
+      tags:
+        - Utilisateurs
+      operationId: deleteCurrentUser
+      x-phase: P3
+      summary: 'Supprimer son compte.'
+      description: >-
+        Supprime définitivement le compte de l'utilisateur connecté (droit à l'effacement, RGPD), après
+        ré-authentification par currentPassword. Un currentPassword faux renvoie un 400 avec le code
+        invalid_credentials. Ferme la session : le cookie du web est effacé et le jeton du mobile invalidé.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteAccountInput'
+      responses:
+        '204':
+          description: 'Compte supprimé.'
+          headers:
+            Set-Cookie:
+              description: 'Efface le cookie de session du web. Attributs : HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=0.'
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /users/{id}:
+    get:
+      tags:
+        - Utilisateurs
+      operationId: getUserById
+      x-phase: P2
+      summary: "Lire le profil public d'un utilisateur."
+      description: "Renvoie uniquement les données publiques (UserPublic), jamais l'adresse e-mail."
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Id'
+      responses:
+        '200':
+          description: "Profil public de l'utilisateur."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPublic'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
 components:
   securitySchemes:
     bearerAuth:
@@ -215,6 +396,19 @@ components:
                 title: Unauthorized
                 status: 401
                 detail: 'The email or password is incorrect.'
+    NotFound:
+      description: "Ressource introuvable, ou ressource d'une campagne dont l'utilisateur n'est pas membre."
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          examples:
+            notFound:
+              summary: "La ressource demandée n'existe pas."
+              value:
+                type: '/problems/not-found'
+                title: Not Found
+                status: 404
 
   schemas:
     Id:
