@@ -7,6 +7,10 @@ info:
     Le contenu de règles servi par l'API provient du System Reference Document 5.1
     de Wizards of the Coast LLC, sous licence CC BY 4.0
     (https://creativecommons.org/licenses/by/4.0/).
+
+    Convention : une route sans `x-phase` est implémentée en P2 ; `x-phase: P3` signale une route
+    reportée. Un non-membre d'une campagne reçoit 404 sur ses ressources, un membre sans le rôle
+    requis reçoit 403.
   license:
     name: Tous droits réservés
     url: 'https://github.com/EpiQuest-roll42/EpiQuest-Web/blob/main/LICENSE'
@@ -21,6 +25,10 @@ tags:
     description: 'Inscription, connexion et déconnexion (cookie pour le web, jeton pour le mobile).'
   - name: Utilisateurs
     description: "Profil de l'utilisateur connecté et profils publics."
+  - name: Campagnes
+    description: 'Campagnes, invitations et membres (rôles MJ et joueur).'
+  - name: Personnages
+    description: 'Fiches de personnage, création guidée et vues par lecteur (propriétaire, MJ, groupe).'
 paths:
   /auth/register:
     post:
@@ -323,6 +331,580 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+  /campaigns:
+    get:
+      tags:
+        - Campagnes
+      operationId: listMyCampaigns
+      summary: "Lister les campagnes de l'utilisateur connecté."
+      description: "Renvoie uniquement les campagnes dont l'utilisateur est membre, comme MJ ou comme joueur."
+      parameters:
+        - name: role
+          in: query
+          required: false
+          description: "Filtre sur le rôle de l'utilisateur dans la campagne."
+          schema:
+            $ref: '#/components/schemas/CampaignRole'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: 'Page de campagnes.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CampaignSummaryPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags:
+        - Campagnes
+      operationId: createCampaign
+      summary: 'Créer une campagne.'
+      description: "Le créateur devient le MJ de la campagne. Un code d'invitation est généré."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCampaignInput'
+      responses:
+        '201':
+          description: 'Campagne créée, vue MJ.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CampaignGmView'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /invitations/lookup:
+    post:
+      tags:
+        - Campagnes
+      operationId: lookupInvitation
+      summary: "Afficher l'aperçu d'une campagne à partir d'un code d'invitation."
+      description: >-
+        Connexion obligatoire : le web garde le code lu dans le fragment du lien pendant l'inscription,
+        puis appelle cette route. Le code est envoyé dans le corps, jamais dans l'URL. Un code inconnu
+        ou renouvelé renvoie 404.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LookupInvitationInput'
+      responses:
+        '200':
+          description: 'Aperçu de la campagne.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvitationPreview'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /campaigns/join:
+    post:
+      tags:
+        - Campagnes
+      operationId: joinCampaign
+      summary: "Rejoindre une campagne avec un code d'invitation."
+      description: >-
+        L'utilisateur devient joueur de la campagne. characterId est facultatif : le personnage peut
+        être choisi plus tard avec setMyCharacter. Erreurs : 404 si le code est inconnu ou renouvelé,
+        ou si characterId est fourni et désigne le personnage d'un autre utilisateur ; 409 already_member
+        si l'utilisateur est déjà membre (MJ compris) ; 409 character_already_in_campaign si le
+        personnage est déjà engagé dans une campagne.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JoinCampaignInput'
+      responses:
+        '200':
+          description: 'Campagne rejointe, vue joueur.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CampaignPlayerView'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /campaigns/{campaignId}:
+    parameters:
+      - $ref: '#/components/parameters/CampaignId'
+    get:
+      tags:
+        - Campagnes
+      operationId: getCampaign
+      summary: 'Lire une campagne.'
+      description: >-
+        Projection par spectateur : le MJ reçoit CampaignGmView (avec l'invitation), un joueur reçoit
+        CampaignPlayerView, sans aucune donnée réservée au MJ. Le champ viewerRole indique la vue reçue.
+      responses:
+        '200':
+          description: "Vue de la campagne selon le rôle de l'utilisateur."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CampaignView'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags:
+        - Campagnes
+      operationId: updateCampaign
+      x-phase: P3
+      summary: 'Modifier une campagne (MJ).'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCampaignInput'
+      responses:
+        '200':
+          description: 'Campagne modifiée, vue MJ.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CampaignGmView'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags:
+        - Campagnes
+      operationId: deleteCampaign
+      x-phase: P3
+      summary: 'Supprimer une campagne (MJ).'
+      description: "Supprime la campagne et invalide son code d'invitation."
+      responses:
+        '204':
+          description: 'Campagne supprimée.'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /campaigns/{campaignId}/invitation:
+    parameters:
+      - $ref: '#/components/parameters/CampaignId'
+    get:
+      tags:
+        - Campagnes
+      operationId: getInvitation
+      summary: "Lire le code d'invitation (MJ)."
+      responses:
+        '200':
+          description: "Code et lien d'invitation."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invitation'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags:
+        - Campagnes
+      operationId: renewInvitation
+      summary: "Renouveler le code d'invitation (MJ)."
+      description: "Génère un nouveau code ; l'ancien est invalidé immédiatement. Le code n'expire pas autrement."
+      responses:
+        '201':
+          description: "Nouveau code d'invitation."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invitation'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /campaigns/{campaignId}/members:
+    parameters:
+      - $ref: '#/components/parameters/CampaignId'
+    get:
+      tags:
+        - Campagnes
+      operationId: listMembers
+      summary: "Lister les membres d'une campagne."
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: 'Page de membres.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /campaigns/{campaignId}/members/me/character:
+    parameters:
+      - $ref: '#/components/parameters/CampaignId'
+    put:
+      tags:
+        - Campagnes
+      operationId: setMyCharacter
+      summary: 'Choisir son personnage dans la campagne (joueur).'
+      description: >-
+        Réservé aux joueurs (403 pour le MJ). 404 si characterId désigne le personnage d'un autre
+        utilisateur ; 409 character_already_in_campaign si le personnage est engagé dans une autre campagne.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetCharacterInput'
+      responses:
+        '200':
+          description: 'Personnage choisi.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Member'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /campaigns/{campaignId}/members/{userId}:
+    parameters:
+      - $ref: '#/components/parameters/CampaignId'
+      - name: userId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Id'
+    delete:
+      tags:
+        - Campagnes
+      operationId: removeMember
+      x-phase: P3
+      summary: 'Retirer un joueur de la campagne (MJ).'
+      description: >-
+        404 si userId n'est pas membre ; 409 cannot_remove_self si le MJ tente de se retirer lui-même.
+        Temps réel : le serveur ferme immédiatement le socket du joueur retiré.
+      responses:
+        '204':
+          description: 'Joueur retiré.'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /campaigns/{campaignId}/leave:
+    parameters:
+      - $ref: '#/components/parameters/CampaignId'
+    post:
+      tags:
+        - Campagnes
+      operationId: leaveCampaign
+      x-phase: P3
+      summary: 'Quitter une campagne (joueur).'
+      description: '409 gm_must_transfer si le MJ tente de partir sans avoir transféré son rôle.'
+      responses:
+        '204':
+          description: 'Campagne quittée.'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /campaigns/{campaignId}/transfer-gm:
+    parameters:
+      - $ref: '#/components/parameters/CampaignId'
+    post:
+      tags:
+        - Campagnes
+      operationId: transferGameMaster
+      x-phase: P3
+      summary: 'Transférer le rôle de MJ à un joueur (MJ).'
+      description: >-
+        L'ancien MJ devient joueur, sans personnage. 404 si userId n'est pas membre ; 400
+        cannot_transfer_to_self si userId est le MJ lui-même. Temps réel : l'ancien MJ est retiré du
+        canal MJ et abonné au canal joueurs ; le nouveau MJ passe au canal MJ.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferGameMasterInput'
+      responses:
+        '200':
+          description: "Rôle transféré ; vue joueur de la campagne pour l'ancien MJ."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CampaignPlayerView'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /characters:
+    get:
+      tags:
+        - Personnages
+      operationId: listMyCharacters
+      summary: "Lister les personnages de l'utilisateur connecté."
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/CharacterStatus'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: 'Page de personnages.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CharacterSummaryPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags:
+        - Personnages
+      operationId: createCharacter
+      summary: 'Créer un personnage (brouillon).'
+      description: "Crée un brouillon, visible de son seul propriétaire jusqu'à finalizeCreation."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCharacterInput'
+      responses:
+        '201':
+          description: 'Brouillon créé.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CharacterOwnerView'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /characters/{characterId}:
+    parameters:
+      - $ref: '#/components/parameters/CharacterId'
+    get:
+      tags:
+        - Personnages
+      operationId: getCharacter
+      summary: 'Lire un personnage.'
+      description: >-
+        Projection par spectateur : le propriétaire reçoit la vue owner (avec ses notes), le MJ de la
+        campagne la vue gm (sans les notes), un autre joueur de la campagne la vue party (identité, PV
+        et états seulement). Tout autre utilisateur reçoit 404, de même que tout le monde sauf le
+        propriétaire pour un brouillon. Le champ view indique la vue reçue.
+      responses:
+        '200':
+          description: 'Vue du personnage selon le lecteur.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CharacterView'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags:
+        - Personnages
+      operationId: updateCharacter
+      summary: 'Modifier le nom ou les notes de son personnage (propriétaire).'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCharacterInput'
+      responses:
+        '200':
+          description: 'Personnage modifié.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CharacterOwnerView'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags:
+        - Personnages
+      operationId: deleteCharacter
+      x-phase: P3
+      summary: 'Supprimer son personnage (propriétaire).'
+      description: '409 character_in_campaign si le personnage est encore rattaché à une campagne.'
+      responses:
+        '204':
+          description: 'Personnage supprimé.'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /characters/{characterId}/creation/options:
+    parameters:
+      - $ref: '#/components/parameters/CharacterId'
+    get:
+      tags:
+        - Personnages
+      operationId: getCreationOptions
+      summary: 'Lire les choix possibles pour une étape de création (propriétaire, brouillon).'
+      description: >-
+        Les choix sont décrits de façon générique (ChoiceGroup) à partir des données SRD : les règles
+        sont des données. 409 character_not_draft si le personnage est déjà finalisé.
+      parameters:
+        - name: step
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/CreationStep'
+      responses:
+        '200':
+          description: "Choix possibles pour l'étape."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreationOptions'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /characters/{characterId}/creation:
+    parameters:
+      - $ref: '#/components/parameters/CharacterId'
+    patch:
+      tags:
+        - Personnages
+      operationId: updateCreation
+      summary: 'Enregistrer des choix de création (propriétaire, brouillon).'
+      description: >-
+        Le serveur valide les choix avec le moteur de règles et renvoie la fiche recalculée, avec ses
+        avertissements dans creation.warnings. Erreurs 400 : choice_not_allowed, prerequisite_not_met,
+        too_many_choices, points_exceeded ; FieldError.field désigne le groupe en cause (par exemple
+        choices.class-skills). 409 character_not_draft si le personnage est déjà finalisé.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCreationInput'
+      responses:
+        '200':
+          description: 'Fiche recalculée.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CharacterOwnerView'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /characters/{characterId}/creation/finalize:
+    parameters:
+      - $ref: '#/components/parameters/CharacterId'
+    post:
+      tags:
+        - Personnages
+      operationId: finalizeCreation
+      summary: 'Terminer la création (propriétaire, brouillon).'
+      description: >-
+        Le personnage passe au statut active et devient visible du MJ et des joueurs de sa campagne.
+        400 creation_incomplete si une étape manque ; 409 character_not_draft s'il est déjà finalisé.
+      responses:
+        '200':
+          description: 'Personnage finalisé.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CharacterOwnerView'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
 components:
   securitySchemes:
     bearerAuth:
@@ -409,6 +991,51 @@ components:
                 type: '/problems/not-found'
                 title: Not Found
                 status: 404
+    Forbidden:
+      description: 'Membre de la campagne, mais sans le rôle requis (par exemple un joueur sur une route réservée au MJ).'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          examples:
+            gmOnly:
+              summary: 'Route réservée au MJ.'
+              value:
+                type: '/problems/forbidden'
+                title: Forbidden
+                status: 403
+
+  parameters:
+    CampaignId:
+      name: campaignId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Id'
+    CharacterId:
+      name: characterId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Id'
+    Cursor:
+      name: cursor
+      in: query
+      required: false
+      description: 'Curseur opaque renvoyé dans nextCursor par la page précédente.'
+      schema:
+        type: string
+        maxLength: 256
+    Limit:
+      name: limit
+      in: query
+      required: false
+      description: "Nombre maximal d'éléments par page."
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
 
   schemas:
     Id:
@@ -655,3 +1282,1272 @@ components:
       properties:
         currentPassword:
           $ref: '#/components/schemas/PasswordCheck'
+
+    # --- CAMPAGNES ---
+    InvitationCode:
+      type: string
+      pattern: '^[0-9A-HJKMNP-TV-Z]{5}-[0-9A-HJKMNP-TV-Z]{5}$'
+      description: >-
+        Code d'invitation tel que le serveur le renvoie : 10 caractères aléatoires de l'alphabet Crockford
+        base32 (sans I, L, O ni U), soit 50 bits d'entropie, au format XXXXX-XXXXX, en majuscules.
+      example: '7KQ2M-9XMAT'
+
+    InvitationCodeInput:
+      type: string
+      pattern: '^[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{5}-[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{5}$'
+      description: >-
+        Code d'invitation saisi par l'utilisateur. La casse est ignorée : le serveur met le code en
+        majuscules avant de le comparer.
+      example: '7kq2m-9xmat'
+
+    CampaignRole:
+      type: string
+      enum:
+        - gm
+        - player
+      description: 'Rôle dans une campagne : MJ (gm) ou joueur (player).'
+      example: player
+
+    CampaignName:
+      type: string
+      minLength: 3
+      maxLength: 60
+      description: 'Nom de la campagne. Le serveur retire les espaces de début et de fin avant de valider la longueur.'
+      example: 'La Mine perdue'
+
+    CampaignDescription:
+      type: string
+      maxLength: 2000
+      description: 'Description libre de la campagne.'
+      example: 'Une campagne pour joueurs débutants, du niveau 1 au niveau 5.'
+
+    CharacterRef:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        name:
+          $ref: '#/components/schemas/CharacterName'
+
+    Invitation:
+      type: object
+      required:
+        - code
+        - url
+        - createdAt
+      properties:
+        code:
+          $ref: '#/components/schemas/InvitationCode'
+        url:
+          type: string
+          format: uri
+          description: "Lien d'invitation. Le code est dans le fragment (#), que le navigateur n'envoie jamais au serveur."
+          example: 'https://app.example.org/rejoindre#7KQ2M-9XMAT'
+        createdAt:
+          type: string
+          format: date-time
+          example: '2026-11-02T18:15:00Z'
+
+    InvitationPreview:
+      type: object
+      required:
+        - campaignName
+        - gm
+        - playerCount
+      properties:
+        campaignName:
+          $ref: '#/components/schemas/CampaignName'
+        gm:
+          $ref: '#/components/schemas/UserPublic'
+        playerCount:
+          type: integer
+          minimum: 0
+          example: 3
+
+    CampaignSummary:
+      type: object
+      required:
+        - id
+        - name
+        - myRole
+        - gm
+        - playerCount
+        - updatedAt
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        name:
+          $ref: '#/components/schemas/CampaignName'
+        myRole:
+          $ref: '#/components/schemas/CampaignRole'
+        gm:
+          $ref: '#/components/schemas/UserPublic'
+        playerCount:
+          type: integer
+          minimum: 0
+          example: 3
+        myCharacter:
+          description: "Personnage de l'utilisateur, seulement s'il est joueur ; null s'il n'en a pas encore choisi."
+          type: object
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/CharacterBrief'
+        updatedAt:
+          type: string
+          format: date-time
+          example: '2026-11-02T18:15:00Z'
+
+    CampaignGmView:
+      type: object
+      description: 'Vue MJ de la campagne. Les données réservées au MJ (notes, PNJ, documents) seront ajoutées ici uniquement.'
+      required:
+        - viewerRole
+        - id
+        - name
+        - gm
+        - playerCount
+        - invitation
+        - createdAt
+      properties:
+        viewerRole:
+          type: string
+          enum:
+            - gm
+        id:
+          $ref: '#/components/schemas/Id'
+        name:
+          $ref: '#/components/schemas/CampaignName'
+        description:
+          type: string
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/CampaignDescription'
+        gm:
+          $ref: '#/components/schemas/UserPublic'
+        playerCount:
+          type: integer
+          minimum: 0
+          example: 3
+        invitation:
+          $ref: '#/components/schemas/Invitation'
+        createdAt:
+          type: string
+          format: date-time
+          example: '2026-11-02T18:15:00Z'
+
+    CampaignPlayerView:
+      type: object
+      description: "Vue joueur de la campagne. Ne contient aucune donnée réservée au MJ, pas même le code d'invitation."
+      required:
+        - viewerRole
+        - id
+        - name
+        - gm
+        - playerCount
+        - createdAt
+      properties:
+        viewerRole:
+          type: string
+          enum:
+            - player
+        id:
+          $ref: '#/components/schemas/Id'
+        name:
+          $ref: '#/components/schemas/CampaignName'
+        description:
+          type: string
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/CampaignDescription'
+        gm:
+          $ref: '#/components/schemas/UserPublic'
+        playerCount:
+          type: integer
+          minimum: 0
+          example: 3
+        myCharacter:
+          description: "Personnage du joueur ; null s'il n'en a pas encore choisi."
+          type: object
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/CharacterBrief'
+        createdAt:
+          type: string
+          format: date-time
+          example: '2026-11-02T18:15:00Z'
+
+    CampaignView:
+      description: 'Vue de la campagne selon le rôle de la personne qui la consulte (projection par spectateur).'
+      oneOf:
+        - $ref: '#/components/schemas/CampaignGmView'
+        - $ref: '#/components/schemas/CampaignPlayerView'
+      discriminator:
+        propertyName: viewerRole
+        mapping:
+          gm: '#/components/schemas/CampaignGmView'
+          player: '#/components/schemas/CampaignPlayerView'
+
+    Member:
+      type: object
+      required:
+        - user
+        - role
+        - joinedAt
+      properties:
+        user:
+          $ref: '#/components/schemas/UserPublic'
+        role:
+          $ref: '#/components/schemas/CampaignRole'
+        character:
+          description: "Personnage du membre ; null pour le MJ ou pour un joueur qui n'en a pas encore choisi."
+          type: object
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/CharacterBrief'
+        joinedAt:
+          type: string
+          format: date-time
+          example: '2026-11-02T18:15:00Z'
+
+    CampaignSummaryPage:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CampaignSummary'
+        nextCursor:
+          type: string
+          nullable: true
+          description: 'Curseur de la page suivante ; null sur la dernière page.'
+
+    MemberPage:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Member'
+        nextCursor:
+          type: string
+          nullable: true
+          description: 'Curseur de la page suivante ; null sur la dernière page.'
+
+    CreateCampaignInput:
+      type: object
+      required:
+        - name
+      additionalProperties: false
+      properties:
+        name:
+          $ref: '#/components/schemas/CampaignName'
+        description:
+          $ref: '#/components/schemas/CampaignDescription'
+
+    UpdateCampaignInput:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      x-phase: P3
+      properties:
+        name:
+          $ref: '#/components/schemas/CampaignName'
+        description:
+          $ref: '#/components/schemas/CampaignDescription'
+
+    LookupInvitationInput:
+      type: object
+      required:
+        - code
+      additionalProperties: false
+      properties:
+        code:
+          $ref: '#/components/schemas/InvitationCodeInput'
+
+    JoinCampaignInput:
+      type: object
+      required:
+        - code
+      additionalProperties: false
+      properties:
+        code:
+          $ref: '#/components/schemas/InvitationCodeInput'
+        characterId:
+          $ref: '#/components/schemas/Id'
+
+    SetCharacterInput:
+      type: object
+      required:
+        - characterId
+      additionalProperties: false
+      properties:
+        characterId:
+          $ref: '#/components/schemas/Id'
+
+    TransferGameMasterInput:
+      type: object
+      required:
+        - userId
+      additionalProperties: false
+      x-phase: P3
+      properties:
+        userId:
+          $ref: '#/components/schemas/Id'
+
+    # --- PERSONNAGES : PETITS TYPES ---
+    RuleId:
+      type: string
+      pattern: '^[a-z0-9]+(-[a-z0-9]+)*$'
+      maxLength: 64
+      description: >-
+        Identifiant d'une donnée SRD (espèce, classe, historique, sort, objet, état…), repris des index
+        de la D&D 5e API à l'import. Unique pour un type donné : le type est porté par le champ.
+      example: 'fighter'
+
+    RuleRef:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          $ref: '#/components/schemas/RuleId'
+        name:
+          type: string
+          description: >-
+            Nom de la donnée SRD, traduit à l'import. C'est du contenu de règles, pas un libellé
+            d'interface : il fait exception à la règle « les libellés viennent de l'interface ».
+          example: 'Guerrier'
+
+    AbilityCode:
+      type: string
+      enum:
+        - str
+        - dex
+        - con
+        - int
+        - wis
+        - cha
+      description: 'Code de caractéristique.'
+      example: dex
+
+    CharacterName:
+      type: string
+      minLength: 1
+      maxLength: 60
+      example: 'Mira'
+
+    CharacterStatus:
+      type: string
+      enum:
+        - draft
+        - active
+      description: 'Brouillon (création en cours) ou personnage actif.'
+      example: active
+
+    CreationStep:
+      type: string
+      enum:
+        - species
+        - class
+        - background
+        - abilities
+        - proficiencies
+        - equipment
+        - spells
+      description: >-
+        Étape de création, dans l'ordre d'affichage. proficiencies couvre compétences, outils et langues.
+        Pour une classe sans sorts, l'étape spells renvoie groups vide et le client la saute. Le
+        récapitulatif final n'existe que côté client : il appelle finalizeCreation.
+      example: abilities
+
+    ValueBreakdown:
+      type: object
+      readOnly: true
+      description: >-
+        Valeur calculée par le serveur et son détail. Le client affiche lui-même les libellés à partir
+        de source (par exemple « Cuir 11 + DEX 3 »).
+      required:
+        - value
+        - parts
+      properties:
+        value:
+          type: integer
+          example: 14
+        parts:
+          type: array
+          items:
+            type: object
+            required:
+              - source
+              - value
+            properties:
+              source:
+                type: object
+                required:
+                  - kind
+                  - ref
+                properties:
+                  kind:
+                    type: string
+                    enum:
+                      - base
+                      - ability
+                      - item
+                      - feature
+                      - proficiency
+                      - species
+                  ref:
+                    description: 'RuleId de la source, ou code de caractéristique (par exemple dex).'
+                    allOf:
+                      - $ref: '#/components/schemas/RuleId'
+              value:
+                type: integer
+          example:
+            - source:
+                kind: item
+                ref: leather-armor
+              value: 11
+            - source:
+                kind: ability
+                ref: dex
+              value: 3
+
+    HitPoints:
+      type: object
+      required:
+        - current
+        - max
+        - temporary
+      properties:
+        current:
+          type: integer
+          minimum: 0
+          example: 20
+        max:
+          type: integer
+          minimum: 0
+          readOnly: true
+          example: 34
+        temporary:
+          type: integer
+          minimum: 0
+          example: 0
+
+    AbilityScore:
+      type: object
+      required:
+        - score
+        - modifier
+      properties:
+        score:
+          type: integer
+          minimum: 1
+          maximum: 30
+          example: 16
+        modifier:
+          type: integer
+          readOnly: true
+          example: 3
+
+    AbilityScores:
+      type: object
+      required:
+        - str
+        - dex
+        - con
+        - int
+        - wis
+        - cha
+      properties:
+        str:
+          $ref: '#/components/schemas/AbilityScore'
+        dex:
+          $ref: '#/components/schemas/AbilityScore'
+        con:
+          $ref: '#/components/schemas/AbilityScore'
+        int:
+          $ref: '#/components/schemas/AbilityScore'
+        wis:
+          $ref: '#/components/schemas/AbilityScore'
+        cha:
+          $ref: '#/components/schemas/AbilityScore'
+
+    CampaignRef:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        name:
+          $ref: '#/components/schemas/CampaignName'
+
+    # --- PERSONNAGES : RÉSUMÉS ---
+    CharacterBrief:
+      type: object
+      description: >-
+        Résumé d'un personnage dans le contexte d'une campagne (liste des membres, myCharacter), par
+        exemple « Arwen · Haut-elfe · Rôdeuse niv. 3 ». species et class sont null tant que le
+        personnage est en brouillon.
+      required:
+        - id
+        - name
+        - status
+        - level
+        - species
+        - class
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        name:
+          $ref: '#/components/schemas/CharacterName'
+        status:
+          $ref: '#/components/schemas/CharacterStatus'
+        level:
+          type: integer
+          minimum: 1
+          maximum: 5
+          example: 3
+        species:
+          type: object
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/RuleRef'
+        class:
+          type: object
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/RuleRef'
+
+    CharacterSummary:
+      description: 'Résumé de personnage pour la liste de ses propres personnages, avec sa campagne.'
+      allOf:
+        - $ref: '#/components/schemas/CharacterBrief'
+        - type: object
+          required:
+            - campaign
+          properties:
+            campaign:
+              type: object
+              nullable: true
+              allOf:
+                - $ref: '#/components/schemas/CampaignRef'
+
+    CharacterSummaryPage:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CharacterSummary'
+        nextCursor:
+          type: string
+          nullable: true
+          description: 'Curseur de la page suivante ; null sur la dernière page.'
+
+    # --- PERSONNAGES : VUES ---
+    CharacterPartyView:
+      type: object
+      description: >-
+        Vue d'un autre joueur de la campagne : identité, PV exacts et états seulement. On partage le
+        minimum : le reste de la fiche n'est jamais envoyé.
+      required:
+        - view
+        - id
+        - name
+        - owner
+        - level
+        - species
+        - class
+        - hitPoints
+        - conditions
+      properties:
+        view:
+          type: string
+          enum:
+            - party
+        id:
+          $ref: '#/components/schemas/Id'
+        name:
+          $ref: '#/components/schemas/CharacterName'
+        owner:
+          $ref: '#/components/schemas/UserPublic'
+        level:
+          type: integer
+          minimum: 1
+          maximum: 5
+        species:
+          $ref: '#/components/schemas/RuleRef'
+        class:
+          $ref: '#/components/schemas/RuleRef'
+        hitPoints:
+          $ref: '#/components/schemas/HitPoints'
+        conditions:
+          type: array
+          items:
+            $ref: '#/components/schemas/RuleRef'
+
+    InventoryEntry:
+      type: object
+      required:
+        - id
+        - item
+        - customName
+        - quantity
+        - equipped
+        - weight
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        item:
+          description: 'Objet SRD ; null pour un objet hors SRD décrit par customName.'
+          type: object
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/RuleRef'
+        customName:
+          type: string
+          nullable: true
+          maxLength: 60
+        quantity:
+          type: integer
+          minimum: 1
+          example: 1
+        equipped:
+          type: boolean
+          example: true
+        weight:
+          type: number
+          minimum: 0
+          readOnly: true
+          description: 'Poids total de la ligne, en kilogrammes.'
+          example: 5
+
+    CharacterSheet:
+      type: object
+      description: >-
+        Fiche complète, commune aux vues owner et gm. Ne contient pas les notes du joueur, réservées à
+        la vue owner. Les statistiques dérivées sont calculées par le serveur (readOnly). Distances en
+        mètres et poids en kilogrammes (ADR 0009).
+        Tous les champs sont présents ; les champs nullables liés à la création valent null uniquement
+        lorsque status vaut draft. subclass, spellcasting et campaign peuvent valoir null même pour un
+        personnage actif. Les tableaux ne sont jamais null : ils sont vides tant que le choix n'est pas fait.
+      required:
+        - id
+        - name
+        - status
+        - level
+        - owner
+        - species
+        - class
+        - subclass
+        - background
+        - abilities
+        - proficiencyBonus
+        - armorClass
+        - initiative
+        - speed
+        - passivePerception
+        - hitPoints
+        - hitDice
+        - deathSaves
+        - savingThrows
+        - skills
+        - proficiencies
+        - features
+        - spellcasting
+        - inventory
+        - currency
+        - carryWeight
+        - conditions
+        - campaign
+        - rulesetVersion
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        name:
+          $ref: '#/components/schemas/CharacterName'
+        status:
+          $ref: '#/components/schemas/CharacterStatus'
+        level:
+          type: integer
+          minimum: 1
+          maximum: 5
+        owner:
+          $ref: '#/components/schemas/UserPublic'
+        species:
+          type: object
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/RuleRef'
+        class:
+          type: object
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/RuleRef'
+        subclass:
+          type: object
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/RuleRef'
+        background:
+          type: object
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/RuleRef'
+        abilities:
+          type: object
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/AbilityScores'
+        proficiencyBonus:
+          type: integer
+          readOnly: true
+          example: 2
+        armorClass:
+          type: object
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/ValueBreakdown'
+        initiative:
+          type: object
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/ValueBreakdown'
+        speed:
+          type: number
+          nullable: true
+          readOnly: true
+          description: 'Vitesse en mètres (30 pieds = 9 m).'
+          example: 9
+        passivePerception:
+          type: object
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/ValueBreakdown'
+        hitPoints:
+          type: object
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/HitPoints'
+        hitDice:
+          type: object
+          nullable: true
+          required:
+            - die
+            - total
+            - remaining
+          properties:
+            die:
+              type: string
+              pattern: '^d(4|6|8|10|12|20)$'
+              example: 'd10'
+            total:
+              type: integer
+              minimum: 0
+            remaining:
+              type: integer
+              minimum: 0
+        deathSaves:
+          type: object
+          readOnly: true
+          description: 'Mis à jour uniquement par le serveur, à partir des jets contre la mort.'
+          required:
+            - successes
+            - failures
+          properties:
+            successes:
+              type: integer
+              minimum: 0
+              maximum: 3
+            failures:
+              type: integer
+              minimum: 0
+              maximum: 3
+        savingThrows:
+          type: array
+          readOnly: true
+          items:
+            type: object
+            required:
+              - ability
+              - modifier
+              - proficient
+            properties:
+              ability:
+                $ref: '#/components/schemas/AbilityCode'
+              modifier:
+                type: integer
+              proficient:
+                type: boolean
+        skills:
+          type: array
+          readOnly: true
+          items:
+            type: object
+            required:
+              - skill
+              - ability
+              - modifier
+              - proficient
+            properties:
+              skill:
+                $ref: '#/components/schemas/RuleRef'
+              ability:
+                $ref: '#/components/schemas/AbilityCode'
+              modifier:
+                type: integer
+              proficient:
+                type: boolean
+        proficiencies:
+          type: object
+          readOnly: true
+          required:
+            - armor
+            - weapons
+            - tools
+            - languages
+          properties:
+            armor:
+              type: array
+              items:
+                $ref: '#/components/schemas/RuleRef'
+            weapons:
+              type: array
+              items:
+                $ref: '#/components/schemas/RuleRef'
+            tools:
+              type: array
+              items:
+                $ref: '#/components/schemas/RuleRef'
+            languages:
+              type: array
+              items:
+                $ref: '#/components/schemas/RuleRef'
+        features:
+          type: array
+          readOnly: true
+          items:
+            type: object
+            required:
+              - id
+              - name
+              - source
+              - level
+            properties:
+              id:
+                $ref: '#/components/schemas/RuleId'
+              name:
+                type: string
+              source:
+                $ref: '#/components/schemas/RuleRef'
+              level:
+                type: integer
+                minimum: 1
+                maximum: 20
+        spellcasting:
+          type: object
+          nullable: true
+          readOnly: true
+          description: 'null pour un personnage qui ne lance pas de sorts.'
+          required:
+            - ability
+            - saveDc
+            - attackBonus
+            - slots
+            - spells
+          properties:
+            ability:
+              $ref: '#/components/schemas/AbilityCode'
+            saveDc:
+              type: integer
+              example: 13
+            attackBonus:
+              type: integer
+              example: 5
+            slots:
+              type: array
+              items:
+                type: object
+                required:
+                  - level
+                  - max
+                  - used
+                properties:
+                  level:
+                    type: integer
+                    minimum: 1
+                    maximum: 9
+                  max:
+                    type: integer
+                    minimum: 0
+                  used:
+                    type: integer
+                    minimum: 0
+            spells:
+              type: array
+              items:
+                $ref: '#/components/schemas/RuleRef'
+        inventory:
+          type: array
+          items:
+            $ref: '#/components/schemas/InventoryEntry'
+        currency:
+          $ref: '#/components/schemas/Currency'
+        carryWeight:
+          type: object
+          nullable: true
+          readOnly: true
+          description: 'Charge portée et capacité, en kilogrammes.'
+          required:
+            - current
+            - capacity
+          properties:
+            current:
+              type: number
+              minimum: 0
+            capacity:
+              type: number
+              minimum: 0
+        conditions:
+          type: array
+          items:
+            $ref: '#/components/schemas/RuleRef'
+        campaign:
+          type: object
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/CampaignRef'
+        creation:
+          type: object
+          description: 'Facultatif : présent seulement pour un brouillon, absent une fois le personnage finalisé.'
+          required:
+            - abilityMethod
+            - completedSteps
+            - warnings
+          properties:
+            abilityMethod:
+              allOf:
+                - $ref: '#/components/schemas/AbilityMethod'
+              nullable: true
+              type: string
+            completedSteps:
+              type: array
+              items:
+                $ref: '#/components/schemas/CreationStep'
+            warnings:
+              type: array
+              items:
+                type: object
+                required:
+                  - code
+                properties:
+                  code:
+                    type: string
+                    description: "Code d'avertissement en anglais, traduit par le client."
+                    example: 'spells_not_chosen'
+                  groupId:
+                    type: string
+                    description: 'Groupe de choix concerné, le cas échéant.'
+        rulesetVersion:
+          type: string
+          readOnly: true
+          description: "Version de l'import SRD utilisée pour le calcul de la fiche."
+          example: 'srd-5.1-2026.10'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Currency:
+      type: object
+      required:
+        - cp
+        - sp
+        - ep
+        - gp
+        - pp
+      properties:
+        cp:
+          type: integer
+          minimum: 0
+        sp:
+          type: integer
+          minimum: 0
+        ep:
+          type: integer
+          minimum: 0
+        gp:
+          type: integer
+          minimum: 0
+        pp:
+          type: integer
+          minimum: 0
+
+    CharacterOwnerView:
+      description: 'Vue du propriétaire : la fiche complète et ses notes.'
+      allOf:
+        - $ref: '#/components/schemas/CharacterSheet'
+        - type: object
+          required:
+            - view
+            - notes
+          properties:
+            view:
+              type: string
+              enum:
+                - owner
+            notes:
+              type: string
+              maxLength: 10000
+              default: ''
+              description: 'Notes du joueur. Jamais envoyées au MJ ni aux autres joueurs.'
+
+    CharacterGmView:
+      description: 'Vue du MJ de la campagne : la fiche complète, sans les notes du joueur.'
+      allOf:
+        - $ref: '#/components/schemas/CharacterSheet'
+        - type: object
+          required:
+            - view
+          properties:
+            view:
+              type: string
+              enum:
+                - gm
+
+    CharacterView:
+      description: 'Vue du personnage selon le lecteur (projection par spectateur).'
+      oneOf:
+        - $ref: '#/components/schemas/CharacterOwnerView'
+        - $ref: '#/components/schemas/CharacterGmView'
+        - $ref: '#/components/schemas/CharacterPartyView'
+      discriminator:
+        propertyName: view
+        mapping:
+          owner: '#/components/schemas/CharacterOwnerView'
+          gm: '#/components/schemas/CharacterGmView'
+          party: '#/components/schemas/CharacterPartyView'
+
+    # --- PERSONNAGES : CRÉATION ---
+    AbilityMethod:
+      type: string
+      enum:
+        - pointBuy
+        - standardArray
+        - roll
+      description: 'Méthode de détermination des caractéristiques.'
+
+    ChoiceOption:
+      type: object
+      required:
+        - id
+        - grants
+      properties:
+        id:
+          type: string
+          maxLength: 64
+          example: 'chain-mail'
+        grants:
+          type: array
+          description: 'Ce que donne cette option : une compétence, ou un lot (une armure, un arc long et 20 flèches).'
+          items:
+            type: object
+            required:
+              - ref
+              - quantity
+            properties:
+              ref:
+                $ref: '#/components/schemas/RuleRef'
+              quantity:
+                type: integer
+                minimum: 1
+
+    ChoiceGroup:
+      type: object
+      description: 'Un choix de création décrit en données : choisir choose options parmi options.'
+      required:
+        - id
+        - choose
+        - options
+        - chosen
+      properties:
+        id:
+          type: string
+          maxLength: 64
+          example: 'class-skills'
+        choose:
+          type: integer
+          minimum: 1
+          example: 2
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChoiceOption'
+        chosen:
+          type: array
+          items:
+            type: string
+            maxLength: 64
+
+    AbilityOptions:
+      type: object
+      required:
+        - methods
+        - pointBuyBudget
+        - pointBuyCosts
+        - standardArray
+        - rolledValues
+      properties:
+        methods:
+          type: array
+          items:
+            $ref: '#/components/schemas/AbilityMethod'
+        pointBuyBudget:
+          type: integer
+          example: 27
+        pointBuyCosts:
+          type: array
+          items:
+            type: object
+            required:
+              - score
+              - cost
+            properties:
+              score:
+                type: integer
+              cost:
+                type: integer
+        standardArray:
+          type: array
+          minItems: 6
+          maxItems: 6
+          items:
+            type: integer
+          example: [15, 14, 13, 12, 10, 8]
+        rolledValues:
+          type: array
+          nullable: true
+          minItems: 6
+          maxItems: 6
+          description: "Les 6 totaux tirés par le serveur ; null tant que le tirage n'a pas eu lieu."
+          items:
+            type: integer
+
+    CreationOptions:
+      type: object
+      required:
+        - step
+        - groups
+      properties:
+        step:
+          $ref: '#/components/schemas/CreationStep'
+        groups:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChoiceGroup'
+        abilities:
+          description: "Présent seulement à l'étape abilities."
+          allOf:
+            - $ref: '#/components/schemas/AbilityOptions'
+
+    # --- PERSONNAGES : ENTRÉES ---
+    CreateCharacterInput:
+      type: object
+      required:
+        - name
+      additionalProperties: false
+      properties:
+        name:
+          $ref: '#/components/schemas/CharacterName'
+
+    UpdateCharacterInput:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        name:
+          $ref: '#/components/schemas/CharacterName'
+        notes:
+          type: string
+          maxLength: 10000
+
+    UpdateCreationInput:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        abilityMethod:
+          $ref: '#/components/schemas/AbilityMethod'
+        abilityAssignment:
+          type: object
+          additionalProperties: false
+          description: >-
+            Score de chaque caractéristique. Avec la méthode roll, les valeurs doivent être une
+            permutation des valeurs tirées par le serveur.
+          required:
+            - str
+            - dex
+            - con
+            - int
+            - wis
+            - cha
+          properties:
+            str:
+              type: integer
+              minimum: 1
+              maximum: 30
+            dex:
+              type: integer
+              minimum: 1
+              maximum: 30
+            con:
+              type: integer
+              minimum: 1
+              maximum: 30
+            int:
+              type: integer
+              minimum: 1
+              maximum: 30
+            wis:
+              type: integer
+              minimum: 1
+              maximum: 30
+            cha:
+              type: integer
+              minimum: 1
+              maximum: 30
+        choices:
+          type: array
+          maxItems: 50
+          items:
+            type: object
+            additionalProperties: false
+            required:
+              - groupId
+              - optionIds
+            properties:
+              groupId:
+                type: string
+                maxLength: 64
+              optionIds:
+                type: array
+                maxItems: 50
+                items:
+                  type: string
+                  maxLength: 64
