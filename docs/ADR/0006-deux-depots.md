@@ -1,6 +1,6 @@
 # ADR 0006 - Deux dépôts : EpiQuest-Web et EpiQuest-Mobile
 
-- **Statut** : proposé, en attente de confirmation par le référent pédagogique
+- **Statut** : accepté
 - **Date** : 2026-10-21
 - **Décideurs** : Vivien, Alexandre, Killian
 - **Tâche** : P1-01 (#1)
