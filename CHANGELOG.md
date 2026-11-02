@@ -11,5 +11,5 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), et le p
 - Monorepo pnpm et Turborepo : `apps/api`, `apps/web` et `packages/rules-engine` (#3).
 - Configuration TypeScript partagée, ESLint, Prettier, commitlint et husky (#3).
 - Docker Compose pour le développement local : PostgreSQL et Adminer, configurés par `.env` (#4).
-- Documentation : README, guide de contribution, journal des décisions d'architecture (ADR 0001 à 0007), licence, code de conduite et ce journal des modifications.
+- Documentation : README, guide de contribution, journal des décisions d'architecture (ADR 0001 à 0008), licence, code de conduite et ce journal des modifications.
 - Mini charte graphique de Lanterne (`docs/charte-graphique.pdf`) : logo, palettes claire et « table de jeu » aux contrastes vérifiés (WCAG 2.2 AA), typographies Cinzel, Lora et Inter, composants de base (#8).
