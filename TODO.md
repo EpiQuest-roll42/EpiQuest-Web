@@ -12,7 +12,7 @@ Points repérés pendant P1-03, P1-04 et l'issue des fichiers du dépôt. Chaque
 
 ## Outillage
 
-- [ ] **Script `test` à la racine** : ajouter `turbo run test`, documenté dans le README mais absent du `package.json`. À faire avec le premier test du moteur de règles, ou dans la CI.
+- [x] **Script `test` à la racine** : ajouter `turbo run test`, documenté dans le README mais absent du `package.json`. À faire avec le premier test du moteur de règles, ou dans la CI.
 - [ ] **Version de PostgreSQL** : fixer l'image sur une version précise (par exemple `postgres:17.11-alpine`) dans `compose.yaml`, comme Adminer.
 - [ ] **Vérifier `compose.yaml` en CI** : `docker compose config --quiet`, avec un `.env` créé à partir de `.env.example` et des valeurs factices.
 - [ ] **TypeScript** : remonter au-delà de `~6.0.x` quand typescript-eslint le prendra en charge.
