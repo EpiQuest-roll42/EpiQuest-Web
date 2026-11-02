@@ -16,7 +16,132 @@ servers:
 security:
   - bearerAuth: []
   - cookieAuth: []
-paths: {}
+paths:
+  /auth/register:
+    post:
+      tags:
+        - Auth
+      operationId: register
+      security: []
+      summary: 'Créer un compte utilisateur.'
+      description: >-
+        Crée un nouveau compte utilisateur avec les informations fournies. Après cette réponse,
+        l'application mobile enchaîne immédiatement avec createToken pour ouvrir sa session.
+        Un conflit 409 sur l'adresse e-mail révèle qu'un compte
+        existe déjà ; cette énumération est acceptée et limitée par la réponse 429.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterInput'
+      responses:
+        '201':
+          description: 'Compte créé avec succès.'
+          headers:
+            Set-Cookie:
+              description: 'Cookie de session destiné au web. Attributs obligatoires : HttpOnly; Secure; SameSite=Strict; Path=/.'
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentUser'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /auth/login:
+    post:
+      tags:
+        - Auth
+      operationId: login
+      security: []
+      summary: "Connexion de l'application web."
+      description: >-
+        Authentifie l'utilisateur et ouvre une session web au moyen d'un cookie httpOnly.
+        Le 401 et le temps de réponse ne doivent pas révéler si l'adresse e-mail existe.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginInput'
+      responses:
+        '200':
+          description: 'Connexion réussie.'
+          headers:
+            Set-Cookie:
+              description: 'Cookie de session destiné au web. Attributs obligatoires : HttpOnly; Secure; SameSite=Strict; Path=/.'
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentUser'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /auth/token:
+    post:
+      tags:
+        - Auth
+      operationId: createToken
+      security: []
+      summary: "Connexion de l'application mobile : renvoie un jeton d'accès."
+      description: >-
+        Authentifie l'utilisateur mobile avec son adresse e-mail et son mot de passe,
+        puis renvoie un jeton Bearer à présenter dans l'en-tête Authorization des requêtes suivantes.
+        Le 401 et le temps de réponse ne doivent pas révéler si l'adresse e-mail existe.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginInput'
+      responses:
+        '200':
+          description: 'Connexion réussie.'
+          headers:
+            Cache-Control:
+              description: 'Empêche le stockage de la réponse contenant le jeton.'
+              schema:
+                type: string
+                enum:
+                  - no-store
+              example: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /auth/logout:
+    post:
+      tags:
+        - Auth
+      operationId: logout
+      summary: 'Fermer la session active.'
+      description: 'Révoque la session active et efface le cookie de session du web ou invalide le jeton du mobile.'
+      responses:
+        '204':
+          description: 'Session fermée.'
+          headers:
+            Set-Cookie:
+              description: 'Efface le cookie de session du web. Attributs : HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=0.'
+              schema:
+                type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
 components:
   securitySchemes:
     bearerAuth:
@@ -28,6 +153,68 @@ components:
       in: cookie
       name: lanterne_session
       description: "Cookie de session `httpOnly`, utilisé par l'application web."
+
+  responses:
+    BadRequest:
+      description: 'Requête invalide ou données de validation incorrectes.'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          examples:
+            passwordTooShort:
+              summary: 'Le mot de passe ne respecte pas la longueur minimale.'
+              value:
+                type: '/problems/validation-error'
+                title: Bad Request
+                status: 400
+                detail: 'One or more validation errors occurred.'
+                errors:
+                  - field: password
+                    code: too_short
+    Conflict:
+      description: "Conflit de données, par exemple un nom d'utilisateur ou une adresse e-mail déjà pris."
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          examples:
+            emailAlreadyTaken:
+              summary: "L'adresse e-mail est déjà associée à un compte."
+              value:
+                type: '/problems/conflict'
+                title: Conflict
+                status: 409
+                detail: 'An account with this email already exists.'
+                errors:
+                  - field: email
+                    code: already_taken
+    TooManyRequests:
+      description: 'Trop de requêtes. Réessayez après le délai indiqué par `Retry-After`.'
+      headers:
+        Retry-After:
+          description: 'Délai avant une nouvelle tentative, en secondes ou sous forme de date HTTP.'
+          schema:
+            type: string
+          example: '60'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Unauthorized:
+      description: 'Authentification invalide ou expirée.'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          examples:
+            invalidCredentials:
+              summary: 'Les identifiants sont invalides.'
+              value:
+                type: '/problems/unauthorized'
+                title: Unauthorized
+                status: 401
+                detail: 'The email or password is incorrect.'
 
   schemas:
     Id:
