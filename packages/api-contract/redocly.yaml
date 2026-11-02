@@ -1,0 +1,6 @@
+extends:
+  - recommended
+rules:
+  # Seul le serveur local existe pour l'instant (ADR 0004 : l'URL du VPS n'est pas encore connue).
+  # À réactiver quand le serveur de production sera ajouté à `servers`.
+  no-server-example.com: off

@@ -1,0 +1,11 @@
+{
+  "name": "@lanterne/api-contract",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "lint": "redocly lint openapi.yaml"
+  },
+  "devDependencies": {
+    "@redocly/cli": "2.72.1"
+  }
+}
