@@ -8,9 +8,11 @@ Points repérés pendant P1-03, P1-04 et l'issue des fichiers du dépôt. Chaque
 - [ ] **Attribution du SRD dans le produit** : page « À propos » ou « Mentions légales » dans l'application web, avec la mention d'attribution CC BY 4.0 du SRD 5.1 (le README ne suffit pas : l'utilisateur ne le lit pas).
 - [ ] **Traduction du SRD** : décider en équipe si le contenu est affiché en français. Si oui, ajouter « traduit et adapté » à la mention d'attribution (README et page « À propos »), comme l'exige la CC BY 4.0.
 
+- [ ] **Icônes** : les composants de la charte utilisent Lucide (licence ISC). Utiliser la même bibliothèque dans le code (`lucide-react` côté web, équivalent côté mobile), le noter dans un ADR, et passer les icônes restantes des maquettes sur Lucide.
+
 ## Outillage
 
-- [ ] **Script `test` à la racine** : ajouter `turbo run test`, documenté dans le README mais absent du `package.json`. À faire avec le premier test du moteur de règles, ou dans la CI.
+- [x] **Script `test` à la racine** : ajouter `turbo run test`, documenté dans le README mais absent du `package.json`. À faire avec le premier test du moteur de règles, ou dans la CI.
 - [ ] **Version de PostgreSQL** : fixer l'image sur une version précise (par exemple `postgres:17.11-alpine`) dans `compose.yaml`, comme Adminer.
 - [ ] **Vérifier `compose.yaml` en CI** : `docker compose config --quiet`, avec un `.env` créé à partir de `.env.example` et des valeurs factices.
 - [ ] **TypeScript** : remonter au-delà de `~6.0.x` quand typescript-eslint le prendra en charge.
