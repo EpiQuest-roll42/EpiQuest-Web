@@ -1,0 +1,30 @@
+openapi: 3.0.3
+info:
+  title: Lanterne API
+  version: 0.1.0
+  description: >-
+    API de Lanterne, table de jeu de rôle virtuelle compatible 5e édition.
+    Le contenu de règles servi par l'API provient du System Reference Document 5.1
+    de Wizards of the Coast LLC, sous licence CC BY 4.0
+    (https://creativecommons.org/licenses/by/4.0/).
+  license:
+    name: Tous droits réservés
+    url: https://github.com/EpiQuest-roll42/EpiQuest-Web/blob/main/LICENSE
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Développement local
+security:
+  - bearerAuth: []
+  - cookieAuth: []
+paths: {}
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: Jeton d'accès, utilisé par l'application mobile.
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: lanterne_session
+      description: Cookie de session `httpOnly`, utilisé par l'application web.
