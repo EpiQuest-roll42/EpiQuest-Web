@@ -9,10 +9,10 @@ info:
     (https://creativecommons.org/licenses/by/4.0/).
   license:
     name: Tous droits réservés
-    url: https://github.com/EpiQuest-roll42/EpiQuest-Web/blob/main/LICENSE
+    url: 'https://github.com/EpiQuest-roll42/EpiQuest-Web/blob/main/LICENSE'
 servers:
   - url: http://localhost:3000/api/v1
-    description: Développement local
+    description: 'Développement local'
 security:
   - bearerAuth: []
   - cookieAuth: []
@@ -22,9 +22,255 @@ components:
     bearerAuth:
       type: http
       scheme: bearer
-      description: Jeton d'accès, utilisé par l'application mobile.
+      description: "Jeton d'accès, utilisé par l'application mobile."
     cookieAuth:
       type: apiKey
       in: cookie
       name: lanterne_session
-      description: Cookie de session `httpOnly`, utilisé par l'application web.
+      description: "Cookie de session `httpOnly`, utilisé par l'application web."
+
+  schemas:
+    Id:
+      type: string
+      format: uuid
+      description: 'Identifiant unique formaté en UUID v4 standard.'
+      example: '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d'
+
+    Username:
+      type: string
+      minLength: 3
+      maxLength: 20
+      pattern: '^[a-zA-Z0-9_]+$'
+      description: >-
+        Nom d'affichage unique de l'utilisateur. Limité strictement aux caractères alphanumériques 
+        et aux underscores pour éviter les attaques par homographe (ex: mélange de caractères cyrilliques 
+        et latins). La vérification de l'unicité doit être insensible à la casse.
+      example: 'RolePlayMaster'
+
+    Email:
+      type: string
+      format: email
+      maxLength: 254
+      description: 'Adresse e-mail valide.'
+      example: 'joueur.un@example.org'
+
+    Password:
+      type: string
+      minLength: 12
+      maxLength: 128
+      description: >-
+        Mot de passe sécurisé pour la création ou le renouvellement. La longueur maximale est 
+        strictement plafonnée pour éviter les attaques par déni de service (DoS) ciblant les algorithmes de hachage.
+      example: 'SuperSecurePassword123!'
+
+    PasswordCheck:
+      type: string
+      minLength: 1
+      maxLength: 128
+      description: >-
+        Validation d'un mot de passe existant pour authentification ou ré-authentification. 
+        Contrainte volontairement souple (minLength: 1) pour ne pas bloquer les utilisateurs en cas de 
+        changement de politique de sécurité globale et pour ne pas divulguer les règles de complexité.
+      example: 'SuperSecurePassword123!'
+
+    FieldError:
+      type: object
+      required:
+        - field
+        - code
+      properties:
+        field:
+          type: string
+          description: 'Le chemin JSON de la propriété de la requête ayant échoué à la validation.'
+          example: 'newPassword'
+        code:
+          type: string
+          description: >-
+            Code d'erreur lisible par une machine en anglais (ex: 'too_short', 'already_taken', 'password_required'). 
+            Les clients utilisent ce code pour générer les libellés traduits dans l'interface utilisateur.
+          example: 'too_short'
+
+    Problem:
+      type: object
+      required:
+        - type
+        - title
+        - status
+      properties:
+        type:
+          type: string
+          format: uri-reference
+          description: 'Chemin relatif ou absolu identifiant le type de problème.'
+          example: '/problems/validation-error'
+        title:
+          type: string
+          description: 'Un résumé court et lisible en anglais destiné aux développeurs décrivant le type de problème.'
+          example: 'Bad Request'
+        status:
+          type: integer
+          description: "Le code de statut HTTP généré par le serveur d'origine."
+          example: 400
+        detail:
+          type: string
+          description: 'Une explication détaillée en anglais axée sur le développeur concernant cette occurrence spécifique.'
+          example: 'One or more validation errors occurred.'
+        instance:
+          type: string
+          format: uri-reference
+          description: "Une référence d'URI identifiant l'occurrence spécifique du problème."
+          example: '/users/me/password'
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldError'
+          description: "Liste optionnelle d'erreurs de validation spécifiques aux champs pour les formulaires."
+
+    UserPublic:
+      type: object
+      required:
+        - id
+        - username
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        username:
+          $ref: '#/components/schemas/Username'
+
+    CurrentUser:
+      type: object
+      required:
+        - id
+        - username
+        - email
+        - createdAt
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        username:
+          $ref: '#/components/schemas/Username'
+        email:
+          $ref: '#/components/schemas/Email'
+        createdAt:
+          type: string
+          format: date-time
+          description: 'Horodatage de la création du profil utilisateur.'
+          example: '2026-11-02T18:15:00Z'
+
+    TokenResponse:
+      type: object
+      required:
+        - accessToken
+        - tokenType
+        - expiresIn
+      properties:
+        accessToken:
+          type: string
+          description: 'Chaîne opaque de sécurité représentant la session active. Les clients mobiles ne doivent jamais la décoder.'
+          example: 'at_7d4bad9bdd2b0d7b3dcb6d9b1deb4d3b7d4b'
+        tokenType:
+          type: string
+          enum:
+            - Bearer
+          description: "Le type de jeton d'accès émis."
+          example: 'Bearer'
+        expiresIn:
+          type: integer
+          description: "La durée de vie restante du jeton d'accès exprimée en secondes."
+          example: 3600
+
+    RegisterInput:
+      type: object
+      required:
+        - email
+        - username
+        - password
+      additionalProperties: false
+      properties:
+        email:
+          $ref: '#/components/schemas/Email'
+        username:
+          $ref: '#/components/schemas/Username'
+        password:
+          $ref: '#/components/schemas/Password'
+
+    LoginInput:
+      type: object
+      required:
+        - email
+        - password
+      additionalProperties: false
+      description: "Identifiants utilisés pour s'authentifier sur l'application."
+      properties:
+        email:
+          $ref: '#/components/schemas/Email'
+        password:
+          $ref: '#/components/schemas/PasswordCheck'
+
+    UpdateUserInput:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      description: >-
+        Données pour mettre à jour partiellement le profil actif. Modifier l'adresse e-mail exige de 
+        remplir le champ currentPassword, retournant un code d'erreur 400 'password_required' s'il est manquant.
+      properties:
+        username:
+          $ref: '#/components/schemas/Username'
+        email:
+          $ref: '#/components/schemas/Email'
+        currentPassword:
+          $ref: '#/components/schemas/PasswordCheck'
+
+    ChangePasswordInput:
+      type: object
+      required:
+        - currentPassword
+        - newPassword
+      additionalProperties: false
+      description: "Modifie le mot de passe actuel. Provoque l'invalidation de toutes les autres sessions actives du compte."
+      properties:
+        currentPassword:
+          $ref: '#/components/schemas/PasswordCheck'
+        newPassword:
+          $ref: '#/components/schemas/Password'
+
+    ForgotInput:
+      type: object
+      required:
+        - email
+      additionalProperties: false
+      x-phase: P2
+      description: "Données requises pour initier une procédure d'oubli de mot de passe via e-mail."
+      properties:
+        email:
+          $ref: '#/components/schemas/Email'
+
+    ResetInput:
+      type: object
+      required:
+        - token
+        - newPassword
+      additionalProperties: false
+      x-phase: P2
+      description: 'Valide le jeton de réinitialisation et applique le nouveau mot de passe. Révoque toutes les sessions et cookies existants.'
+      properties:
+        token:
+          type: string
+          maxLength: 128
+          description: "Jeton de réinitialisation sécurisé envoyé via l'infrastructure d'e-mailing."
+          example: 'rst_8fbc2c149bd40153'
+        newPassword:
+          $ref: '#/components/schemas/Password'
+
+    DeleteAccountInput:
+      type: object
+      required:
+        - currentPassword
+      additionalProperties: false
+      x-phase: P3
+      description: >-
+        Données destinées à la route non-idempotente de suppression POST /users/me/deletion. 
+        Protège contre le vol et le détournement de session active en imposant une ré-authentification par mot de passe.
+      properties:
+        currentPassword:
+          $ref: '#/components/schemas/PasswordCheck'
