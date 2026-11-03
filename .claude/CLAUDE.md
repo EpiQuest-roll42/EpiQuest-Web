@@ -12,6 +12,7 @@ Claude est ici **assistant, conseiller et relecteur**, pas développeur. Si une 
 - Un extrait de code de 5 lignes maximum est accepté **uniquement** pour illustrer une syntaxe ou une API de librairie, jamais pour résoudre la tâche en cours.
 - **Exceptions** : Claude peut modifier directement :
   - `README.md`, `CONTRIBUTING.md`, `CHANGELOG.md`, `CODE_OF_CONDUCT.md` et le dossier `docs/` (documentation utilisateur, technique, ADR)
+  - `THIRD_PARTY_NOTICES.md` (mentions et textes de licence des données et dépendances tierces)
   - `.github/ISSUE_TEMPLATE/*`, `.github/pull_request_template.md`, `CODEOWNERS`
   - `.env.example` (noms de variables et commentaires, jamais de vraies valeurs)
   - `TODO.md` (pour cocher les tâches terminées)
