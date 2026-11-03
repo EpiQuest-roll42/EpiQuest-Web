@@ -31,7 +31,7 @@
 
 - **Personnages** : assistant de création pas à pas, fiche interactive, niveaux 1 à 5 et montée de niveau, export PDF.
 - **Dés** : notation complète (`2d6+3`, `4d6kh3`, avantage, dés explosifs, relances), jets calculés côté serveur, jets publics, privés ou cachés, probabilités.
-- **Cartes** : grille carrée ou hexagonale, calques, murs et portes, brouillard de guerre selon la ligne de vue, mesures et gabarits.
+- **Cartes** : grille carrée ou hexagonale, calques, murs et portes (sur grille carrée), brouillard de guerre selon la ligne de vue, mesures et gabarits.
 - **Bestiaire et rencontres** : bestiaire du SRD, constructeur de rencontres avec calcul de la difficulté.
 - **Combat assisté** : le produit applique les règles, le MJ garde la main pour ajouter un effet, modifier ou annuler.
 - **Deux vues synchronisées** : la vue joueurs n'affiche que ce que les personnages voient et ne reçoit jamais d'information cachée.
@@ -169,14 +169,14 @@ Les issues marquées `good first issue` sont un bon point de départ.
 
 ## Documentation
 
-| Document                                                                   | Contenu                                                                                                                               |
-| -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| [`docs/ADR/`](docs/ADR/)                                                   | Journal des décisions d'architecture                                                                                                  |
-| [`docs/charte-graphique.pdf`](docs/charte-graphique.pdf)                   | Mini charte graphique (2 pages) : logo, palettes claire et « table de jeu », typographies, couples de contraste autorisés, composants |
-| `docs/utilisateur/`                                                        | Guides du MJ et du joueur, aide-mémoire des dés, FAQ (_à venir_)                                                                      |
-| `docs/technique/`                                                          | Architecture, modèle de données, moteur de règles, synchronisation, exploitation (_à venir_)                                          |
-| [`packages/api-contract/openapi.yaml`](packages/api-contract/openapi.yaml) | Contrat de l'API, écrit avant le code ; il fait foi en cas d'écart avec l'implémentation                                              |
-| Swagger                                                                    | Documentation de l'API, servie par l'API sur `/api/docs`                                                                              |
+| Document                                                                   | Contenu                                                                                                                                                                                                     |
+| -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`docs/ADR/`](docs/ADR/)                                                   | Journal des décisions d'architecture                                                                                                                                                                        |
+| [`docs/charte-graphique.pdf`](docs/charte-graphique.pdf)                   | Mini charte graphique (2 pages) : logo, palettes claire et « table de jeu », typographies, couples de contraste autorisés, composants                                                                       |
+| `docs/utilisateur/`                                                        | Guides du MJ et du joueur, aide-mémoire des dés, FAQ (_à venir_)                                                                                                                                            |
+| [`docs/technique/`](docs/technique/)                                       | Documentation technique : [notation des dés](docs/technique/notation-des-des.md) (grammaire, limites, erreurs, probabilités) ; architecture, modèle de données, synchronisation et exploitation (_à venir_) |
+| [`packages/api-contract/openapi.yaml`](packages/api-contract/openapi.yaml) | Contrat de l'API, écrit avant le code ; il fait foi en cas d'écart avec l'implémentation                                                                                                                    |
+| Swagger                                                                    | Documentation de l'API, servie par l'API sur `/api/docs`                                                                                                                                                    |
 
 ## Accessibilité
 

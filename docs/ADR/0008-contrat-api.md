@@ -63,7 +63,7 @@ Le contrat est écrit **en premier**, à la main, dans `openapi.yaml`. Ce fichie
 
 **Hors du périmètre d'OpenAPI**
 
-OpenAPI ne décrit que les routes REST. Les messages des canaux WebSocket (MJ et joueurs) réutilisent les schémas de `components/schemas` du contrat, ce qui les rend disponibles au web comme au mobile, mais leur description (événements, ordre, reconnexion) fait l'objet d'une ADR séparée.
+OpenAPI ne décrit que les routes REST. Les messages des canaux WebSocket (MJ et joueurs) réutilisent les schémas de `components/schemas` du contrat, ce qui les rend disponibles au web comme au mobile, mais leur description (événements, ordre, reconnexion) fait l'objet d'une ADR séparée ([ADR 0010](0010-evenements-temps-reel.md)).
 
 ## Conséquences
 
