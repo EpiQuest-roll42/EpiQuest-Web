@@ -167,7 +167,6 @@ paths:
         - Auth
       operationId: forgotPassword
       security: []
-      x-phase: P2
       summary: 'Demander la réinitialisation de son mot de passe.'
       description: >-
         Envoie un lien de réinitialisation par e-mail si un compte correspond. Répond toujours 204, avec
@@ -192,7 +191,6 @@ paths:
         - Auth
       operationId: resetPassword
       security: []
-      x-phase: P2
       summary: 'Réinitialiser son mot de passe avec le jeton reçu par e-mail.'
       description: >-
         Valide le jeton de réinitialisation et applique newPassword. Un jeton invalide ou expiré renvoie
@@ -315,7 +313,6 @@ paths:
       tags:
         - Utilisateurs
       operationId: getUserById
-      x-phase: P2
       summary: "Lire le profil public d'un utilisateur."
       description: "Renvoie uniquement les données publiques (UserPublic), jamais l'adresse e-mail."
       parameters:
@@ -701,6 +698,78 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /campaigns/{campaignId}/sessions:
+    parameters:
+      - $ref: '#/components/parameters/CampaignId'
+    get:
+      tags:
+        - Campagnes
+      operationId: listSessions
+      summary: 'Lister les séances de la campagne, de la plus récente à la plus ancienne.'
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: 'Page de séances.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags:
+        - Campagnes
+      operationId: startSession
+      summary: 'Ouvrir une séance (MJ).'
+      description: >-
+        Une seule séance ouverte à la fois par campagne : 409 session_already_open sinon. Le numéro est
+        attribué par le serveur (1, 2, 3… par campagne). Les jets et le journal lancés pendant la séance
+        portent son identifiant.
+      responses:
+        '201':
+          description: 'Séance ouverte.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /campaigns/{campaignId}/sessions/current/end:
+    parameters:
+      - $ref: '#/components/parameters/CampaignId'
+    post:
+      tags:
+        - Campagnes
+      operationId: endSession
+      summary: 'Clore la séance ouverte (MJ).'
+      description: "409 no_open_session si aucune séance n'est ouverte."
+      responses:
+        '200':
+          description: 'Séance close.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
   /characters:
     get:
       tags:
@@ -1005,6 +1074,8 @@ paths:
           required: false
           schema:
             $ref: '#/components/schemas/Id'
+        - $ref: '#/components/parameters/SessionIdFilter'
+        - $ref: '#/components/parameters/SessionFilter'
         - $ref: '#/components/parameters/Cursor'
         - $ref: '#/components/parameters/Limit'
       responses:
@@ -1418,7 +1489,7 @@ paths:
       x-phase: P3
       summary: 'Exporter la fiche en PDF (propriétaire ou MJ).'
       description: >-
-        Fiche aux couleurs de Lanterne, sans aucune marque « Dungeons & Dragons », avec la mention
+        Fiche aux couleurs de Lanterne, sans marque tierce, avec la mention
         d'attribution du SRD 5.1. La vue du MJ n'inclut pas les notes du joueur. 409
         character_not_active pour un brouillon.
       responses:
@@ -2848,6 +2919,22 @@ components:
       required: true
       schema:
         $ref: '#/components/schemas/Id'
+    SessionIdFilter:
+      name: sessionId
+      in: query
+      required: false
+      description: 'Ne garder que les éléments de cette séance. Exclusif avec session (400 si les deux sont fournis).'
+      schema:
+        $ref: '#/components/schemas/Id'
+    SessionFilter:
+      name: session
+      in: query
+      required: false
+      description: "current : ne garder que les éléments de la séance ouverte (aucun résultat s'il n'y en a pas)."
+      schema:
+        type: string
+        enum:
+          - current
     SrdId:
       name: ruleId
       in: path
@@ -3107,7 +3194,6 @@ components:
       required:
         - email
       additionalProperties: false
-      x-phase: P2
       description: "Données requises pour initier une procédure d'oubli de mot de passe via e-mail."
       properties:
         email:
@@ -3119,7 +3205,6 @@ components:
         - token
         - newPassword
       additionalProperties: false
-      x-phase: P2
       description: 'Valide le jeton de réinitialisation et applique le nouveau mot de passe. Révoque toutes les sessions et cookies existants.'
       properties:
         token:
@@ -3468,7 +3553,7 @@ components:
       maxLength: 64
       description: >-
         Identifiant d'une donnée SRD (espèce, classe, historique, sort, objet, état…), repris des index
-        de la D&D 5e API à l'import. Unique pour un type donné : le type est porté par le champ.
+        de la source importée (5e-bits) à l'import. Unique pour un type donné : le type est porté par le champ.
       example: 'fighter'
 
     RuleRef:
@@ -4654,6 +4739,7 @@ components:
         - roller
         - character
         - campaignId
+        - sessionId
         - context
         - createdAt
       properties:
@@ -4691,6 +4777,12 @@ components:
         campaignId:
           type: string
           nullable: true
+          allOf:
+            - $ref: '#/components/schemas/Id'
+        sessionId:
+          type: string
+          nullable: true
+          description: 'Séance pendant laquelle le jet a été lancé ; null hors séance.'
           allOf:
             - $ref: '#/components/schemas/Id'
         context:
@@ -8658,6 +8750,44 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ClassSummary'
+        nextCursor:
+          type: string
+          nullable: true
+
+    # --- CAMPAGNES : SÉANCES ---
+    Session:
+      type: object
+      required:
+        - id
+        - number
+        - startedAt
+        - endedAt
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        number:
+          type: integer
+          minimum: 1
+          description: 'Numéro de la séance dans la campagne (« Séance 3 »).'
+          example: 3
+        startedAt:
+          type: string
+          format: date-time
+        endedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: 'null tant que la séance est ouverte.'
+
+    SessionPage:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Session'
         nextCursor:
           type: string
           nullable: true
