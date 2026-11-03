@@ -1872,6 +1872,93 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /maps/{mapId}/templates:
+    parameters:
+      - $ref: '#/components/parameters/MapId'
+    post:
+      tags:
+        - Cartes
+      operationId: createMapTemplate
+      x-phase: P3
+      summary: 'Poser un gabarit de zone qui dure sur la carte (MJ).'
+      description: >-
+        Pour un effet qui dure (un Nuage de brouillard, par exemple). Le gabarit d'une action de combat,
+        lui, fait partie de la proposition d'action et n'existe pas sur la carte en dehors d'elle. Un
+        gabarit public est envoyé aux joueurs, sans identifiant. Joueur : 403 si c'est la carte active,
+        sinon 404.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMapTemplateInput'
+      responses:
+        '201':
+          description: 'Gabarit posé, avec les cases touchées calculées par le serveur.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MapTemplateGm'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /maps/{mapId}/templates/{templateId}:
+    parameters:
+      - $ref: '#/components/parameters/MapId'
+      - name: templateId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Id'
+    patch:
+      tags:
+        - Cartes
+      operationId: updateMapTemplate
+      x-phase: P3
+      summary: 'Déplacer ou modifier un gabarit (MJ).'
+      description: "404 si le gabarit n'existe pas. Joueur : 403 si c'est la carte active, sinon 404."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMapTemplateInput'
+      responses:
+        '200':
+          description: 'Gabarit modifié.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MapTemplateGm'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags:
+        - Cartes
+      operationId: deleteMapTemplate
+      x-phase: P3
+      summary: 'Retirer un gabarit (MJ).'
+      description: "404 si le gabarit n'existe pas. Joueur : 403 si c'est la carte active, sinon 404."
+      responses:
+        '204':
+          description: 'Gabarit retiré.'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /maps/{mapId}/tokens:
     parameters:
       - $ref: '#/components/parameters/MapId'
@@ -5777,6 +5864,7 @@ components:
         - decor
         - tokens
         - fog
+        - templates
         - autoReveal
         - revealAll
         - geometryVersion
@@ -5819,6 +5907,11 @@ components:
             $ref: '#/components/schemas/TokenGm'
         fog:
           $ref: '#/components/schemas/FogGm'
+        templates:
+          type: array
+          description: 'Gabarits de zone posés sur la carte.'
+          items:
+            $ref: '#/components/schemas/MapTemplateGm'
         autoReveal:
           type: boolean
           description: '(P3) La ligne de vue des personnages révèle les cases automatiquement.'
@@ -5848,6 +5941,7 @@ components:
         - decor
         - tokens
         - fog
+        - templates
       properties:
         view:
           type: string
@@ -5886,6 +5980,11 @@ components:
             $ref: '#/components/schemas/TokenParty'
         fog:
           $ref: '#/components/schemas/FogParty'
+        templates:
+          type: array
+          description: 'Gabarits publics seulement, sans identifiant.'
+          items:
+            $ref: '#/components/schemas/MapTemplateParty'
 
     MapView:
       oneOf:
@@ -8791,3 +8890,131 @@ components:
         nextCursor:
           type: string
           nullable: true
+
+    # --- CARTES : GABARITS DE ZONE ---
+    AreaSpec:
+      type: object
+      description: >-
+        Forme d'une zone d'effet, reprise de Targeting.zone (section Données SRD). Une case est touchée si
+        son centre est dans la forme : règle calculée par le moteur de règles, identique dans le navigateur
+        et sur le serveur (docs/technique/format-des-regles.md).
+      required:
+        - shape
+        - sizeMeters
+        - origin
+      properties:
+        shape:
+          type: string
+          enum:
+            - sphere
+            - cone
+            - line
+            - cube
+            - cylinder
+        sizeMeters:
+          type: number
+          minimum: 0
+          description: 'Rayon (sphère, cylindre), longueur (cône, ligne) ou côté (cube).'
+        widthMeters:
+          type: number
+          minimum: 0
+          description: 'Largeur de la ligne.'
+        origin:
+          type: object
+          description: "Point d'origine, en cases ; les décimales sont permises (0,5 = milieu d'une case)."
+          required:
+            - x
+            - y
+          properties:
+            x:
+              type: number
+              minimum: 0
+              maximum: 100
+            y:
+              type: number
+              minimum: 0
+              maximum: 100
+        directionDegrees:
+          type: number
+          minimum: 0
+          exclusiveMaximum: true
+          maximum: 360
+          description: 'Cône et ligne : direction en degrés, 0 = nord, sens horaire.'
+
+    TemplateLabel:
+      type: string
+      maxLength: 60
+      example: 'Nuage de brouillard'
+
+    MapTemplateGm:
+      type: object
+      required:
+        - id
+        - area
+        - label
+        - public
+        - affectedCells
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        area:
+          $ref: '#/components/schemas/AreaSpec'
+        label:
+          type: string
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/TemplateLabel'
+        public:
+          type: boolean
+          description: 'Envoyé aux joueurs.'
+        affectedCells:
+          readOnly: true
+          description: 'Cases touchées, calculées par le serveur.'
+          allOf:
+            - $ref: '#/components/schemas/CellSet'
+
+    MapTemplateParty:
+      type: object
+      description: 'Gabarit public vu par les joueurs, sans identifiant.'
+      required:
+        - area
+        - label
+      properties:
+        area:
+          $ref: '#/components/schemas/AreaSpec'
+        label:
+          type: string
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/TemplateLabel'
+
+    CreateMapTemplateInput:
+      type: object
+      required:
+        - area
+        - public
+      additionalProperties: false
+      x-phase: P3
+      properties:
+        area:
+          $ref: '#/components/schemas/AreaSpec'
+        label:
+          $ref: '#/components/schemas/TemplateLabel'
+        public:
+          type: boolean
+
+    UpdateMapTemplateInput:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      x-phase: P3
+      properties:
+        area:
+          $ref: '#/components/schemas/AreaSpec'
+        label:
+          type: string
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/TemplateLabel'
+        public:
+          type: boolean

@@ -114,6 +114,8 @@ Une `Action` décrit tout ce qui se lance : un sort, l'attaque d'un monstre, une
 | `line`     | longueur     | `widthMeters`  |
 | `cube`     | côté         | —              |
 
+**Cases touchées.** Une case est touchée si **son centre** est dans la forme. La règle est simple, identique dans le navigateur et sur le serveur, et c'est le moteur de règles qui la calcule. Sur la carte, une zone se décrit par un `AreaSpec` (contrat, section Cartes) : la forme et ses dimensions ci-dessus, plus `origin` (en cases, décimales permises) et `directionDegrees` pour le cône et la ligne (0 = nord, sens horaire).
+
 ### Résolution
 
 - **`attack`** : `kind` (`melee`, `ranged`, `meleeSpell`, `rangedSpell`), `bonus` (Formula), puis les effets `onHit` et `onMiss`.
