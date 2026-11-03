@@ -181,6 +181,21 @@ Portés par les capacités (`Feature.passive`), les états (`Condition.passive`)
 
 _À terre_ s'écrit avec deux `rollMode` : avantage pour les attaquants à 1,5 m ou moins (`withinMeters: 1.5`), désavantage au-delà (`beyondMeters: 1.5`).
 
+## Effets actifs
+
+Un effet en cours sur un personnage ou une créature est un **`ActiveEffect`** : l'effet lui-même, sa source, les rounds restants (`null` : jusqu'à ce qu'on le retire) et `hiddenFromPlayers`. C'est la **seule source des états** : la fiche (`CharacterSheet.effects`) et le pion (`CreatureTokenGm.effects`) en portent la liste, et le combat les lit sans en être propriétaire, car un personnage peut rester empoisonné après la fin du combat.
+
+L'effet porté est soit un `Effect` du format SRD (par exemple l'état `poisoned`), soit un **effet libre** (`FreeEffect`), ajouté par le MJ pour ce que les règles ne prévoient pas :
+
+| Champ                | Rôle                                    | Exemple de la fiche |
+| -------------------- | --------------------------------------- | ------------------- |
+| `name`               | nom affiché, y compris aux joueurs      | « En feu »          |
+| `trigger`            | `startOfTurn`, `endOfTurn` ou `none`    | `startOfTurn`       |
+| `dice`, `damageType` | dégâts ou soins lancés au déclenchement | `1d4`, `fire`       |
+| `durationRounds`     | durée                                   | 2                   |
+
+Les joueurs ne reçoivent que le **nom** des effets visibles (`VisibleEffect`), jamais un effet marqué `hiddenFromPlayers`.
+
 ## États
 
 Un état (`Condition`) est décrit par ses effets passifs. Par exemple :
