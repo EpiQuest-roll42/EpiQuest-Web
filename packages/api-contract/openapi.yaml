@@ -4640,9 +4640,7 @@ components:
       maxLength: 20
       pattern: '^[a-zA-Z0-9_]+$'
       description: >-
-        Nom d'affichage unique de l'utilisateur. Limité strictement aux caractères alphanumériques 
-        et aux underscores pour éviter les attaques par homographe (ex: mélange de caractères cyrilliques 
-        et latins). La vérification de l'unicité doit être insensible à la casse.
+        Nom d'affichage unique de l'utilisateur. Limité strictement aux caractères alphanumériques  et aux underscores pour éviter les attaques par homographe (ex: mélange de caractères cyrilliques  et latins). La vérification de l'unicité doit être insensible à la casse.
       example: 'RolePlayMaster'
 
     Email:
@@ -4657,8 +4655,7 @@ components:
       minLength: 12
       maxLength: 128
       description: >-
-        Mot de passe sécurisé pour la création ou le renouvellement. La longueur maximale est 
-        strictement plafonnée pour éviter les attaques par déni de service (DoS) ciblant les algorithmes de hachage.
+        Mot de passe sécurisé pour la création ou le renouvellement. La longueur maximale est  strictement plafonnée pour éviter les attaques par déni de service (DoS) ciblant les algorithmes de hachage.
       example: 'SuperSecurePassword123!'
 
     PasswordCheck:
@@ -4666,9 +4663,7 @@ components:
       minLength: 1
       maxLength: 128
       description: >-
-        Validation d'un mot de passe existant pour authentification ou ré-authentification. 
-        Contrainte volontairement souple (minLength: 1) pour ne pas bloquer les utilisateurs en cas de 
-        changement de politique de sécurité globale et pour ne pas divulguer les règles de complexité.
+        Validation d'un mot de passe existant pour authentification ou ré-authentification.  Contrainte volontairement souple (minLength: 1) pour ne pas bloquer les utilisateurs en cas de  changement de politique de sécurité globale et pour ne pas divulguer les règles de complexité.
       example: 'SuperSecurePassword123!'
 
     FieldError:
@@ -4684,8 +4679,7 @@ components:
         code:
           type: string
           description: >-
-            Code d'erreur lisible par une machine en anglais (ex: 'too_short', 'already_taken', 'password_required'). 
-            Les clients utilisent ce code pour générer les libellés traduits dans l'interface utilisateur.
+            Code d'erreur lisible par une machine en anglais (ex: 'too_short', 'already_taken', 'password_required').  Les clients utilisent ce code pour générer les libellés traduits dans l'interface utilisateur.
           example: 'too_short'
         position:
           type: integer
@@ -4825,8 +4819,7 @@ components:
       minProperties: 1
       additionalProperties: false
       description: >-
-        Données pour mettre à jour partiellement le profil actif. Modifier l'adresse e-mail exige de 
-        remplir le champ currentPassword, retournant un code d'erreur 400 'password_required' s'il est manquant.
+        Données pour mettre à jour partiellement le profil actif. Modifier l'adresse e-mail exige de  remplir le champ currentPassword, retournant un code d'erreur 400 'password_required' s'il est manquant.
       properties:
         username:
           $ref: '#/components/schemas/Username'
@@ -4881,8 +4874,7 @@ components:
       additionalProperties: false
       x-phase: P3
       description: >-
-        Données destinées à la route non-idempotente de suppression POST /users/me/deletion. 
-        Protège contre le vol et le détournement de session active en imposant une ré-authentification par mot de passe.
+        Données destinées à la route non-idempotente de suppression POST /users/me/deletion.  Protège contre le vol et le détournement de session active en imposant une ré-authentification par mot de passe.
       properties:
         currentPassword:
           $ref: '#/components/schemas/PasswordCheck'
@@ -5288,32 +5280,7 @@ components:
         parts:
           type: array
           items:
-            type: object
-            required:
-              - source
-              - value
-            properties:
-              source:
-                type: object
-                required:
-                  - kind
-                  - ref
-                properties:
-                  kind:
-                    type: string
-                    enum:
-                      - base
-                      - ability
-                      - item
-                      - feature
-                      - proficiency
-                      - species
-                  ref:
-                    description: 'RuleId de la source, ou code de caractéristique (par exemple dex).'
-                    allOf:
-                      - $ref: '#/components/schemas/RuleId'
-              value:
-                type: integer
+            $ref: '#/components/schemas/ValueBreakdownPart'
           example:
             - source:
                 kind: item
@@ -5324,6 +5291,35 @@ components:
                 ref: dex
               value: 3
 
+    ValueBreakdownPart:
+      type: object
+      required:
+        - source
+        - value
+      properties:
+        source:
+          $ref: '#/components/schemas/ValueSource'
+        value:
+          type: integer
+    ValueSource:
+      type: object
+      required:
+        - kind
+        - ref
+      properties:
+        kind:
+          type: string
+          enum:
+            - base
+            - ability
+            - item
+            - feature
+            - proficiency
+            - species
+        ref:
+          description: 'RuleId de la source, ou code de caractéristique (par exemple dex).'
+          allOf:
+            - $ref: '#/components/schemas/RuleId'
     HitPoints:
       type: object
       required:
@@ -5651,161 +5647,32 @@ components:
         hitDice:
           type: object
           nullable: true
-          required:
-            - die
-            - total
-            - remaining
-          properties:
-            die:
-              type: string
-              pattern: '^d(4|6|8|10|12|20)$'
-              example: 'd10'
-            total:
-              type: integer
-              minimum: 0
-            remaining:
-              type: integer
-              minimum: 0
+          allOf:
+            - $ref: '#/components/schemas/HitDice'
         deathSaves:
-          type: object
-          readOnly: true
-          description: 'Mis à jour uniquement par le serveur, à partir des jets contre la mort.'
-          required:
-            - successes
-            - failures
-          properties:
-            successes:
-              type: integer
-              minimum: 0
-              maximum: 3
-            failures:
-              type: integer
-              minimum: 0
-              maximum: 3
+          $ref: '#/components/schemas/DeathSaves'
         savingThrows:
           type: array
           readOnly: true
           items:
-            type: object
-            required:
-              - ability
-              - modifier
-              - proficient
-            properties:
-              ability:
-                $ref: '#/components/schemas/AbilityCode'
-              modifier:
-                type: integer
-              proficient:
-                type: boolean
+            $ref: '#/components/schemas/SavingThrowModifier'
         skills:
           type: array
           readOnly: true
           items:
-            type: object
-            required:
-              - skill
-              - ability
-              - modifier
-              - proficient
-            properties:
-              skill:
-                $ref: '#/components/schemas/RuleRef'
-              ability:
-                $ref: '#/components/schemas/AbilityCode'
-              modifier:
-                type: integer
-              proficient:
-                type: boolean
+            $ref: '#/components/schemas/SkillModifier'
         proficiencies:
-          type: object
-          readOnly: true
-          required:
-            - armor
-            - weapons
-            - tools
-            - languages
-          properties:
-            armor:
-              type: array
-              items:
-                $ref: '#/components/schemas/RuleRef'
-            weapons:
-              type: array
-              items:
-                $ref: '#/components/schemas/RuleRef'
-            tools:
-              type: array
-              items:
-                $ref: '#/components/schemas/RuleRef'
-            languages:
-              type: array
-              items:
-                $ref: '#/components/schemas/RuleRef'
+          $ref: '#/components/schemas/CharacterProficiencies'
         features:
           type: array
           readOnly: true
           items:
-            type: object
-            required:
-              - id
-              - name
-              - source
-              - level
-            properties:
-              id:
-                $ref: '#/components/schemas/RuleId'
-              name:
-                type: string
-              source:
-                $ref: '#/components/schemas/RuleRef'
-              level:
-                type: integer
-                minimum: 1
-                maximum: 20
+            $ref: '#/components/schemas/GainedFeature'
         spellcasting:
           type: object
           nullable: true
-          readOnly: true
-          description: 'null pour un personnage qui ne lance pas de sorts.'
-          required:
-            - ability
-            - saveDc
-            - attackBonus
-            - slots
-            - spells
-          properties:
-            ability:
-              $ref: '#/components/schemas/AbilityCode'
-            saveDc:
-              type: integer
-              example: 13
-            attackBonus:
-              type: integer
-              example: 5
-            slots:
-              type: array
-              items:
-                type: object
-                required:
-                  - level
-                  - max
-                  - used
-                properties:
-                  level:
-                    type: integer
-                    minimum: 1
-                    maximum: 9
-                  max:
-                    type: integer
-                    minimum: 0
-                  used:
-                    type: integer
-                    minimum: 0
-            spells:
-              type: array
-              items:
-                $ref: '#/components/schemas/RuleRef'
+          allOf:
+            - $ref: '#/components/schemas/CharacterSpellcasting'
         inventory:
           type: array
           items:
@@ -5815,18 +5682,8 @@ components:
         carryWeight:
           type: object
           nullable: true
-          readOnly: true
-          description: 'Charge portée et capacité, en kilogrammes.'
-          required:
-            - current
-            - capacity
-          properties:
-            current:
-              type: number
-              minimum: 0
-            capacity:
-              type: number
-              minimum: 0
+          allOf:
+            - $ref: '#/components/schemas/CarryWeight'
         effects:
           type: array
           readOnly: true
@@ -5841,36 +5698,7 @@ components:
           allOf:
             - $ref: '#/components/schemas/CampaignRef'
         creation:
-          type: object
-          description: 'Facultatif : présent seulement pour un brouillon, absent une fois le personnage finalisé.'
-          required:
-            - abilityMethod
-            - completedSteps
-            - warnings
-          properties:
-            abilityMethod:
-              allOf:
-                - $ref: '#/components/schemas/AbilityMethod'
-              nullable: true
-              type: string
-            completedSteps:
-              type: array
-              items:
-                $ref: '#/components/schemas/CreationStep'
-            warnings:
-              type: array
-              items:
-                type: object
-                required:
-                  - code
-                properties:
-                  code:
-                    type: string
-                    description: "Code d'avertissement en anglais, traduit par le client."
-                    example: 'spells_not_chosen'
-                  groupId:
-                    type: string
-                    description: 'Groupe de choix concerné, le cas échéant.'
+          $ref: '#/components/schemas/CreationState'
         rulesetVersion:
           type: string
           readOnly: true
@@ -5883,6 +5711,202 @@ components:
           type: string
           format: date-time
 
+    HitDice:
+      type: object
+      required:
+        - die
+        - total
+        - remaining
+      properties:
+        die:
+          type: string
+          pattern: '^d(4|6|8|10|12|20)$'
+          example: 'd10'
+        total:
+          type: integer
+          minimum: 0
+        remaining:
+          type: integer
+          minimum: 0
+    DeathSaves:
+      type: object
+      readOnly: true
+      description: 'Mis à jour uniquement par le serveur, à partir des jets contre la mort.'
+      required:
+        - successes
+        - failures
+      properties:
+        successes:
+          type: integer
+          minimum: 0
+          maximum: 3
+        failures:
+          type: integer
+          minimum: 0
+          maximum: 3
+    SavingThrowModifier:
+      type: object
+      required:
+        - ability
+        - modifier
+        - proficient
+      properties:
+        ability:
+          $ref: '#/components/schemas/AbilityCode'
+        modifier:
+          type: integer
+        proficient:
+          type: boolean
+    SkillModifier:
+      type: object
+      required:
+        - skill
+        - ability
+        - modifier
+        - proficient
+      properties:
+        skill:
+          $ref: '#/components/schemas/RuleRef'
+        ability:
+          $ref: '#/components/schemas/AbilityCode'
+        modifier:
+          type: integer
+        proficient:
+          type: boolean
+    CharacterProficiencies:
+      type: object
+      readOnly: true
+      required:
+        - armor
+        - weapons
+        - tools
+        - languages
+      properties:
+        armor:
+          type: array
+          items:
+            $ref: '#/components/schemas/RuleRef'
+        weapons:
+          type: array
+          items:
+            $ref: '#/components/schemas/RuleRef'
+        tools:
+          type: array
+          items:
+            $ref: '#/components/schemas/RuleRef'
+        languages:
+          type: array
+          items:
+            $ref: '#/components/schemas/RuleRef'
+    GainedFeature:
+      type: object
+      required:
+        - id
+        - name
+        - source
+        - level
+      properties:
+        id:
+          $ref: '#/components/schemas/RuleId'
+        name:
+          type: string
+        source:
+          $ref: '#/components/schemas/RuleRef'
+        level:
+          type: integer
+          minimum: 1
+          maximum: 20
+    CharacterSpellcasting:
+      type: object
+      readOnly: true
+      description: 'null pour un personnage qui ne lance pas de sorts.'
+      required:
+        - ability
+        - saveDc
+        - attackBonus
+        - slots
+        - spells
+      properties:
+        ability:
+          $ref: '#/components/schemas/AbilityCode'
+        saveDc:
+          type: integer
+          example: 13
+        attackBonus:
+          type: integer
+          example: 5
+        slots:
+          type: array
+          items:
+            $ref: '#/components/schemas/SpellSlotUsage'
+        spells:
+          type: array
+          items:
+            $ref: '#/components/schemas/RuleRef'
+    SpellSlotUsage:
+      type: object
+      required:
+        - level
+        - max
+        - used
+      properties:
+        level:
+          type: integer
+          minimum: 1
+          maximum: 9
+        max:
+          type: integer
+          minimum: 0
+        used:
+          type: integer
+          minimum: 0
+    CarryWeight:
+      type: object
+      readOnly: true
+      description: 'Charge portée et capacité, en kilogrammes.'
+      required:
+        - current
+        - capacity
+      properties:
+        current:
+          type: number
+          minimum: 0
+        capacity:
+          type: number
+          minimum: 0
+    CreationState:
+      type: object
+      description: 'Facultatif : présent seulement pour un brouillon, absent une fois le personnage finalisé.'
+      required:
+        - abilityMethod
+        - completedSteps
+        - warnings
+      properties:
+        abilityMethod:
+          allOf:
+            - $ref: '#/components/schemas/AbilityMethod'
+          nullable: true
+          type: string
+        completedSteps:
+          type: array
+          items:
+            $ref: '#/components/schemas/CreationStep'
+        warnings:
+          type: array
+          items:
+            $ref: '#/components/schemas/CreationWarning'
+    CreationWarning:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          description: "Code d'avertissement en anglais, traduit par le client."
+          example: 'spells_not_chosen'
+        groupId:
+          type: string
+          description: 'Groupe de choix concerné, le cas échéant.'
     Currency:
       type: object
       required:
@@ -6085,15 +6109,7 @@ components:
         pointBuyCosts:
           type: array
           items:
-            type: object
-            required:
-              - score
-              - cost
-            properties:
-              score:
-                type: integer
-              cost:
-                type: integer
+            $ref: '#/components/schemas/PointBuyCost'
         standardArray:
           type: array
           minItems: 6
@@ -6110,6 +6126,16 @@ components:
           items:
             type: integer
 
+    PointBuyCost:
+      type: object
+      required:
+        - score
+        - cost
+      properties:
+        score:
+          type: integer
+        cost:
+          type: integer
     CreationOptions:
       type: object
       required:
@@ -6156,62 +6182,66 @@ components:
         abilityMethod:
           $ref: '#/components/schemas/AbilityMethod'
         abilityAssignment:
-          type: object
-          additionalProperties: false
-          description: >-
-            Score de chaque caractéristique. Avec la méthode roll, les valeurs doivent être une
-            permutation des valeurs tirées par le serveur.
-          required:
-            - str
-            - dex
-            - con
-            - int
-            - wis
-            - cha
-          properties:
-            str:
-              type: integer
-              minimum: 1
-              maximum: 30
-            dex:
-              type: integer
-              minimum: 1
-              maximum: 30
-            con:
-              type: integer
-              minimum: 1
-              maximum: 30
-            int:
-              type: integer
-              minimum: 1
-              maximum: 30
-            wis:
-              type: integer
-              minimum: 1
-              maximum: 30
-            cha:
-              type: integer
-              minimum: 1
-              maximum: 30
+          $ref: '#/components/schemas/AbilityAssignmentInput'
         choices:
           type: array
           maxItems: 50
           items:
-            type: object
-            additionalProperties: false
-            required:
-              - groupId
-              - optionIds
-            properties:
-              groupId:
-                type: string
-                maxLength: 64
-              optionIds:
-                type: array
-                maxItems: 50
-                items:
-                  type: string
-                  maxLength: 64
+            $ref: '#/components/schemas/ChoiceSelectionInput'
+    AbilityAssignmentInput:
+      type: object
+      additionalProperties: false
+      description: >-
+        Score de chaque caractéristique. Avec la méthode roll, les valeurs doivent être une
+        permutation des valeurs tirées par le serveur.
+      required:
+        - str
+        - dex
+        - con
+        - int
+        - wis
+        - cha
+      properties:
+        str:
+          type: integer
+          minimum: 1
+          maximum: 30
+        dex:
+          type: integer
+          minimum: 1
+          maximum: 30
+        con:
+          type: integer
+          minimum: 1
+          maximum: 30
+        int:
+          type: integer
+          minimum: 1
+          maximum: 30
+        wis:
+          type: integer
+          minimum: 1
+          maximum: 30
+        cha:
+          type: integer
+          minimum: 1
+          maximum: 30
+    ChoiceSelectionInput:
+      type: object
+      additionalProperties: false
+      required:
+        - groupId
+        - optionIds
+      properties:
+        groupId:
+          type: string
+          maxLength: 64
+        optionIds:
+          type: array
+          maxItems: 50
+          items:
+            type: string
+            maxLength: 64
 
     # --- DÉS ---
     DiceExpression:
@@ -6292,36 +6322,12 @@ components:
         keep:
           type: object
           nullable: true
-          required:
-            - mode
-            - count
-          properties:
-            mode:
-              type: string
-              enum:
-                - highest
-                - lowest
-            count:
-              type: integer
-              minimum: 1
+          allOf:
+            - $ref: '#/components/schemas/KeepModifier'
         explode:
           type: boolean
         reroll:
-          type: object
-          nullable: true
-          description: 'equal : relance les dés qui font value ; atMost : relance les dés qui font value ou moins. Une seule relance par dé.'
-          required:
-            - mode
-            - value
-          properties:
-            mode:
-              type: string
-              enum:
-                - equal
-                - atMost
-            value:
-              type: integer
-              minimum: 1
+          $ref: '#/components/schemas/RerollModifier'
         dice:
           type: array
           items:
@@ -6338,7 +6344,7 @@ components:
           mode: highest
           count: 3
         explode: false
-        reroll: null
+        reroll:
         dice:
           - { value: 6, kept: true, rerolledFrom: null, fromExplosion: false }
           - { value: 5, kept: true, rerolledFrom: null, fromExplosion: false }
@@ -6346,6 +6352,36 @@ components:
           - { value: 2, kept: false, rerolledFrom: null, fromExplosion: false }
         subtotal: 14
 
+    KeepModifier:
+      type: object
+      required:
+        - mode
+        - count
+      properties:
+        mode:
+          type: string
+          enum:
+            - highest
+            - lowest
+        count:
+          type: integer
+          minimum: 1
+    RerollModifier:
+      type: object
+      nullable: true
+      description: 'equal : relance les dés qui font value ; atMost : relance les dés qui font value ou moins. Une seule relance par dé.'
+      required:
+        - mode
+        - value
+      properties:
+        mode:
+          type: string
+          enum:
+            - equal
+            - atMost
+        value:
+          type: integer
+          minimum: 1
     ConstantTerm:
       type: object
       required:
@@ -6522,17 +6558,19 @@ components:
           maxItems: 2000
           description: 'Probabilité exacte de chaque total, triée par total. La somme vaut 1.'
           items:
-            type: object
-            required:
-              - total
-              - probability
-            properties:
-              total:
-                type: integer
-              probability:
-                type: number
-                minimum: 0
-                maximum: 1
+            $ref: '#/components/schemas/TotalProbability'
+    TotalProbability:
+      type: object
+      required:
+        - total
+        - probability
+      properties:
+        total:
+          type: integer
+        probability:
+          type: number
+          minimum: 0
+          maximum: 1
 
     RollInput:
       type: object
@@ -6626,18 +6664,7 @@ components:
           minimum: 2
           maximum: 5
         hitPoints:
-          type: object
-          required:
-            - die
-            - average
-          properties:
-            die:
-              type: string
-              pattern: '^d(4|6|8|10|12|20)$'
-              example: 'd10'
-            average:
-              type: integer
-              example: 6
+          $ref: '#/components/schemas/LevelUpHitPoints'
         grantedFeatures:
           type: array
           description: "Capacités obtenues d'office à ce niveau."
@@ -6651,21 +6678,38 @@ components:
         abilityIncrease:
           type: object
           nullable: true
-          description: 'Augmentation de caractéristiques offerte à ce niveau ; null sinon.'
-          required:
-            - points
-            - maxPerAbility
-            - cap
-          properties:
-            points:
-              type: integer
-              example: 2
-            maxPerAbility:
-              type: integer
-              example: 2
-            cap:
-              type: integer
-              example: 20
+          allOf:
+            - $ref: '#/components/schemas/AbilityIncreaseRule'
+    LevelUpHitPoints:
+      type: object
+      required:
+        - die
+        - average
+      properties:
+        die:
+          type: string
+          pattern: '^d(4|6|8|10|12|20)$'
+          example: 'd10'
+        average:
+          type: integer
+          example: 6
+    AbilityIncreaseRule:
+      type: object
+      description: 'Augmentation de caractéristiques offerte à ce niveau ; null sinon.'
+      required:
+        - points
+        - maxPerAbility
+        - cap
+      properties:
+        points:
+          type: integer
+          example: 2
+        maxPerAbility:
+          type: integer
+          example: 2
+        cap:
+          type: integer
+          example: 20
 
     HitPointsAdjustmentInput:
       description: 'amount (corrections du MJ) ou dice (lancés par le serveur), jamais les deux : le discriminant method le garantit aussi dans les clients générés.'
@@ -6748,23 +6792,25 @@ components:
           type: array
           maxItems: 9
           items:
-            type: object
-            additionalProperties: false
-            required:
-              - level
-              - used
-            properties:
-              level:
-                type: integer
-                minimum: 1
-                maximum: 9
-              used:
-                type: integer
-                minimum: 0
+            $ref: '#/components/schemas/SpellSlotUsageInput'
         hitDiceRemaining:
           type: integer
           minimum: 0
 
+    SpellSlotUsageInput:
+      type: object
+      additionalProperties: false
+      required:
+        - level
+        - used
+      properties:
+        level:
+          type: integer
+          minimum: 1
+          maximum: 9
+        used:
+          type: integer
+          minimum: 0
     AddInventoryItemInput:
       description: 'Un objet SRD (source srd) ou un objet hors SRD (source custom), jamais les deux.'
       oneOf:
@@ -6924,50 +6970,38 @@ components:
           type: array
           maxItems: 50
           items:
-            type: object
-            additionalProperties: false
-            required:
-              - groupId
-              - optionIds
-            properties:
-              groupId:
-                type: string
-                maxLength: 64
-              optionIds:
-                type: array
-                maxItems: 50
-                items:
-                  type: string
-                  maxLength: 64
+            $ref: '#/components/schemas/ChoiceSelectionInput'
         abilityIncreases:
-          type: object
-          additionalProperties: false
-          description: 'Points ajoutés à chaque caractéristique, par exemple { dex: 2 }.'
-          properties:
-            str:
-              type: integer
-              minimum: 1
-              maximum: 2
-            dex:
-              type: integer
-              minimum: 1
-              maximum: 2
-            con:
-              type: integer
-              minimum: 1
-              maximum: 2
-            int:
-              type: integer
-              minimum: 1
-              maximum: 2
-            wis:
-              type: integer
-              minimum: 1
-              maximum: 2
-            cha:
-              type: integer
-              minimum: 1
-              maximum: 2
+          $ref: '#/components/schemas/AbilityIncreasesInput'
+    AbilityIncreasesInput:
+      type: object
+      additionalProperties: false
+      description: 'Points ajoutés à chaque caractéristique, par exemple { dex: 2 }.'
+      properties:
+        str:
+          type: integer
+          minimum: 1
+          maximum: 2
+        dex:
+          type: integer
+          minimum: 1
+          maximum: 2
+        con:
+          type: integer
+          minimum: 1
+          maximum: 2
+        int:
+          type: integer
+          minimum: 1
+          maximum: 2
+        wis:
+          type: integer
+          minimum: 1
+          maximum: 2
+        cha:
+          type: integer
+          minimum: 1
+          maximum: 2
 
     # --- CARTES : GRILLE ET CASES ---
     GridType:
@@ -7107,22 +7141,24 @@ components:
             tiles:
               type: array
               items:
-                type: object
-                required:
-                  - x
-                  - y
-                  - mask
-                properties:
-                  x:
-                    type: integer
-                    minimum: 0
-                  y:
-                    type: integer
-                    minimum: 0
-                  mask:
-                    type: string
-                    maxLength: 64
-                    description: "Empreinte des cases non cachées de la tuile et de la version du fond, à passer dans le paramètre mask de getMapTile. Elle change si le brouillard découvre ou recache une case de la tuile, ou si le MJ renvoie une image ; la différence entre visible et explored n'y entre pas (l'assombrissement se fait côté front). Chaque changement de brouillard envoie par WebSocket la nouvelle liste tiles."
+                $ref: '#/components/schemas/MaskedTile'
+    MaskedTile:
+      type: object
+      required:
+        - x
+        - y
+        - mask
+      properties:
+        x:
+          type: integer
+          minimum: 0
+        y:
+          type: integer
+          minimum: 0
+        mask:
+          type: string
+          maxLength: 64
+          description: "Empreinte des cases non cachées de la tuile et de la version du fond, à passer dans le paramètre mask de getMapTile. Elle change si le brouillard découvre ou recache une case de la tuile, ou si le MJ renvoie une image ; la différence entre visible et explored n'y entre pas (l'assombrissement se fait côté front). Chaque changement de brouillard envoie par WebSocket la nouvelle liste tiles."
 
     WallGm:
       type: object
@@ -7884,23 +7920,25 @@ components:
         name:
           $ref: '#/components/schemas/MapName'
         grid:
-          type: object
-          additionalProperties: false
-          required:
-            - type
-            - cols
-            - rows
-          properties:
-            type:
-              $ref: '#/components/schemas/GridType'
-            cols:
-              type: integer
-              minimum: 1
-              maximum: 100
-            rows:
-              type: integer
-              minimum: 1
-              maximum: 100
+          $ref: '#/components/schemas/GridSpecInput'
+    GridSpecInput:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+        - cols
+        - rows
+      properties:
+        type:
+          $ref: '#/components/schemas/GridType'
+        cols:
+          type: integer
+          minimum: 1
+          maximum: 100
+        rows:
+          type: integer
+          minimum: 1
+          maximum: 100
 
     UpdateMapInput:
       type: object
@@ -7929,84 +7967,92 @@ components:
           type: array
           maxItems: 2000
           items:
-            type: object
-            additionalProperties: false
-            required:
-              - from
-              - to
-            properties:
-              id:
-                $ref: '#/components/schemas/Id'
-              from:
-                $ref: '#/components/schemas/Vertex'
-              to:
-                $ref: '#/components/schemas/Vertex'
+            $ref: '#/components/schemas/WallInput'
         doors:
           type: array
           maxItems: 200
           items:
-            type: object
-            additionalProperties: false
-            required:
-              - from
-              - to
-              - state
-              - secret
-            properties:
-              id:
-                $ref: '#/components/schemas/Id'
-              from:
-                $ref: '#/components/schemas/Vertex'
-              to:
-                $ref: '#/components/schemas/Vertex'
-              state:
-                $ref: '#/components/schemas/DoorState'
-              secret:
-                type: boolean
+            $ref: '#/components/schemas/DoorInput'
         areas:
           type: array
           maxItems: 100
           items:
-            type: object
-            additionalProperties: false
-            required:
-              - name
-              - cells
-              - public
-            properties:
-              id:
-                $ref: '#/components/schemas/Id'
-              name:
-                $ref: '#/components/schemas/AreaName'
-              cells:
-                $ref: '#/components/schemas/CellSet'
-              public:
-                type: boolean
+            $ref: '#/components/schemas/AreaInput'
         decor:
           type: array
           maxItems: 1000
           items:
-            type: object
-            additionalProperties: false
-            required:
-              - kind
-              - cell
-              - rotation
-              - layer
-            properties:
-              id:
-                $ref: '#/components/schemas/Id'
-              kind:
-                $ref: '#/components/schemas/DecorKind'
-              cell:
-                $ref: '#/components/schemas/Cell'
-              rotation:
-                $ref: '#/components/schemas/Rotation'
-              layer:
-                type: string
-                enum:
-                  - decor
-                  - gm
+            $ref: '#/components/schemas/DecorInput'
+    WallInput:
+      type: object
+      additionalProperties: false
+      required:
+        - from
+        - to
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        from:
+          $ref: '#/components/schemas/Vertex'
+        to:
+          $ref: '#/components/schemas/Vertex'
+    DoorInput:
+      type: object
+      additionalProperties: false
+      required:
+        - from
+        - to
+        - state
+        - secret
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        from:
+          $ref: '#/components/schemas/Vertex'
+        to:
+          $ref: '#/components/schemas/Vertex'
+        state:
+          $ref: '#/components/schemas/DoorState'
+        secret:
+          type: boolean
+    AreaInput:
+      type: object
+      additionalProperties: false
+      required:
+        - name
+        - cells
+        - public
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        name:
+          $ref: '#/components/schemas/AreaName'
+        cells:
+          $ref: '#/components/schemas/CellSet'
+        public:
+          type: boolean
+    DecorInput:
+      type: object
+      additionalProperties: false
+      required:
+        - kind
+        - cell
+        - rotation
+        - layer
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        kind:
+          $ref: '#/components/schemas/DecorKind'
+        cell:
+          $ref: '#/components/schemas/Cell'
+        rotation:
+          $ref: '#/components/schemas/Rotation'
+        layer:
+          type: string
+          enum:
+            - decor
+            - gm
 
     UpdateDoorInput:
       type: object
@@ -8771,17 +8817,19 @@ components:
         steps:
           type: array
           items:
-            type: object
-            required:
-              - level
-              - dice
-            properties:
-              level:
-                type: integer
-                minimum: 1
-                maximum: 20
-              dice:
-                $ref: '#/components/schemas/Formula'
+            $ref: '#/components/schemas/ScalingStep'
+    ScalingStep:
+      type: object
+      required:
+        - level
+        - dice
+      properties:
+        level:
+          type: integer
+          minimum: 1
+          maximum: 20
+        dice:
+          $ref: '#/components/schemas/Formula'
 
     # --- DONNÉES SRD : EFFETS PONCTUELS ---
     Effect:
@@ -8893,20 +8941,24 @@ components:
         repeatSave:
           type: object
           nullable: true
-          required:
-            - ability
-            - dc
-            - timing
-          properties:
-            ability:
-              $ref: '#/components/schemas/AbilityCode'
-            dc:
-              $ref: '#/components/schemas/Formula'
-            timing:
-              type: string
-              enum:
-                - startOfTurn
-                - endOfTurn
+          allOf:
+            - $ref: '#/components/schemas/RepeatSave'
+    RepeatSave:
+      type: object
+      required:
+        - ability
+        - dc
+        - timing
+      properties:
+        ability:
+          $ref: '#/components/schemas/AbilityCode'
+        dc:
+          $ref: '#/components/schemas/Formula'
+        timing:
+          type: string
+          enum:
+            - startOfTurn
+            - endOfTurn
 
     ModifierEffect:
       type: object
@@ -9302,15 +9354,7 @@ components:
         abilityBonuses:
           type: array
           items:
-            type: object
-            required:
-              - ability
-              - value
-            properties:
-              ability:
-                $ref: '#/components/schemas/AbilityCode'
-              value:
-                type: integer
+            $ref: '#/components/schemas/AbilityBonus'
         traits:
           type: array
           items:
@@ -9324,6 +9368,16 @@ components:
           items:
             $ref: '#/components/schemas/ChoiceGroup'
 
+    AbilityBonus:
+      type: object
+      required:
+        - ability
+        - value
+      properties:
+        ability:
+          $ref: '#/components/schemas/AbilityCode'
+        value:
+          type: integer
     ClassSpellcasting:
       type: object
       description: >-
@@ -9351,51 +9405,12 @@ components:
           type: array
           description: 'Progression standard seulement.'
           items:
-            type: object
-            required:
-              - level
-              - slots
-            properties:
-              level:
-                type: integer
-                minimum: 1
-                maximum: 20
-              slots:
-                type: array
-                items:
-                  type: object
-                  required:
-                    - slotLevel
-                    - count
-                  properties:
-                    slotLevel:
-                      type: integer
-                      minimum: 1
-                      maximum: 9
-                    count:
-                      type: integer
-                      minimum: 0
+            $ref: '#/components/schemas/SpellSlotsAtLevel'
         pactSlotsByLevel:
           type: array
           description: 'Magie de pacte seulement.'
           items:
-            type: object
-            required:
-              - level
-              - count
-              - slotLevel
-            properties:
-              level:
-                type: integer
-                minimum: 1
-                maximum: 20
-              count:
-                type: integer
-                minimum: 0
-              slotLevel:
-                type: integer
-                minimum: 1
-                maximum: 5
+            $ref: '#/components/schemas/PactSlotsAtLevel'
         cantripsKnownByLevel:
           $ref: '#/components/schemas/CountByLevel'
         spellsKnownByLevel:
@@ -9403,21 +9418,68 @@ components:
           allOf:
             - $ref: '#/components/schemas/CountByLevel'
 
+    SpellSlotsAtLevel:
+      type: object
+      required:
+        - level
+        - slots
+      properties:
+        level:
+          type: integer
+          minimum: 1
+          maximum: 20
+        slots:
+          type: array
+          items:
+            $ref: '#/components/schemas/SpellSlotAllowance'
+    SpellSlotAllowance:
+      type: object
+      required:
+        - slotLevel
+        - count
+      properties:
+        slotLevel:
+          type: integer
+          minimum: 1
+          maximum: 9
+        count:
+          type: integer
+          minimum: 0
+    PactSlotsAtLevel:
+      type: object
+      required:
+        - level
+        - count
+        - slotLevel
+      properties:
+        level:
+          type: integer
+          minimum: 1
+          maximum: 20
+        count:
+          type: integer
+          minimum: 0
+        slotLevel:
+          type: integer
+          minimum: 1
+          maximum: 5
     CountByLevel:
       type: array
       items:
-        type: object
-        required:
-          - level
-          - count
-        properties:
-          level:
-            type: integer
-            minimum: 1
-            maximum: 20
-          count:
-            type: integer
-            minimum: 0
+        $ref: '#/components/schemas/LevelCount'
+    LevelCount:
+      type: object
+      required:
+        - level
+        - count
+      properties:
+        level:
+          type: integer
+          minimum: 1
+          maximum: 20
+        count:
+          type: integer
+          minimum: 0
 
     ClassLevel:
       type: object
@@ -9461,19 +9523,21 @@ components:
         levels:
           type: array
           items:
-            type: object
-            required:
-              - level
-              - features
-            properties:
-              level:
-                type: integer
-                minimum: 1
-                maximum: 20
-              features:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Feature'
+            $ref: '#/components/schemas/SubclassLevel'
+    SubclassLevel:
+      type: object
+      required:
+        - level
+        - features
+      properties:
+        level:
+          type: integer
+          minimum: 1
+          maximum: 20
+        features:
+          type: array
+          items:
+            $ref: '#/components/schemas/Feature'
 
     CharacterClass:
       type: object
@@ -9508,24 +9572,7 @@ components:
           items:
             $ref: '#/components/schemas/AbilityCode'
         proficiencies:
-          type: object
-          required:
-            - armor
-            - weapons
-            - tools
-          properties:
-            armor:
-              type: array
-              items:
-                $ref: '#/components/schemas/RuleRef'
-            weapons:
-              type: array
-              items:
-                $ref: '#/components/schemas/RuleRef'
-            tools:
-              type: array
-              items:
-                $ref: '#/components/schemas/RuleRef'
+          $ref: '#/components/schemas/ClassProficiencies'
         choiceGroups:
           type: array
           description: 'Compétences et équipement de départ.'
@@ -9545,6 +9592,25 @@ components:
           items:
             $ref: '#/components/schemas/Subclass'
 
+    ClassProficiencies:
+      type: object
+      required:
+        - armor
+        - weapons
+        - tools
+      properties:
+        armor:
+          type: array
+          items:
+            $ref: '#/components/schemas/RuleRef'
+        weapons:
+          type: array
+          items:
+            $ref: '#/components/schemas/RuleRef'
+        tools:
+          type: array
+          items:
+            $ref: '#/components/schemas/RuleRef'
     Background:
       type: object
       required:
@@ -9617,33 +9683,7 @@ components:
         school:
           $ref: '#/components/schemas/RuleId'
         components:
-          type: object
-          required:
-            - verbal
-            - somatic
-            - material
-          properties:
-            verbal:
-              type: boolean
-            somatic:
-              type: boolean
-            material:
-              type: object
-              nullable: true
-              required:
-                - text
-                - costCp
-                - consumed
-              properties:
-                text:
-                  type: string
-                  maxLength: 500
-                costCp:
-                  type: integer
-                  nullable: true
-                  minimum: 0
-                consumed:
-                  type: boolean
+          $ref: '#/components/schemas/SpellComponents'
         ritual:
           type: boolean
         classes:
@@ -9659,6 +9699,38 @@ components:
         description:
           $ref: '#/components/schemas/SrdDescription'
 
+    SpellComponents:
+      type: object
+      required:
+        - verbal
+        - somatic
+        - material
+      properties:
+        verbal:
+          type: boolean
+        somatic:
+          type: boolean
+        material:
+          type: object
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/MaterialComponent'
+    MaterialComponent:
+      type: object
+      required:
+        - text
+        - costCp
+        - consumed
+      properties:
+        text:
+          type: string
+          maxLength: 500
+        costCp:
+          type: integer
+          nullable: true
+          minimum: 0
+        consumed:
+          type: boolean
     ItemCategory:
       type: string
       enum:
@@ -9737,15 +9809,7 @@ components:
                 - melee
                 - ranged
             damage:
-              type: object
-              required:
-                - dice
-                - damageType
-              properties:
-                dice:
-                  $ref: '#/components/schemas/Formula'
-                damageType:
-                  $ref: '#/components/schemas/RuleId'
+              $ref: '#/components/schemas/DamageSpec'
             versatileDice:
               nullable: true
               type: string
@@ -9759,16 +9823,30 @@ components:
             rangeMeters:
               type: object
               nullable: true
-              required:
-                - normal
-                - long
-              properties:
-                normal:
-                  type: number
-                  minimum: 0
-                long:
-                  type: number
-                  minimum: 0
+              allOf:
+                - $ref: '#/components/schemas/RangeMeters'
+    DamageSpec:
+      type: object
+      required:
+        - dice
+        - damageType
+      properties:
+        dice:
+          $ref: '#/components/schemas/Formula'
+        damageType:
+          $ref: '#/components/schemas/RuleId'
+    RangeMeters:
+      type: object
+      required:
+        - normal
+        - long
+      properties:
+        normal:
+          type: number
+          minimum: 0
+        long:
+          type: number
+          minimum: 0
 
     ArmorItem:
       type: object
@@ -9918,17 +9996,8 @@ components:
             charges:
               type: object
               nullable: true
-              description: "Charges de l'objet, consommées par ChargesCost."
-              required:
-                - max
-                - per
-              properties:
-                max:
-                  $ref: '#/components/schemas/Quantity'
-                per:
-                  $ref: '#/components/schemas/RestPeriod'
-                regain:
-                  $ref: '#/components/schemas/Formula'
+              allOf:
+                - $ref: '#/components/schemas/ItemCharges'
             passive:
               type: array
               items:
@@ -9940,6 +10009,19 @@ components:
             automation:
               $ref: '#/components/schemas/Automation'
 
+    ItemCharges:
+      type: object
+      description: "Charges de l'objet, consommées par ChargesCost."
+      required:
+        - max
+        - per
+      properties:
+        max:
+          $ref: '#/components/schemas/Quantity'
+        per:
+          $ref: '#/components/schemas/RestPeriod'
+        regain:
+          $ref: '#/components/schemas/Formula'
     Item:
       oneOf:
         - $ref: '#/components/schemas/WeaponItem'
@@ -10043,38 +10125,42 @@ components:
           type: array
           nullable: true
           items:
-            type: object
-            required:
-              - level
-              - count
-            properties:
-              level:
-                type: integer
-                minimum: 1
-                maximum: 9
-              count:
-                type: integer
-                minimum: 0
+            $ref: '#/components/schemas/SpellSlotCount'
         perDay:
           type: array
           items:
-            type: object
-            required:
-              - count
-              - spells
-            properties:
-              count:
-                type: integer
-                minimum: 1
-              spells:
-                type: array
-                items:
-                  $ref: '#/components/schemas/RuleRef'
+            $ref: '#/components/schemas/PerDaySpells'
         atWill:
           type: array
           items:
             $ref: '#/components/schemas/RuleRef'
 
+    SpellSlotCount:
+      type: object
+      required:
+        - level
+        - count
+      properties:
+        level:
+          type: integer
+          minimum: 1
+          maximum: 9
+        count:
+          type: integer
+          minimum: 0
+    PerDaySpells:
+      type: object
+      required:
+        - count
+        - spells
+      properties:
+        count:
+          type: integer
+          minimum: 1
+        spells:
+          type: array
+          items:
+            $ref: '#/components/schemas/RuleRef'
     Monster:
       description: 'Bloc de statistiques complet. Les bonus sont déjà calculés : les actions utilisent des valeurs fixes.'
       allOf:
@@ -10115,86 +10201,17 @@ components:
             hitDice:
               $ref: '#/components/schemas/Formula'
             speeds:
-              type: object
-              description: 'En mètres.'
-              required:
-                - walk
-              properties:
-                walk:
-                  type: number
-                  minimum: 0
-                fly:
-                  type: number
-                  minimum: 0
-                swim:
-                  type: number
-                  minimum: 0
-                climb:
-                  type: number
-                  minimum: 0
-                burrow:
-                  type: number
-                  minimum: 0
-                hover:
-                  type: boolean
+              $ref: '#/components/schemas/Speeds'
             abilities:
-              type: object
-              required:
-                - str
-                - dex
-                - con
-                - int
-                - wis
-                - cha
-              properties:
-                str:
-                  type: integer
-                  minimum: 1
-                  maximum: 30
-                dex:
-                  type: integer
-                  minimum: 1
-                  maximum: 30
-                con:
-                  type: integer
-                  minimum: 1
-                  maximum: 30
-                int:
-                  type: integer
-                  minimum: 1
-                  maximum: 30
-                wis:
-                  type: integer
-                  minimum: 1
-                  maximum: 30
-                cha:
-                  type: integer
-                  minimum: 1
-                  maximum: 30
+              $ref: '#/components/schemas/MonsterAbilityScores'
             savingThrows:
               type: array
               items:
-                type: object
-                required:
-                  - ability
-                  - bonus
-                properties:
-                  ability:
-                    $ref: '#/components/schemas/AbilityCode'
-                  bonus:
-                    type: integer
+                $ref: '#/components/schemas/MonsterSavingThrow'
             skills:
               type: array
               items:
-                type: object
-                required:
-                  - skill
-                  - bonus
-                properties:
-                  skill:
-                    $ref: '#/components/schemas/RuleRef'
-                  bonus:
-                    type: integer
+                $ref: '#/components/schemas/MonsterSkill'
             damageVulnerabilities:
               type: array
               items:
@@ -10212,25 +10229,7 @@ components:
               items:
                 $ref: '#/components/schemas/RuleId'
             senses:
-              type: object
-              description: 'En mètres.'
-              required:
-                - passivePerception
-              properties:
-                darkvision:
-                  type: number
-                  minimum: 0
-                blindsight:
-                  type: number
-                  minimum: 0
-                truesight:
-                  type: number
-                  minimum: 0
-                tremorsense:
-                  type: number
-                  minimum: 0
-                passivePerception:
-                  type: integer
+              $ref: '#/components/schemas/MonsterSenses'
             languages:
               type: array
               items:
@@ -10250,23 +10249,8 @@ components:
             multiattack:
               type: object
               nullable: true
-              required:
-                - attacks
-              properties:
-                attacks:
-                  type: array
-                  items:
-                    type: object
-                    required:
-                      - actionKey
-                      - count
-                    properties:
-                      actionKey:
-                        type: string
-                        maxLength: 64
-                      count:
-                        type: integer
-                        minimum: 1
+              allOf:
+                - $ref: '#/components/schemas/Multiattack'
             reactions:
               type: array
               items:
@@ -10274,18 +10258,8 @@ components:
             legendary:
               type: object
               nullable: true
-              description: 'Le coût de chaque action est porté par Cost.legendary.'
-              required:
-                - perRound
-                - actions
-              properties:
-                perRound:
-                  type: integer
-                  minimum: 1
-                actions:
-                  type: array
-                  items:
-                    $ref: '#/components/schemas/Action'
+              allOf:
+                - $ref: '#/components/schemas/LegendaryActions'
             spellcasting:
               type: object
               nullable: true
@@ -10297,6 +10271,138 @@ components:
               $ref: '#/components/schemas/SrdDescription'
 
     # --- DONNÉES SRD : LISTES ET ATTRIBUTION ---
+    Speeds:
+      type: object
+      description: 'En mètres.'
+      required:
+        - walk
+      properties:
+        walk:
+          type: number
+          minimum: 0
+        fly:
+          type: number
+          minimum: 0
+        swim:
+          type: number
+          minimum: 0
+        climb:
+          type: number
+          minimum: 0
+        burrow:
+          type: number
+          minimum: 0
+        hover:
+          type: boolean
+    MonsterAbilityScores:
+      type: object
+      required:
+        - str
+        - dex
+        - con
+        - int
+        - wis
+        - cha
+      properties:
+        str:
+          type: integer
+          minimum: 1
+          maximum: 30
+        dex:
+          type: integer
+          minimum: 1
+          maximum: 30
+        con:
+          type: integer
+          minimum: 1
+          maximum: 30
+        int:
+          type: integer
+          minimum: 1
+          maximum: 30
+        wis:
+          type: integer
+          minimum: 1
+          maximum: 30
+        cha:
+          type: integer
+          minimum: 1
+          maximum: 30
+    MonsterSavingThrow:
+      type: object
+      required:
+        - ability
+        - bonus
+      properties:
+        ability:
+          $ref: '#/components/schemas/AbilityCode'
+        bonus:
+          type: integer
+    MonsterSkill:
+      type: object
+      required:
+        - skill
+        - bonus
+      properties:
+        skill:
+          $ref: '#/components/schemas/RuleRef'
+        bonus:
+          type: integer
+    MonsterSenses:
+      type: object
+      description: 'En mètres.'
+      required:
+        - passivePerception
+      properties:
+        darkvision:
+          type: number
+          minimum: 0
+        blindsight:
+          type: number
+          minimum: 0
+        truesight:
+          type: number
+          minimum: 0
+        tremorsense:
+          type: number
+          minimum: 0
+        passivePerception:
+          type: integer
+    Multiattack:
+      type: object
+      required:
+        - attacks
+      properties:
+        attacks:
+          type: array
+          items:
+            $ref: '#/components/schemas/MultiattackEntry'
+    MultiattackEntry:
+      type: object
+      required:
+        - actionKey
+        - count
+      properties:
+        actionKey:
+          type: string
+          maxLength: 64
+        count:
+          type: integer
+          minimum: 1
+    LegendaryActions:
+      type: object
+      description: 'Le coût de chaque action est porté par Cost.legendary.'
+      required:
+        - perRound
+        - actions
+      properties:
+        perRound:
+          type: integer
+          minimum: 1
+        actions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Action'
     RuleRefPage:
       type: object
       required:
@@ -10457,29 +10563,31 @@ components:
           type: string
           format: date-time
         dataSource:
-          type: object
-          description: 'Source des données structurées, sous licence MIT ; texte complet dans THIRD_PARTY_NOTICES.md.'
-          required:
-            - name
-            - url
-            - license
-            - copyright
-          properties:
-            name:
-              type: string
-              example: '5e-bits, 5e-srd-api'
-            url:
-              type: string
-              format: uri
-              example: 'https://github.com/5e-bits/5e-srd-api'
-              description: 'Le dépôt GitHub, où se trouve la licence MIT citée.'
-            license:
-              type: string
-              enum:
-                - MIT
-            copyright:
-              type: string
-              example: 'Copyright (c) 2018-2020 Adrian Padua, Christopher Ward'
+          $ref: '#/components/schemas/DataSource'
+    DataSource:
+      type: object
+      description: 'Source des données structurées, sous licence MIT ; texte complet dans THIRD_PARTY_NOTICES.md.'
+      required:
+        - name
+        - url
+        - license
+        - copyright
+      properties:
+        name:
+          type: string
+          example: '5e-bits, 5e-srd-api'
+        url:
+          type: string
+          format: uri
+          example: 'https://github.com/5e-bits/5e-srd-api'
+          description: 'Le dépôt GitHub, où se trouve la licence MIT citée.'
+        license:
+          type: string
+          enum:
+            - MIT
+        copyright:
+          type: string
+          example: 'Copyright (c) 2018-2020 Adrian Padua, Christopher Ward'
 
     SpeciesSummary:
       type: object
@@ -10507,16 +10615,7 @@ components:
         abilityBonuses:
           type: array
           items:
-            type: object
-            required:
-              - ability
-              - value
-            properties:
-              ability:
-                $ref: '#/components/schemas/AbilityCode'
-              value:
-                type: integer
-
+            $ref: '#/components/schemas/AbilityBonus'
     SpeciesSummaryPage:
       type: object
       required:
@@ -10643,20 +10742,7 @@ components:
           minimum: 0
           description: 'Largeur de la ligne.'
         origin:
-          type: object
-          description: "Point d'origine, en cases ; les décimales sont permises (0,5 = milieu d'une case)."
-          required:
-            - x
-            - y
-          properties:
-            x:
-              type: number
-              minimum: 0
-              maximum: 100
-            y:
-              type: number
-              minimum: 0
-              maximum: 100
+          $ref: '#/components/schemas/MapPoint'
         directionDegrees:
           type: number
           minimum: 0
@@ -10664,6 +10750,21 @@ components:
           maximum: 360
           description: 'Cône et ligne : direction en degrés, 0 = nord, sens horaire.'
 
+    MapPoint:
+      type: object
+      description: "Point d'origine, en cases ; les décimales sont permises (0,5 = milieu d'une case)."
+      required:
+        - x
+        - y
+      properties:
+        x:
+          type: number
+          minimum: 0
+          maximum: 100
+        y:
+          type: number
+          minimum: 0
+          maximum: 100
     TemplateLabel:
       type: string
       maxLength: 60
@@ -10779,20 +10880,22 @@ components:
         thresholds:
           type: array
           items:
-            type: object
-            required:
-              - rating
-              - xp
-            properties:
-              rating:
-                $ref: '#/components/schemas/DifficultyRating'
-              xp:
-                type: integer
-                minimum: 0
+            $ref: '#/components/schemas/DifficultyThreshold'
         partySize:
           type: integer
           minimum: 0
 
+    DifficultyThreshold:
+      type: object
+      required:
+        - rating
+        - xp
+      properties:
+        rating:
+          $ref: '#/components/schemas/DifficultyRating'
+        xp:
+          type: integer
+          minimum: 0
     EncounterCreature:
       type: object
       required:
@@ -11074,18 +11177,8 @@ components:
         source:
           type: object
           nullable: true
-          description: "Action ou combattant d'origine."
-          required:
-            - kind
-            - id
-          properties:
-            kind:
-              type: string
-              enum:
-                - action
-                - combatant
-            id:
-              $ref: '#/components/schemas/Id'
+          allOf:
+            - $ref: '#/components/schemas/EffectSource'
         remainingRounds:
           type: integer
           nullable: true
@@ -11094,6 +11187,20 @@ components:
         hiddenFromPlayers:
           type: boolean
 
+    EffectSource:
+      type: object
+      description: "Action ou combattant d'origine."
+      required:
+        - kind
+        - id
+      properties:
+        kind:
+          type: string
+          enum:
+            - action
+            - combatant
+        id:
+          $ref: '#/components/schemas/Id'
     VisibleEffect:
       type: object
       description: 'Effet vu par les joueurs : son nom seulement, jamais un effet marqué hiddenFromPlayers.'
@@ -11214,16 +11321,8 @@ components:
         concentration:
           type: object
           nullable: true
-          required:
-            - source
-            - effectIds
-          properties:
-            source:
-              $ref: '#/components/schemas/RuleRef'
-            effectIds:
-              type: array
-              items:
-                $ref: '#/components/schemas/Id'
+          allOf:
+            - $ref: '#/components/schemas/Concentration'
         reactionUsed:
           type: boolean
           description: 'Remis à faux au début du tour du combattant.'
@@ -11231,6 +11330,18 @@ components:
           type: boolean
           description: "Retiré du combat : reste dans la liste du MJ et dans le journal, mais n'apparaît plus dans l'initiative des joueurs."
 
+    Concentration:
+      type: object
+      required:
+        - source
+        - effectIds
+      properties:
+        source:
+          $ref: '#/components/schemas/RuleRef'
+        effectIds:
+          type: array
+          items:
+            $ref: '#/components/schemas/Id'
     StartCombatInput:
       type: object
       additionalProperties: false
@@ -11767,21 +11878,7 @@ components:
           allOf:
             - $ref: '#/components/schemas/Id'
         source:
-          type: object
-          additionalProperties: false
-          required:
-            - kind
-          properties:
-            kind:
-              $ref: '#/components/schemas/ResolutionSourceKind'
-            ref:
-              description: 'Sort, arme, capacité, objet ou monstre ; absent pour une action manuelle.'
-              allOf:
-                - $ref: '#/components/schemas/RuleId'
-            actionKey:
-              type: string
-              maxLength: 64
-              description: "Action choisie (Action.key) quand l'élément en a plusieurs."
+          $ref: '#/components/schemas/ActionSourceInput'
         slotLevel:
           type: integer
           minimum: 1
@@ -11806,6 +11903,22 @@ components:
           items:
             $ref: '#/components/schemas/AddEffectInput'
 
+    ActionSourceInput:
+      type: object
+      additionalProperties: false
+      required:
+        - kind
+      properties:
+        kind:
+          $ref: '#/components/schemas/ResolutionSourceKind'
+        ref:
+          description: 'Sort, arme, capacité, objet ou monstre ; absent pour une action manuelle.'
+          allOf:
+            - $ref: '#/components/schemas/RuleId'
+        actionKey:
+          type: string
+          maxLength: 64
+          description: "Action choisie (Action.key) quand l'élément en a plusieurs."
     UpdatePendingActionInput:
       type: object
       minProperties: 1
@@ -11816,21 +11929,7 @@ components:
           type: array
           maxItems: 50
           items:
-            type: object
-            required:
-              - combatantId
-            additionalProperties: false
-            properties:
-              combatantId:
-                $ref: '#/components/schemas/Id'
-              included:
-                type: boolean
-              result:
-                $ref: '#/components/schemas/TargetResult'
-              damage:
-                type: integer
-                minimum: 0
-                description: 'Dégâts finaux forcés par le MJ.'
+            $ref: '#/components/schemas/TargetOverrideInput'
         addTargets:
           type: array
           maxItems: 50
@@ -11844,6 +11943,22 @@ components:
             $ref: '#/components/schemas/AddEffectInput'
 
     # --- COMBAT : JOURNAL ---
+    TargetOverrideInput:
+      type: object
+      required:
+        - combatantId
+      additionalProperties: false
+      properties:
+        combatantId:
+          $ref: '#/components/schemas/Id'
+        included:
+          type: boolean
+        result:
+          $ref: '#/components/schemas/TargetResult'
+        damage:
+          type: integer
+          minimum: 0
+          description: 'Dégâts finaux forcés par le MJ.'
     JournalEntryBase:
       type: object
       required:
@@ -11957,23 +12072,25 @@ components:
               enum:
                 - manualCorrection
             subject:
-              type: object
-              required:
-                - kind
-                - id
-              properties:
-                kind:
-                  type: string
-                  enum:
-                    - character
-                    - token
-                id:
-                  $ref: '#/components/schemas/Id'
+              $ref: '#/components/schemas/CorrectionSubject'
             route:
               type: string
               maxLength: 64
               description: 'operationId de la correction (adjustHitPoints, takeRest…).'
 
+    CorrectionSubject:
+      type: object
+      required:
+        - kind
+        - id
+      properties:
+        kind:
+          type: string
+          enum:
+            - character
+            - token
+        id:
+          $ref: '#/components/schemas/Id'
     JournalRollGm:
       description: 'Jet de dés.'
       type: object
@@ -12336,25 +12453,27 @@ components:
           type: array
           maxItems: 50
           items:
-            type: object
-            required:
-              - kind
-              - id
-            properties:
-              kind:
-                type: string
-                enum:
-                  - npc
-                  - location
-                  - quest
-                  - map
-                  - encounter
-              id:
-                $ref: '#/components/schemas/Id'
+            $ref: '#/components/schemas/NoteLink'
         updatedAt:
           type: string
           format: date-time
 
+    NoteLink:
+      type: object
+      required:
+        - kind
+        - id
+      properties:
+        kind:
+          type: string
+          enum:
+            - npc
+            - location
+            - quest
+            - map
+            - encounter
+        id:
+          $ref: '#/components/schemas/Id'
     GmNotePage:
       type: object
       required:
@@ -12389,22 +12508,7 @@ components:
           type: array
           maxItems: 50
           items:
-            type: object
-            required:
-              - kind
-              - id
-            properties:
-              kind:
-                type: string
-                enum:
-                  - npc
-                  - location
-                  - quest
-                  - map
-                  - encounter
-              id:
-                $ref: '#/components/schemas/Id'
-
+            $ref: '#/components/schemas/NoteLink'
     UpdateGmNoteInput:
       type: object
       minProperties: 1
@@ -12423,22 +12527,7 @@ components:
           type: array
           maxItems: 50
           items:
-            type: object
-            required:
-              - kind
-              - id
-            properties:
-              kind:
-                type: string
-                enum:
-                  - npc
-                  - location
-                  - quest
-                  - map
-                  - encounter
-              id:
-                $ref: '#/components/schemas/Id'
-
+            $ref: '#/components/schemas/NoteLink'
     Npc:
       type: object
       description: 'Réservé au MJ, jamais envoyé aux joueurs.'
@@ -12672,21 +12761,23 @@ components:
           type: array
           maxItems: 50
           items:
-            type: object
-            required:
-              - text
-              - done
-            properties:
-              text:
-                type: string
-                minLength: 1
-                maxLength: 500
-              done:
-                type: boolean
+            $ref: '#/components/schemas/QuestObjective'
         updatedAt:
           type: string
           format: date-time
 
+    QuestObjective:
+      type: object
+      required:
+        - text
+        - done
+      properties:
+        text:
+          type: string
+          minLength: 1
+          maxLength: 500
+        done:
+          type: boolean
     QuestPage:
       type: object
       required:
@@ -12729,18 +12820,7 @@ components:
           type: array
           maxItems: 50
           items:
-            type: object
-            required:
-              - text
-              - done
-            properties:
-              text:
-                type: string
-                minLength: 1
-                maxLength: 500
-              done:
-                type: boolean
-
+            $ref: '#/components/schemas/QuestObjective'
     UpdateQuestInput:
       type: object
       minProperties: 1
@@ -12766,18 +12846,7 @@ components:
           type: array
           maxItems: 50
           items:
-            type: object
-            required:
-              - text
-              - done
-            properties:
-              text:
-                type: string
-                minLength: 1
-                maxLength: 500
-              done:
-                type: boolean
-
+            $ref: '#/components/schemas/QuestObjective'
     DocumentKind:
       type: string
       enum:
@@ -12817,20 +12886,8 @@ components:
         image:
           type: object
           nullable: true
-          required:
-            - width
-            - height
-            - version
-          properties:
-            width:
-              type: integer
-              minimum: 1
-            height:
-              type: integer
-              minimum: 1
-            version:
-              type: integer
-              minimum: 1
+          allOf:
+            - $ref: '#/components/schemas/DocumentImageGm'
         gmNotes:
           type: string
           maxLength: 20000
@@ -12842,6 +12899,22 @@ components:
           format: date-time
           nullable: true
 
+    DocumentImageGm:
+      type: object
+      required:
+        - width
+        - height
+        - version
+      properties:
+        width:
+          type: integer
+          minimum: 1
+        height:
+          type: integer
+          minimum: 1
+        version:
+          type: integer
+          minimum: 1
     DocumentParty:
       type: object
       description: 'Document révélé, vu par les joueurs : sans gmNotes.'
@@ -12872,26 +12945,30 @@ components:
         image:
           type: object
           nullable: true
-          required:
-            - width
-            - height
-            - url
-          properties:
-            width:
-              type: integer
-              minimum: 1
-            height:
-              type: integer
-              minimum: 1
-            url:
-              type: string
-              format: uri-reference
-              description: 'URL versionnée de getDocumentImage (?v=), à charger avec fetch et le jeton.'
-              example: '/api/v1/documents/9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d/image?v=2'
+          allOf:
+            - $ref: '#/components/schemas/DocumentImageParty'
         revealedAt:
           type: string
           format: date-time
 
+    DocumentImageParty:
+      type: object
+      required:
+        - width
+        - height
+        - url
+      properties:
+        width:
+          type: integer
+          minimum: 1
+        height:
+          type: integer
+          minimum: 1
+        url:
+          type: string
+          format: uri-reference
+          description: 'URL versionnée de getDocumentImage (?v=), à charger avec fetch et le jeton.'
+          example: '/api/v1/documents/9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d/image?v=2'
     DocumentView:
       oneOf:
         - $ref: '#/components/schemas/DocumentGm'
