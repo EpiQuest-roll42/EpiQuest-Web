@@ -35,6 +35,8 @@ tags:
     description: 'Cartes, brouillard, pions, scène et vue joueurs (projection par spectateur).'
   - name: Données SRD
     description: 'Contenu du SRD 5.1 (CC BY 4.0), en lecture seule, au format de règles interprété par le moteur (docs/technique/format-des-regles.md).'
+  - name: Rencontres
+    description: 'Préparation des rencontres par le MJ, calcul de la difficulté et placement sur la carte. Invisible des joueurs.'
 paths:
   /auth/register:
     post:
@@ -2082,6 +2084,163 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
+  /campaigns/{campaignId}/encounters:
+    parameters:
+      - $ref: '#/components/parameters/CampaignId'
+    get:
+      tags:
+        - Rencontres
+      operationId: listEncounters
+      x-phase: P3
+      summary: 'Lister les rencontres préparées (MJ).'
+      description: 'Préparation du MJ : un joueur reçoit 403.'
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: 'Page de rencontres.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EncounterPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags:
+        - Rencontres
+      operationId: createEncounter
+      x-phase: P3
+      summary: 'Créer une rencontre (MJ).'
+      description: >-
+        Le serveur calcule la difficulté à l'enregistrement ; pendant la construction, le web la calcule en
+        direct avec le moteur de règles. 400 cells_count_mismatch si une créature a des cases prévues dont
+        le nombre diffère de count.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEncounterInput'
+      responses:
+        '201':
+          description: 'Rencontre créée.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Encounter'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /encounters/{encounterId}:
+    parameters:
+      - $ref: '#/components/parameters/EncounterId'
+    get:
+      tags:
+        - Rencontres
+      operationId: getEncounter
+      x-phase: P3
+      summary: 'Lire une rencontre (MJ).'
+      description: >-
+        Un joueur reçoit 404, et non 403 : savoir qu'une rencontre existe est déjà une information cachée
+        (même exception que getRoll).
+      responses:
+        '200':
+          description: 'La rencontre.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Encounter'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags:
+        - Rencontres
+      operationId: updateEncounter
+      x-phase: P3
+      summary: 'Modifier une rencontre (MJ).'
+      description: 'Un joueur reçoit 404. 400 cells_count_mismatch comme à la création.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEncounterInput'
+      responses:
+        '200':
+          description: 'Rencontre modifiée, difficulté recalculée.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Encounter'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags:
+        - Rencontres
+      operationId: deleteEncounter
+      x-phase: P3
+      summary: 'Supprimer une rencontre (MJ).'
+      description: 'Un joueur reçoit 404. Les pions déjà placés restent sur la carte.'
+      responses:
+        '204':
+          description: 'Rencontre supprimée.'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /encounters/{encounterId}/place:
+    parameters:
+      - $ref: '#/components/parameters/EncounterId'
+    post:
+      tags:
+        - Rencontres
+      operationId: placeEncounter
+      x-phase: P3
+      summary: 'Placer la rencontre sur une carte en un clic (MJ).'
+      description: >-
+        Crée tous les pions d'un coup, aux cases prévues, avec hidden repris de chaque créature et les PV
+        selon hitPointMethod. mapId remplace celui de la rencontre s'il est fourni ; 400
+        encounter_without_map si aucune carte n'est connue. 409 cell_occupied si une case prévue est prise.
+        Un joueur reçoit 404.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlaceEncounterInput'
+      responses:
+        '201':
+          description: 'Pions créés.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlacedEncounter'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
   /campaigns/{campaignId}/scene:
     parameters:
       - $ref: '#/components/parameters/CampaignId'
@@ -2996,6 +3155,12 @@ components:
         $ref: '#/components/schemas/Id'
     MapId:
       name: mapId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Id'
+    EncounterId:
+      name: encounterId
       in: path
       required: true
       schema:
@@ -9018,3 +9183,248 @@ components:
             - $ref: '#/components/schemas/TemplateLabel'
         public:
           type: boolean
+
+    # --- RENCONTRES ---
+    DifficultyRating:
+      type: string
+      enum:
+        - trivial
+        - easy
+        - medium
+        - hard
+        - deadly
+      description: 'Les quatre niveaux de la fiche (facile, moyenne, difficile, mortelle), plus trivial sous le seuil easy.'
+
+    EncounterDifficulty:
+      type: object
+      readOnly: true
+      description: >-
+        Difficulté calculée par le moteur de règles. La source des seuils (SRD 5.1, SRD 5.2 ou règle propre
+        à Lanterne) est à vérifier avant P3-05 et à décider dans une ADR ; le format ne dépend pas de la
+        source, grâce au tableau thresholds.
+      required:
+        - rating
+        - totalXp
+        - adjustedXp
+        - thresholds
+        - partySize
+      properties:
+        rating:
+          $ref: '#/components/schemas/DifficultyRating'
+        totalXp:
+          type: integer
+          minimum: 0
+        adjustedXp:
+          type: integer
+          minimum: 0
+          description: 'XP ajusté selon le nombre de créatures.'
+        thresholds:
+          type: array
+          items:
+            type: object
+            required:
+              - rating
+              - xp
+            properties:
+              rating:
+                $ref: '#/components/schemas/DifficultyRating'
+              xp:
+                type: integer
+                minimum: 0
+        partySize:
+          type: integer
+          minimum: 0
+
+    EncounterCreature:
+      type: object
+      required:
+        - monster
+        - count
+        - displayName
+        - hidden
+        - cells
+      properties:
+        monster:
+          $ref: '#/components/schemas/RuleRef'
+        count:
+          type: integer
+          minimum: 1
+          maximum: 20
+        displayName:
+          type: string
+          nullable: true
+          description: 'Nom affiché aux joueurs ; le nom du monstre si null.'
+          allOf:
+            - $ref: '#/components/schemas/DisplayName'
+        hidden:
+          type: boolean
+        cells:
+          type: array
+          nullable: true
+          description: 'Cases prévues sur la carte, autant que count ; null si le MJ place les pions à la main.'
+          items:
+            $ref: '#/components/schemas/Cell'
+
+    Encounter:
+      type: object
+      description: 'Préparation du MJ, jamais envoyée aux joueurs.'
+      required:
+        - id
+        - name
+        - mapId
+        - creatures
+        - partyLevels
+        - difficulty
+        - placedAt
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        name:
+          $ref: '#/components/schemas/EncounterName'
+        mapId:
+          type: string
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/Id'
+        creatures:
+          type: array
+          items:
+            $ref: '#/components/schemas/EncounterCreature'
+        partyLevels:
+          type: array
+          nullable: true
+          description: 'Niveaux du groupe pour le calcul ; null = les personnages actifs de la campagne.'
+          items:
+            type: integer
+            minimum: 1
+            maximum: 20
+        difficulty:
+          $ref: '#/components/schemas/EncounterDifficulty'
+        placedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    EncounterName:
+      type: string
+      minLength: 1
+      maxLength: 60
+      example: "Embuscade à l'entrée de la crypte"
+
+    EncounterPage:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Encounter'
+        nextCursor:
+          type: string
+          nullable: true
+
+    EncounterCreatureInput:
+      type: object
+      required:
+        - monsterId
+        - count
+      additionalProperties: false
+      properties:
+        monsterId:
+          $ref: '#/components/schemas/RuleId'
+        count:
+          type: integer
+          minimum: 1
+          maximum: 20
+        displayName:
+          $ref: '#/components/schemas/DisplayName'
+        hidden:
+          type: boolean
+          default: false
+        cells:
+          type: array
+          nullable: true
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/Cell'
+
+    CreateEncounterInput:
+      type: object
+      required:
+        - name
+        - creatures
+      additionalProperties: false
+      x-phase: P3
+      properties:
+        name:
+          $ref: '#/components/schemas/EncounterName'
+        mapId:
+          type: string
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/Id'
+        creatures:
+          type: array
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/EncounterCreatureInput'
+        partyLevels:
+          type: array
+          nullable: true
+          maxItems: 10
+          items:
+            type: integer
+            minimum: 1
+            maximum: 20
+
+    UpdateEncounterInput:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      x-phase: P3
+      properties:
+        name:
+          $ref: '#/components/schemas/EncounterName'
+        mapId:
+          type: string
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/Id'
+        creatures:
+          type: array
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/EncounterCreatureInput'
+        partyLevels:
+          type: array
+          nullable: true
+          maxItems: 10
+          items:
+            type: integer
+            minimum: 1
+            maximum: 20
+
+    PlaceEncounterInput:
+      type: object
+      additionalProperties: false
+      x-phase: P3
+      properties:
+        mapId:
+          $ref: '#/components/schemas/Id'
+        hitPointMethod:
+          type: string
+          enum:
+            - average
+            - roll
+          default: average
+
+    PlacedEncounter:
+      type: object
+      required:
+        - tokens
+      properties:
+        tokens:
+          type: array
+          items:
+            $ref: '#/components/schemas/TokenGm'
