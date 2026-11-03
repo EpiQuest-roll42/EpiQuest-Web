@@ -68,11 +68,11 @@ variable = "@" identifiant ;
 
 Un `oneOf` de trois formes :
 
-| Forme                             | Exemple                                                               |
-| --------------------------------- | --------------------------------------------------------------------- |
-| une `Formula` simple              | `"@prof"`                                                             |
-| `{ formula, minimum }`            | inspiration bardique : `{ "formula": "@cha", "minimum": 1 }`          |
-| `{ byLevel: [{ level, value }] }` | imposition des mains : 5 au niveau 1, 10 au niveau 2, 15 au niveau 3… |
+| Forme                                            | Exemple                                                                         |
+| ------------------------------------------------ | ------------------------------------------------------------------------------- |
+| une `Formula` simple                             | `"@prof"`                                                                       |
+| `{ kind: minimum, formula, minimum }`            | inspiration bardique : `{ "kind": "minimum", "formula": "@cha", "minimum": 1 }` |
+| `{ kind: byLevel, byLevel: [{ level, value }] }` | imposition des mains : 5 au niveau 1, 10 au niveau 2, 15 au niveau 3…           |
 
 `Quantity` sert pour `Uses.count` (réserves d'utilisations), `Targeting.creatures.count` et les charges des objets magiques.
 
@@ -238,15 +238,15 @@ Le bonus d'attaque ajoute `@prof` si le personnage maîtrise l'arme. Jamais de t
 
 ## Entités
 
-| Entité       | Particularités                                                                                                             |
-| ------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| `Species`    | **aplaties** : `high-elf` contient déjà les traits communs des elfes ; `family` ne sert qu'au regroupement à l'écran       |
-| `Class`      | les 20 niveaux sont importés ; l'API n'expose que les niveaux jusqu'au réglage `maxLevel` du serveur (5 au MVP)            |
-| `Background` | le SRD 5.1 n'en contient qu'un : Acolyte (ADR 0005)                                                                        |
-| `Spell`      | `level` 0 pour un sort mineur ; `actions` contient en général une seule action                                             |
-| `Item`       | `oneOf` sur `category` : `weapon`, `armor`, `gear`, `tool`, `pack`, `magicItem`                                            |
-| `Condition`  | effets passifs (voir [États](#états))                                                                                      |
-| `Monster`    | bonus déjà calculés ; `multiattack` désigne des actions par leur `key` ; `legendary` porte ses coûts dans `Cost.legendary` |
+| Entité           | Particularités                                                                                                             |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `Species`        | **aplaties** : `high-elf` contient déjà les traits communs des elfes ; `family` ne sert qu'au regroupement à l'écran       |
+| `CharacterClass` | les 20 niveaux sont importés ; l'API n'expose que les niveaux jusqu'au réglage `maxLevel` du serveur (5 au MVP)            |
+| `Background`     | le SRD 5.1 n'en contient qu'un : Acolyte (ADR 0005)                                                                        |
+| `Spell`          | `level` 0 pour un sort mineur ; `actions` contient en général une seule action                                             |
+| `Item`           | `oneOf` sur `category` : `weapon`, `armor`, `gear`, `tool`, `pack`, `magicItem`                                            |
+| `Condition`      | effets passifs (voir [États](#états))                                                                                      |
+| `Monster`        | bonus déjà calculés ; `multiattack` désigne des actions par leur `key` ; `legendary` porte ses coûts dans `Cost.legendary` |
 
 Les listes `listSpecies` et `listClasses` renvoient des résumés (`SpeciesSummary`, `ClassSummary`) suffisants pour les cartes de l'assistant, sans appeler le détail de chaque élément ; les historiques et les états renvoient des `RuleRef`.
 

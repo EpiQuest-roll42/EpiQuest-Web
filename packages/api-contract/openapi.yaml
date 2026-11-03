@@ -3879,7 +3879,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Class'
+                $ref: '#/components/schemas/CharacterClass'
         '304':
           $ref: '#/components/responses/NotModified'
         '401':
@@ -5910,6 +5910,14 @@ components:
 
     CharacterOwnerView:
       description: 'Vue du propriétaire : la fiche complète et ses notes.'
+      type: object
+      required:
+        - view
+      properties:
+        view:
+          type: string
+          enum:
+            - owner
       allOf:
         - $ref: '#/components/schemas/CharacterSheet'
         - type: object
@@ -5929,6 +5937,14 @@ components:
 
     CharacterGmView:
       description: 'Vue du MJ de la campagne : la fiche complète, sans les notes du joueur.'
+      type: object
+      required:
+        - view
+      properties:
+        view:
+          type: string
+          enum:
+            - gm
       allOf:
         - $ref: '#/components/schemas/CharacterSheet'
         - type: object
@@ -6652,32 +6668,51 @@ components:
               example: 20
 
     HitPointsAdjustmentInput:
-      description: 'amount (corrections du MJ) ou dice (lancés par le serveur), jamais les deux.'
+      description: 'amount (corrections du MJ) ou dice (lancés par le serveur), jamais les deux : le discriminant method le garantit aussi dans les clients générés.'
       oneOf:
-        - type: object
-          title: HitPointsAmount
-          required:
-            - kind
+        - $ref: '#/components/schemas/HitPointsAmountInput'
+        - $ref: '#/components/schemas/HitPointsDiceInput'
+      discriminator:
+        propertyName: method
+        mapping:
+          amount: '#/components/schemas/HitPointsAmountInput'
+          dice: '#/components/schemas/HitPointsDiceInput'
+
+    HitPointsAmountInput:
+      type: object
+      required:
+        - method
+        - kind
+        - amount
+      additionalProperties: false
+      properties:
+        method:
+          type: string
+          enum:
             - amount
-          additionalProperties: false
-          properties:
-            kind:
-              $ref: '#/components/schemas/HitPointsAdjustmentKind'
-            amount:
-              type: integer
-              minimum: 1
-              maximum: 999
-        - type: object
-          title: HitPointsDice
-          required:
-            - kind
+        kind:
+          $ref: '#/components/schemas/HitPointsAdjustmentKind'
+        amount:
+          type: integer
+          minimum: 1
+          maximum: 999
+
+    HitPointsDiceInput:
+      type: object
+      required:
+        - method
+        - kind
+        - dice
+      additionalProperties: false
+      properties:
+        method:
+          type: string
+          enum:
             - dice
-          additionalProperties: false
-          properties:
-            kind:
-              $ref: '#/components/schemas/HitPointsAdjustmentKind'
-            dice:
-              $ref: '#/components/schemas/DiceExpression'
+        kind:
+          $ref: '#/components/schemas/HitPointsAdjustmentKind'
+        dice:
+          $ref: '#/components/schemas/DiceExpression'
 
     HitPointsAdjustmentKind:
       type: string
@@ -6731,36 +6766,55 @@ components:
           minimum: 0
 
     AddInventoryItemInput:
-      description: 'Un objet SRD (itemId) ou un objet hors SRD (customName), jamais les deux.'
+      description: 'Un objet SRD (source srd) ou un objet hors SRD (source custom), jamais les deux.'
       oneOf:
-        - type: object
-          title: SrdItem
-          required:
-            - itemId
-          additionalProperties: false
-          properties:
-            itemId:
-              $ref: '#/components/schemas/RuleId'
-            quantity:
-              type: integer
-              minimum: 1
-              maximum: 999
-              default: 1
-        - type: object
-          title: CustomItem
-          required:
-            - customName
-          additionalProperties: false
-          properties:
-            customName:
-              type: string
-              minLength: 1
-              maxLength: 60
-            quantity:
-              type: integer
-              minimum: 1
-              maximum: 999
-              default: 1
+        - $ref: '#/components/schemas/SrdItemInput'
+        - $ref: '#/components/schemas/CustomItemInput'
+      discriminator:
+        propertyName: source
+        mapping:
+          srd: '#/components/schemas/SrdItemInput'
+          custom: '#/components/schemas/CustomItemInput'
+
+    SrdItemInput:
+      type: object
+      required:
+        - source
+        - itemId
+      additionalProperties: false
+      properties:
+        source:
+          type: string
+          enum:
+            - srd
+        itemId:
+          $ref: '#/components/schemas/RuleId'
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 999
+          default: 1
+
+    CustomItemInput:
+      type: object
+      required:
+        - source
+        - customName
+      additionalProperties: false
+      properties:
+        source:
+          type: string
+          enum:
+            - custom
+        customName:
+          type: string
+          minLength: 1
+          maxLength: 60
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 999
+          default: 1
 
     UpdateInventoryItemInput:
       type: object
@@ -8106,38 +8160,58 @@ components:
       example: '@spellDc'
 
     Quantity:
-      description: 'Une formule simple, une formule avec un minimum (inspiration bardique : @cha, minimum 1), ou une table par niveau (imposition des mains : 5, 10, 15…).'
+      description: >-
+        Une formule simple, une formule avec un minimum (inspiration bardique : @cha, minimum 1), ou une table
+        par niveau (imposition des mains : 5, 10, 15…). La chaîne se distingue des objets par son type, et
+        les deux objets entre eux par kind.
       oneOf:
         - $ref: '#/components/schemas/Formula'
-        - type: object
-          title: FormulaWithMinimum
-          required:
-            - formula
+        - $ref: '#/components/schemas/QuantityWithMinimum'
+        - $ref: '#/components/schemas/QuantityByLevel'
+
+    QuantityWithMinimum:
+      type: object
+      required:
+        - kind
+        - formula
+        - minimum
+      properties:
+        kind:
+          type: string
+          enum:
             - minimum
-          properties:
-            formula:
-              $ref: '#/components/schemas/Formula'
-            minimum:
-              type: integer
-        - type: object
-          title: QuantityByLevel
-          required:
+        formula:
+          $ref: '#/components/schemas/Formula'
+        minimum:
+          type: integer
+
+    QuantityByLevel:
+      type: object
+      required:
+        - kind
+        - byLevel
+      properties:
+        kind:
+          type: string
+          enum:
             - byLevel
-          properties:
-            byLevel:
-              type: array
-              items:
-                type: object
-                required:
-                  - level
-                  - value
-                properties:
-                  level:
-                    type: integer
-                    minimum: 1
-                    maximum: 20
-                  value:
-                    type: integer
+        byLevel:
+          type: array
+          items:
+            $ref: '#/components/schemas/LevelValue'
+
+    LevelValue:
+      type: object
+      required:
+        - level
+        - value
+      properties:
+        level:
+          type: integer
+          minimum: 1
+          maximum: 20
+        value:
+          type: integer
 
     Automation:
       type: string
@@ -8241,7 +8315,7 @@ components:
         resolution:
           $ref: '#/components/schemas/Resolution'
         duration:
-          $ref: '#/components/schemas/Duration'
+          $ref: '#/components/schemas/EffectDuration'
         scaling:
           type: object
           nullable: true
@@ -8341,6 +8415,14 @@ components:
           maximum: 9
 
     UsesCost:
+      type: object
+      required:
+        - resource
+      properties:
+        resource:
+          type: string
+          enum:
+            - uses
       allOf:
         - type: object
           required:
@@ -8593,7 +8675,7 @@ components:
           items:
             $ref: '#/components/schemas/Effect'
 
-    Duration:
+    EffectDuration:
       type: object
       required:
         - type
@@ -8807,7 +8889,7 @@ components:
         condition:
           $ref: '#/components/schemas/RuleId'
         duration:
-          $ref: '#/components/schemas/Duration'
+          $ref: '#/components/schemas/EffectDuration'
         repeatSave:
           type: object
           nullable: true
@@ -8853,7 +8935,7 @@ components:
         value:
           $ref: '#/components/schemas/Formula'
         duration:
-          $ref: '#/components/schemas/Duration'
+          $ref: '#/components/schemas/EffectDuration'
 
     RollModeEffect:
       type: object
@@ -8957,6 +9039,14 @@ components:
           default: false
 
     DamageAdjustmentEffect:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - damageAdjustment
       allOf:
         - type: object
           required:
@@ -9385,7 +9475,7 @@ components:
                 items:
                   $ref: '#/components/schemas/Feature'
 
-    Class:
+    CharacterClass:
       type: object
       description: "Les 20 niveaux du SRD sont importés ; l'API n'expose que les niveaux jusqu'au réglage maxLevel du serveur (5 au MVP)."
       required:
@@ -9614,6 +9704,14 @@ components:
           $ref: '#/components/schemas/SrdDescription'
 
     WeaponItem:
+      type: object
+      required:
+        - category
+      properties:
+        category:
+          type: string
+          enum:
+            - weapon
       allOf:
         - $ref: '#/components/schemas/ItemBase'
         - type: object
@@ -9673,6 +9771,14 @@ components:
                   minimum: 0
 
     ArmorItem:
+      type: object
+      required:
+        - category
+      properties:
+        category:
+          type: string
+          enum:
+            - armor
       allOf:
         - $ref: '#/components/schemas/ItemBase'
         - type: object
@@ -9710,6 +9816,14 @@ components:
               type: boolean
 
     GearItem:
+      type: object
+      required:
+        - category
+      properties:
+        category:
+          type: string
+          enum:
+            - gear
       allOf:
         - $ref: '#/components/schemas/ItemBase'
         - type: object
@@ -9722,6 +9836,14 @@ components:
                 - gear
 
     ToolItem:
+      type: object
+      required:
+        - category
+      properties:
+        category:
+          type: string
+          enum:
+            - tool
       allOf:
         - $ref: '#/components/schemas/ItemBase'
         - type: object
@@ -9734,6 +9856,14 @@ components:
                 - tool
 
     PackItem:
+      type: object
+      required:
+        - category
+      properties:
+        category:
+          type: string
+          enum:
+            - pack
       allOf:
         - $ref: '#/components/schemas/ItemBase'
         - type: object
@@ -9751,6 +9881,14 @@ components:
                 $ref: '#/components/schemas/ItemQuantity'
 
     MagicItem:
+      type: object
+      required:
+        - category
+      properties:
+        category:
+          type: string
+          enum:
+            - magicItem
       allOf:
         - $ref: '#/components/schemas/ItemBase'
         - type: object
@@ -10895,10 +11033,27 @@ components:
           minimum: 1
 
     AppliedEffect:
-      description: "Un effet du format SRD (par exemple l'état poisoned) ou un effet libre."
+      description: "Un effet du format SRD (par exemple l'état poisoned) ou un effet libre (type free)."
       oneOf:
-        - $ref: '#/components/schemas/Effect'
+        - $ref: '#/components/schemas/DamageEffect'
+        - $ref: '#/components/schemas/HalfDamageEffect'
+        - $ref: '#/components/schemas/HealingEffect'
+        - $ref: '#/components/schemas/TemporaryHitPointsEffect'
+        - $ref: '#/components/schemas/ConditionEffect'
+        - $ref: '#/components/schemas/ModifierEffect'
+        - $ref: '#/components/schemas/RollModeEffect'
         - $ref: '#/components/schemas/FreeEffect'
+      discriminator:
+        propertyName: type
+        mapping:
+          damage: '#/components/schemas/DamageEffect'
+          halfDamage: '#/components/schemas/HalfDamageEffect'
+          healing: '#/components/schemas/HealingEffect'
+          temporaryHitPoints: '#/components/schemas/TemporaryHitPointsEffect'
+          condition: '#/components/schemas/ConditionEffect'
+          modifier: '#/components/schemas/ModifierEffect'
+          rollMode: '#/components/schemas/RollModeEffect'
+          free: '#/components/schemas/FreeEffect'
 
     ActiveEffect:
       type: object
@@ -11521,6 +11676,16 @@ components:
           items:
             $ref: '#/components/schemas/VisibleEffect'
 
+    PartyResolutionTarget:
+      oneOf:
+        - $ref: '#/components/schemas/CreatureTargetParty'
+        - $ref: '#/components/schemas/CharacterTargetParty'
+      discriminator:
+        propertyName: kind
+        mapping:
+          creature: '#/components/schemas/CreatureTargetParty'
+          character: '#/components/schemas/CharacterTargetParty'
+
     TargetResult:
       type: string
       enum:
@@ -11571,14 +11736,7 @@ components:
           type: array
           description: 'Seulement les cibles visibles.'
           items:
-            oneOf:
-              - $ref: '#/components/schemas/CreatureTargetParty'
-              - $ref: '#/components/schemas/CharacterTargetParty'
-            discriminator:
-              propertyName: kind
-              mapping:
-                creature: '#/components/schemas/CreatureTargetParty'
-                character: '#/components/schemas/CharacterTargetParty'
+            $ref: '#/components/schemas/PartyResolutionTarget'
 
     NextTurnResult:
       type: object
@@ -11706,6 +11864,14 @@ components:
 
     JournalActionGm:
       description: 'Action appliquée.'
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - action
       allOf:
         - $ref: '#/components/schemas/JournalEntryBase'
         - type: object
@@ -11722,6 +11888,14 @@ components:
 
     JournalActionUndoneGm:
       description: 'Action défaite.'
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - actionUndone
       allOf:
         - $ref: '#/components/schemas/JournalEntryBase'
         - type: object
@@ -11738,6 +11912,14 @@ components:
 
     JournalActionCancelledGm:
       description: 'Action annulée avant application. Réservé au MJ : pas de variante Party.'
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - actionCancelled
       allOf:
         - $ref: '#/components/schemas/JournalEntryBase'
         - type: object
@@ -11754,6 +11936,14 @@ components:
 
     JournalManualCorrectionGm:
       description: 'Correction manuelle hors combat (PV, repos, ressources, effets). Réservé au MJ : pas de variante Party.'
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - manualCorrection
       allOf:
         - $ref: '#/components/schemas/JournalEntryBase'
         - type: object
@@ -11786,6 +11976,14 @@ components:
 
     JournalRollGm:
       description: 'Jet de dés.'
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - roll
       allOf:
         - $ref: '#/components/schemas/JournalEntryBase'
         - type: object
@@ -11802,6 +12000,14 @@ components:
 
     JournalTurnStartGm:
       description: 'Début de tour.'
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - turnStart
       allOf:
         - $ref: '#/components/schemas/JournalEntryBase'
         - type: object
@@ -11825,6 +12031,14 @@ components:
 
     JournalCombatStartGm:
       description: 'Début de combat.'
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - combatStart
       allOf:
         - $ref: '#/components/schemas/JournalEntryBase'
         - type: object
@@ -11844,6 +12058,14 @@ components:
 
     JournalCombatEndGm:
       description: 'Fin de combat.'
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - combatEnd
       allOf:
         - $ref: '#/components/schemas/JournalEntryBase'
         - type: object
@@ -11860,6 +12082,14 @@ components:
 
     JournalActionParty:
       description: 'Action appliquée, projetée.'
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - action
       allOf:
         - $ref: '#/components/schemas/JournalEntryBase'
         - type: object
@@ -11876,6 +12106,14 @@ components:
 
     JournalActionUndoneParty:
       description: 'Action défaite, projetée.'
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - actionUndone
       allOf:
         - $ref: '#/components/schemas/JournalEntryBase'
         - type: object
@@ -11892,6 +12130,14 @@ components:
 
     JournalRollParty:
       description: 'Jet public, ou jet privé du lecteur.'
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - roll
       allOf:
         - $ref: '#/components/schemas/JournalEntryBase'
         - type: object
@@ -11908,6 +12154,14 @@ components:
 
     JournalTurnStartParty:
       description: "Début du tour d'un combattant visible ; aucune entrée pendant le tour d'une créature cachée."
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - turnStart
       allOf:
         - $ref: '#/components/schemas/JournalEntryBase'
         - type: object
@@ -11929,6 +12183,14 @@ components:
 
     JournalCombatStartParty:
       description: 'Début de combat.'
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - combatStart
       allOf:
         - $ref: '#/components/schemas/JournalEntryBase'
         - type: object
@@ -11942,6 +12204,14 @@ components:
 
     JournalCombatEndParty:
       description: 'Fin de combat.'
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - combatEnd
       allOf:
         - $ref: '#/components/schemas/JournalEntryBase'
         - type: object
