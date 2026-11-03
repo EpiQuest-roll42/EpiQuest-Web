@@ -53,6 +53,7 @@ Ce qui est déjà décidé dans les sections du contrat :
 | `roll.created`, jet `hidden`                | oui           | **non**                                                                                                              | Section Dés       |
 | Changement de brouillard                    | oui           | oui, avec la **nouvelle liste `tiles`** (empreintes de masque) et le nouvel état `fog`                               | Section Cartes    |
 | Changement de pions, de PV ou d'initiative  | oui, vue `gm` | oui, vue `party` : créatures cachées absentes, `healthState` au lieu des PV, dernier état vu hors du champ de vision | Section Cartes    |
+| Gabarit de zone posé, déplacé ou retiré     | oui           | seulement les gabarits `public`, sans identifiant (`MapTemplateParty`)                                               | Section Cartes    |
 | Joueur retiré (`removeMember`)              | oui           | le serveur **ferme immédiatement le socket** du joueur retiré                                                        | Section Campagnes |
 | Rôle de MJ transféré (`transferGameMaster`) | oui           | l'ancien MJ quitte le canal MJ et rejoint le canal joueurs ; le nouveau MJ passe au canal MJ                         | Section Campagnes |
 
