@@ -46,23 +46,27 @@ Ce qui est déjà décidé dans les sections du contrat :
 
 ### Événements déjà définis
 
-| Événement                                   | Canal MJ                  | Canal joueurs                                                                                                        | Source            |
-| ------------------------------------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------- | ----------------- |
-| `roll.created`, jet `public`                | oui                       | oui                                                                                                                  | Section Dés       |
-| `roll.created`, jet `private`               | oui                       | **au lanceur seulement**                                                                                             | Section Dés       |
-| `roll.created`, jet `hidden`                | oui                       | **non**                                                                                                              | Section Dés       |
-| Changement de brouillard                    | oui                       | oui, avec la **nouvelle liste `tiles`** (empreintes de masque) et le nouvel état `fog`                               | Section Cartes    |
-| Changement de pions, de PV ou d'initiative  | oui, vue `gm`             | oui, vue `party` : créatures cachées absentes, `healthState` au lieu des PV, dernier état vu hors du champ de vision | Section Cartes    |
-| Gabarit de zone posé, déplacé ou retiré     | oui                       | seulement les gabarits `public`, sans identifiant (`MapTemplateParty`)                                               | Section Cartes    |
-| Action proposée (`proposeAction`)           | oui, `ActionResolutionGm` | **au joueur qui l'a proposée seulement**, `ActionPendingParty` (« En attente du MJ », sans jets ni cibles)           | Section Combat    |
-| Action corrigée (`updatePendingAction`)     | oui                       | non                                                                                                                  | Section Combat    |
-| Action annulée avant application            | oui                       | au joueur qui l'a proposée seulement : `status: cancelled`                                                           | Section Combat    |
-| Action appliquée ou défaite                 | oui, `ActionResolutionGm` | oui, `ActionResolutionParty` : cibles visibles, jet de dégâts commun, jamais la CA, le DD ni les PV d'une créature   | Section Combat    |
-| Tour suivant, début et fin de combat        | oui                       | oui, par la scène (`ScenePartyView`) ; rien pendant le tour d'une créature cachée hormis `currentTurn: null`         | Section Combat    |
-| Effet ajouté ou retiré                      | oui, `ActiveEffect`       | oui, son nom seulement (`VisibleEffect`), jamais un effet `hiddenFromPlayers`                                        | Section Combat    |
-| Nouvelle entrée du journal                  | oui, `JournalEntryGm`     | oui, `JournalEntryParty` ; jamais `actionCancelled` ni `manualCorrection`                                            | Section Combat    |
-| Joueur retiré (`removeMember`)              | oui                       | le serveur **ferme immédiatement le socket** du joueur retiré                                                        | Section Campagnes |
-| Rôle de MJ transféré (`transferGameMaster`) | oui                       | l'ancien MJ quitte le canal MJ et rejoint le canal joueurs ; le nouveau MJ passe au canal MJ                         | Section Campagnes |
+| Événement                                   | Canal MJ                  | Canal joueurs                                                                                                        | Source                      |
+| ------------------------------------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------- | --------------------------- |
+| `roll.created`, jet `public`                | oui                       | oui                                                                                                                  | Section Dés                 |
+| `roll.created`, jet `private`               | oui                       | **au lanceur seulement**                                                                                             | Section Dés                 |
+| `roll.created`, jet `hidden`                | oui                       | **non**                                                                                                              | Section Dés                 |
+| Changement de brouillard                    | oui                       | oui, avec la **nouvelle liste `tiles`** (empreintes de masque) et le nouvel état `fog`                               | Section Cartes              |
+| Changement de pions, de PV ou d'initiative  | oui, vue `gm`             | oui, vue `party` : créatures cachées absentes, `healthState` au lieu des PV, dernier état vu hors du champ de vision | Section Cartes              |
+| Gabarit de zone posé, déplacé ou retiré     | oui                       | seulement les gabarits `public`, sans identifiant (`MapTemplateParty`)                                               | Section Cartes              |
+| Action proposée (`proposeAction`)           | oui, `ActionResolutionGm` | **au joueur qui l'a proposée seulement**, `ActionPendingParty` (« En attente du MJ », sans jets ni cibles)           | Section Combat              |
+| Action corrigée (`updatePendingAction`)     | oui                       | non                                                                                                                  | Section Combat              |
+| Action annulée avant application            | oui                       | au joueur qui l'a proposée seulement : `status: cancelled`                                                           | Section Combat              |
+| Action appliquée ou défaite                 | oui, `ActionResolutionGm` | oui, `ActionResolutionParty` : cibles visibles, jet de dégâts commun, jamais la CA, le DD ni les PV d'une créature   | Section Combat              |
+| Tour suivant, début et fin de combat        | oui                       | oui, par la scène (`ScenePartyView`) ; rien pendant le tour d'une créature cachée hormis `currentTurn: null`         | Section Combat              |
+| Effet ajouté ou retiré                      | oui, `ActiveEffect`       | oui, son nom seulement (`VisibleEffect`), jamais un effet `hiddenFromPlayers`                                        | Section Combat              |
+| Nouvelle entrée du journal                  | oui, `JournalEntryGm`     | oui, `JournalEntryParty` ; jamais `actionCancelled` ni `manualCorrection`                                            | Section Combat              |
+| Document révélé (`document.revealed`)       | oui                       | oui, `DocumentParty` sans `gmNotes`, **seulement au moment de la révélation**                                        | Section Gestion de campagne |
+| Document recaché ou supprimé                | oui                       | oui : le document disparaît de la liste et de l'affichage                                                            | Section Gestion de campagne |
+| Document affiché sur la vue joueurs         | oui                       | oui, `ScenePartyView.document`                                                                                       | Section Gestion de campagne |
+| Notes, PNJ, lieux et quêtes                 | oui                       | **jamais**                                                                                                           | Section Gestion de campagne |
+| Joueur retiré (`removeMember`)              | oui                       | le serveur **ferme immédiatement le socket** du joueur retiré                                                        | Section Campagnes           |
+| Rôle de MJ transféré (`transferGameMaster`) | oui                       | l'ancien MJ quitte le canal MJ et rejoint le canal joueurs ; le nouveau MJ passe au canal MJ                         | Section Campagnes           |
 
 ### Accessibilité
 
