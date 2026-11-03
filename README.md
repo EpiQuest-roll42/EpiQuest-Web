@@ -169,14 +169,14 @@ Les issues marquées `good first issue` sont un bon point de départ.
 
 ## Documentation
 
-| Document                                                                   | Contenu                                                                                                                                                                                                     |
-| -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`docs/ADR/`](docs/ADR/)                                                   | Journal des décisions d'architecture                                                                                                                                                                        |
-| [`docs/charte-graphique.pdf`](docs/charte-graphique.pdf)                   | Mini charte graphique (2 pages) : logo, palettes claire et « table de jeu », typographies, couples de contraste autorisés, composants                                                                       |
-| `docs/utilisateur/`                                                        | Guides du MJ et du joueur, aide-mémoire des dés, FAQ (_à venir_)                                                                                                                                            |
-| [`docs/technique/`](docs/technique/)                                       | Documentation technique : [notation des dés](docs/technique/notation-des-des.md) (grammaire, limites, erreurs, probabilités) ; architecture, modèle de données, synchronisation et exploitation (_à venir_) |
-| [`packages/api-contract/openapi.yaml`](packages/api-contract/openapi.yaml) | Contrat de l'API, écrit avant le code ; il fait foi en cas d'écart avec l'implémentation                                                                                                                    |
-| Swagger                                                                    | Documentation de l'API, servie par l'API sur `/api/docs`                                                                                                                                                    |
+| Document                                                                   | Contenu                                                                                                                                                                                                                                                                                                        |
+| -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`docs/ADR/`](docs/ADR/)                                                   | Journal des décisions d'architecture                                                                                                                                                                                                                                                                           |
+| [`docs/charte-graphique.pdf`](docs/charte-graphique.pdf)                   | Mini charte graphique (2 pages) : logo, palettes claire et « table de jeu », typographies, couples de contraste autorisés, composants                                                                                                                                                                          |
+| `docs/utilisateur/`                                                        | Guides du MJ et du joueur, aide-mémoire des dés, FAQ (_à venir_)                                                                                                                                                                                                                                               |
+| [`docs/technique/`](docs/technique/)                                       | Documentation technique : [notation des dés](docs/technique/notation-des-des.md) (grammaire, limites, erreurs, probabilités), [format des règles](docs/technique/format-des-regles.md) (actions, effets, vocabulaire du moteur) ; architecture, modèle de données, synchronisation et exploitation (_à venir_) |
+| [`packages/api-contract/openapi.yaml`](packages/api-contract/openapi.yaml) | Contrat de l'API, écrit avant le code ; il fait foi en cas d'écart avec l'implémentation                                                                                                                                                                                                                       |
+| Swagger                                                                    | Documentation de l'API, servie par l'API sur `/api/docs`                                                                                                                                                                                                                                                       |
 
 ## Accessibilité
 
@@ -205,8 +205,10 @@ Les règles suivies par l'assistant (conseil et relecture uniquement, pas de cod
 
 ## Licence et attribution
 
-Le code, la documentation et les visuels originaux de ce dépôt sont publiés **tous droits réservés** pour consultation dans le cadre d'un projet pédagogique : voir [`LICENSE`](LICENSE). Le contenu issu du SRD 5.1 reste sous licence CC BY 4.0, et les dépendances sous leurs propres licences.
+Le code, la documentation et les visuels originaux de ce dépôt sont publiés **tous droits réservés** pour consultation dans le cadre d'un projet pédagogique : voir [`LICENSE`](LICENSE). Le contenu issu du SRD 5.1 reste sous licence CC BY 4.0, et les dépendances sous leurs propres licences. Les mentions des ressources tierces (données de 5e-bits sous licence MIT, icônes Lucide) sont dans [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 
 Lanterne est un produit indépendant, compatible 5e édition. Il n'est ni affilié à Wizards of the Coast ni approuvé par cette société.
 
 This work includes material taken from the System Reference Document 5.1 ("SRD 5.1") by Wizards of the Coast LLC and available at https://dnd.wizards.com/resources/systems-reference-document. The SRD 5.1 is licensed under the Creative Commons Attribution 4.0 International License available at https://creativecommons.org/licenses/by/4.0/legalcode.
+
+Modifié : converti en format structuré, unités converties au système métrique (voir l'[ADR 0009](docs/ADR/0009-unites-srd.md)).

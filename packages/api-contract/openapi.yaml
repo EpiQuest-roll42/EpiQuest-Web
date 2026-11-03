@@ -33,6 +33,8 @@ tags:
     description: 'Jets de dés lancés par le serveur, historique filtré selon le lecteur, probabilités (docs/technique/notation-des-des.md).'
   - name: Cartes
     description: 'Cartes, brouillard, pions, scène et vue joueurs (projection par spectateur).'
+  - name: Données SRD
+    description: 'Contenu du SRD 5.1 (CC BY 4.0), en lecture seule, au format de règles interprété par le moteur (docs/technique/format-des-regles.md).'
 paths:
   /auth/register:
     post:
@@ -2058,6 +2060,581 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /srd/species:
+    get:
+      tags:
+        - Données SRD
+      operationId: listSpecies
+      summary: 'Lister les espèces.'
+      description: >-
+        Lecture seule, pour toute personne connectée ; le jeton d'affichage n'y a pas accès. Résumés
+        paginés ; le détail est sur la route de l'élément. Cache : ETag
+        "<importVersion>-<empreinte des filtres et du curseur>", 304 si rien n'a changé.
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/IfNoneMatch'
+      responses:
+        '200':
+          description: 'Page de résumés.'
+          headers:
+            ETag:
+              $ref: '#/components/headers/SrdETag'
+            Cache-Control:
+              $ref: '#/components/headers/SrdCacheControl'
+            Link:
+              $ref: '#/components/headers/SrdLicenseLink'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpeciesSummaryPage'
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /srd/species/{ruleId}:
+    parameters:
+      - $ref: '#/components/parameters/SrdId'
+    get:
+      tags:
+        - Données SRD
+      operationId: getSpecies
+      summary: 'Lire une espèce.'
+      parameters:
+        - $ref: '#/components/parameters/IfNoneMatch'
+      responses:
+        '200':
+          description: "L'élément complet, au format de règles interprété par le moteur."
+          headers:
+            ETag:
+              $ref: '#/components/headers/SrdETag'
+            Cache-Control:
+              $ref: '#/components/headers/SrdCacheControl'
+            Link:
+              $ref: '#/components/headers/SrdLicenseLink'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Species'
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /srd/classes:
+    get:
+      tags:
+        - Données SRD
+      operationId: listClasses
+      summary: 'Lister les classes.'
+      description: >-
+        Lecture seule, pour toute personne connectée ; le jeton d'affichage n'y a pas accès. Résumés
+        paginés ; le détail est sur la route de l'élément. Cache : ETag
+        "<importVersion>-<empreinte des filtres et du curseur>", 304 si rien n'a changé.
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/IfNoneMatch'
+      responses:
+        '200':
+          description: 'Page de résumés.'
+          headers:
+            ETag:
+              $ref: '#/components/headers/SrdETag'
+            Cache-Control:
+              $ref: '#/components/headers/SrdCacheControl'
+            Link:
+              $ref: '#/components/headers/SrdLicenseLink'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassSummaryPage'
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /srd/classes/{ruleId}:
+    parameters:
+      - $ref: '#/components/parameters/SrdId'
+    get:
+      tags:
+        - Données SRD
+      operationId: getClass
+      summary: 'Lire une classe.'
+      parameters:
+        - $ref: '#/components/parameters/IfNoneMatch'
+      responses:
+        '200':
+          description: "L'élément complet, au format de règles interprété par le moteur."
+          headers:
+            ETag:
+              $ref: '#/components/headers/SrdETag'
+            Cache-Control:
+              $ref: '#/components/headers/SrdCacheControl'
+            Link:
+              $ref: '#/components/headers/SrdLicenseLink'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Class'
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /srd/backgrounds:
+    get:
+      tags:
+        - Données SRD
+      operationId: listBackgrounds
+      summary: 'Lister les historiques.'
+      description: >-
+        Lecture seule, pour toute personne connectée ; le jeton d'affichage n'y a pas accès. Résumés
+        paginés ; le détail est sur la route de l'élément. Cache : ETag
+        "<importVersion>-<empreinte des filtres et du curseur>", 304 si rien n'a changé.
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/IfNoneMatch'
+      responses:
+        '200':
+          description: 'Page de résumés.'
+          headers:
+            ETag:
+              $ref: '#/components/headers/SrdETag'
+            Cache-Control:
+              $ref: '#/components/headers/SrdCacheControl'
+            Link:
+              $ref: '#/components/headers/SrdLicenseLink'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuleRefPage'
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /srd/backgrounds/{ruleId}:
+    parameters:
+      - $ref: '#/components/parameters/SrdId'
+    get:
+      tags:
+        - Données SRD
+      operationId: getBackground
+      summary: 'Lire un historique.'
+      parameters:
+        - $ref: '#/components/parameters/IfNoneMatch'
+      responses:
+        '200':
+          description: "L'élément complet, au format de règles interprété par le moteur."
+          headers:
+            ETag:
+              $ref: '#/components/headers/SrdETag'
+            Cache-Control:
+              $ref: '#/components/headers/SrdCacheControl'
+            Link:
+              $ref: '#/components/headers/SrdLicenseLink'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Background'
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /srd/spells:
+    get:
+      tags:
+        - Données SRD
+      operationId: listSpells
+      summary: 'Lister les sorts.'
+      description: >-
+        Lecture seule, pour toute personne connectée ; le jeton d'affichage n'y a pas accès. Résumés
+        paginés ; le détail est sur la route de l'élément. Cache : ETag
+        "<importVersion>-<empreinte des filtres et du curseur>", 304 si rien n'a changé.
+      parameters:
+        - name: q
+          in: query
+          required: false
+          description: 'Recherche sur le nom.'
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 100
+        - name: level
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 9
+        - name: school
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/RuleId'
+        - name: classId
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/RuleId'
+        - name: concentration
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: ritual
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/IfNoneMatch'
+      responses:
+        '200':
+          description: 'Page de résumés.'
+          headers:
+            ETag:
+              $ref: '#/components/headers/SrdETag'
+            Cache-Control:
+              $ref: '#/components/headers/SrdCacheControl'
+            Link:
+              $ref: '#/components/headers/SrdLicenseLink'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpellSummaryPage'
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /srd/spells/{ruleId}:
+    parameters:
+      - $ref: '#/components/parameters/SrdId'
+    get:
+      tags:
+        - Données SRD
+      operationId: getSpell
+      summary: 'Lire un sort.'
+      parameters:
+        - $ref: '#/components/parameters/IfNoneMatch'
+      responses:
+        '200':
+          description: "L'élément complet, au format de règles interprété par le moteur."
+          headers:
+            ETag:
+              $ref: '#/components/headers/SrdETag'
+            Cache-Control:
+              $ref: '#/components/headers/SrdCacheControl'
+            Link:
+              $ref: '#/components/headers/SrdLicenseLink'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Spell'
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /srd/items:
+    get:
+      tags:
+        - Données SRD
+      operationId: listItems
+      summary: 'Lister les objets et équipements.'
+      description: >-
+        Lecture seule, pour toute personne connectée ; le jeton d'affichage n'y a pas accès. Résumés
+        paginés ; le détail est sur la route de l'élément. Cache : ETag
+        "<importVersion>-<empreinte des filtres et du curseur>", 304 si rien n'a changé.
+      parameters:
+        - name: q
+          in: query
+          required: false
+          description: 'Recherche sur le nom.'
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 100
+        - name: category
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/ItemCategory'
+        - name: rarity
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Rarity'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/IfNoneMatch'
+      responses:
+        '200':
+          description: 'Page de résumés.'
+          headers:
+            ETag:
+              $ref: '#/components/headers/SrdETag'
+            Cache-Control:
+              $ref: '#/components/headers/SrdCacheControl'
+            Link:
+              $ref: '#/components/headers/SrdLicenseLink'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemSummaryPage'
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /srd/items/{ruleId}:
+    parameters:
+      - $ref: '#/components/parameters/SrdId'
+    get:
+      tags:
+        - Données SRD
+      operationId: getItem
+      summary: 'Lire un objet.'
+      parameters:
+        - $ref: '#/components/parameters/IfNoneMatch'
+      responses:
+        '200':
+          description: "L'élément complet, au format de règles interprété par le moteur."
+          headers:
+            ETag:
+              $ref: '#/components/headers/SrdETag'
+            Cache-Control:
+              $ref: '#/components/headers/SrdCacheControl'
+            Link:
+              $ref: '#/components/headers/SrdLicenseLink'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /srd/conditions:
+    get:
+      tags:
+        - Données SRD
+      operationId: listConditions
+      summary: 'Lister les états.'
+      description: >-
+        Lecture seule, pour toute personne connectée ; le jeton d'affichage n'y a pas accès. Résumés
+        paginés ; le détail est sur la route de l'élément. Cache : ETag
+        "<importVersion>-<empreinte des filtres et du curseur>", 304 si rien n'a changé.
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/IfNoneMatch'
+      responses:
+        '200':
+          description: 'Page de résumés.'
+          headers:
+            ETag:
+              $ref: '#/components/headers/SrdETag'
+            Cache-Control:
+              $ref: '#/components/headers/SrdCacheControl'
+            Link:
+              $ref: '#/components/headers/SrdLicenseLink'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuleRefPage'
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /srd/conditions/{ruleId}:
+    parameters:
+      - $ref: '#/components/parameters/SrdId'
+    get:
+      tags:
+        - Données SRD
+      operationId: getCondition
+      summary: 'Lire un état.'
+      parameters:
+        - $ref: '#/components/parameters/IfNoneMatch'
+      responses:
+        '200':
+          description: "L'élément complet, au format de règles interprété par le moteur."
+          headers:
+            ETag:
+              $ref: '#/components/headers/SrdETag'
+            Cache-Control:
+              $ref: '#/components/headers/SrdCacheControl'
+            Link:
+              $ref: '#/components/headers/SrdLicenseLink'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Condition'
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /srd/monsters:
+    get:
+      tags:
+        - Données SRD
+      operationId: listMonsters
+      summary: 'Lister les monstres du bestiaire.'
+      description: >-
+        Lecture seule, pour toute personne connectée ; le jeton d'affichage n'y a pas accès. Résumés
+        paginés ; le détail est sur la route de l'élément. Cache : ETag
+        "<importVersion>-<empreinte des filtres et du curseur>", 304 si rien n'a changé.
+      parameters:
+        - name: q
+          in: query
+          required: false
+          description: 'Recherche sur le nom.'
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 100
+        - name: type
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/RuleId'
+        - name: size
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Size'
+        - name: crMin
+          in: query
+          required: false
+          schema:
+            type: number
+            minimum: 0
+            maximum: 30
+        - name: crMax
+          in: query
+          required: false
+          schema:
+            type: number
+            minimum: 0
+            maximum: 30
+        - name: sort
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - name
+              - cr
+            default: name
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/IfNoneMatch'
+      responses:
+        '200':
+          description: 'Page de résumés.'
+          headers:
+            ETag:
+              $ref: '#/components/headers/SrdETag'
+            Cache-Control:
+              $ref: '#/components/headers/SrdCacheControl'
+            Link:
+              $ref: '#/components/headers/SrdLicenseLink'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MonsterSummaryPage'
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /srd/monsters/{ruleId}:
+    parameters:
+      - $ref: '#/components/parameters/SrdId'
+    get:
+      tags:
+        - Données SRD
+      operationId: getMonster
+      summary: "Lire le bloc de statistiques d'un monstre."
+      parameters:
+        - $ref: '#/components/parameters/IfNoneMatch'
+      responses:
+        '200':
+          description: "L'élément complet, au format de règles interprété par le moteur."
+          headers:
+            ETag:
+              $ref: '#/components/headers/SrdETag'
+            Cache-Control:
+              $ref: '#/components/headers/SrdCacheControl'
+            Link:
+              $ref: '#/components/headers/SrdLicenseLink'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Monster'
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /srd/attribution:
+    get:
+      tags:
+        - Données SRD
+      operationId: getSrdAttribution
+      security: []
+      summary: "Lire la mention d'attribution du SRD 5.1 et des données importées."
+      description: >-
+        Publique, pour que la page de crédits soit lisible avant la connexion. Source unique de la page
+        de crédits du web et du mobile (CC BY 4.0, ADR 0005 et 0009).
+      responses:
+        '200':
+          description: "Mention d'attribution."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SrdAttribution'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
 components:
   securitySchemes:
     bearerAuth:
@@ -2085,6 +2662,20 @@ components:
         doit l'autoriser dans Access-Control-Allow-Headers.
 
   headers:
+    SrdETag:
+      description: 'Version des données : <importVersion>-<id> pour un élément, <importVersion>-<empreinte des filtres et du curseur> pour une liste.'
+      schema:
+        type: string
+    SrdCacheControl:
+      description: "Les données ne changent qu'à un nouvel import."
+      schema:
+        type: string
+        enum:
+          - private, max-age=3600
+    SrdLicenseLink:
+      description: 'Lien vers la mention d''attribution : </api/v1/srd/attribution>; rel="license".'
+      schema:
+        type: string
     GeometryETag:
       description: 'Version de la géométrie de la carte (geometryVersion), à renvoyer dans If-Match.'
       schema:
@@ -2092,6 +2683,11 @@ components:
         example: '"12"'
 
   responses:
+    NotModified:
+      description: "Rien n'a changé depuis l'ETag indiqué dans If-None-Match : le client garde sa copie."
+      headers:
+        ETag:
+          $ref: '#/components/headers/SrdETag'
     BadRequest:
       description: 'Requête invalide ou données de validation incorrectes.'
       content:
@@ -2252,6 +2848,20 @@ components:
       required: true
       schema:
         $ref: '#/components/schemas/Id'
+    SrdId:
+      name: ruleId
+      in: path
+      required: true
+      description: 'Identifiant SRD, unique pour un type donné : le chemin indique le type.'
+      schema:
+        $ref: '#/components/schemas/RuleId'
+    IfNoneMatch:
+      name: If-None-Match
+      in: header
+      required: false
+      description: "ETag de la copie du client ; réponse 304 si rien n'a changé."
+      schema:
+        type: string
     Cursor:
       name: cursor
       in: query
@@ -3615,18 +4225,54 @@ components:
           example: 'chain-mail'
         grants:
           type: array
-          description: 'Ce que donne cette option : une compétence, ou un lot (une armure, un arc long et 20 flèches).'
+          description: 'Ce que donne cette option : une compétence, un lot (une armure, un arc long et 20 flèches), ou un bonus de caractéristique (demi-elfe : +1 dans deux caractéristiques au choix).'
           items:
-            type: object
-            required:
-              - ref
-              - quantity
-            properties:
-              ref:
-                $ref: '#/components/schemas/RuleRef'
-              quantity:
-                type: integer
-                minimum: 1
+            $ref: '#/components/schemas/ChoiceGrant'
+
+    ChoiceGrant:
+      oneOf:
+        - $ref: '#/components/schemas/RefGrant'
+        - $ref: '#/components/schemas/AbilityBonusGrant'
+      discriminator:
+        propertyName: kind
+        mapping:
+          ref: '#/components/schemas/RefGrant'
+          abilityBonus: '#/components/schemas/AbilityBonusGrant'
+
+    RefGrant:
+      type: object
+      required:
+        - kind
+        - ref
+        - quantity
+      properties:
+        kind:
+          type: string
+          enum:
+            - ref
+        ref:
+          $ref: '#/components/schemas/RuleRef'
+        quantity:
+          type: integer
+          minimum: 1
+
+    AbilityBonusGrant:
+      type: object
+      required:
+        - kind
+        - ability
+        - value
+      properties:
+        kind:
+          type: string
+          enum:
+            - abilityBonus
+        ability:
+          $ref: '#/components/schemas/AbilityCode'
+        value:
+          type: integer
+          minimum: 1
+          maximum: 2
 
     ChoiceGroup:
       type: object
@@ -5669,3 +6315,2349 @@ components:
           nullable: true
           allOf:
             - $ref: '#/components/schemas/Id'
+
+    # --- DONNÉES SRD : VALEURS DE BASE ---
+    Formula:
+      type: string
+      minLength: 1
+      maxLength: 100
+      description: >-
+        Expression de la grammaire des dés (docs/technique/notation-des-des.md) qui accepte en plus des
+        variables préfixées par @ : @str, @dex, @con, @int, @wis, @cha (modificateurs), @prof, @level,
+        @spellMod, @spellAttack, @spellDc, @slotLevel. Les variables ne sont acceptées que dans les données
+        de règles, jamais dans un jet libre ; une variable inconnue fait échouer l'import. Format complet :
+        docs/technique/format-des-regles.md.
+      example: '@spellDc'
+
+    Quantity:
+      description: 'Une formule simple, une formule avec un minimum (inspiration bardique : @cha, minimum 1), ou une table par niveau (imposition des mains : 5, 10, 15…).'
+      oneOf:
+        - $ref: '#/components/schemas/Formula'
+        - type: object
+          title: FormulaWithMinimum
+          required:
+            - formula
+            - minimum
+          properties:
+            formula:
+              $ref: '#/components/schemas/Formula'
+            minimum:
+              type: integer
+        - type: object
+          title: QuantityByLevel
+          required:
+            - byLevel
+          properties:
+            byLevel:
+              type: array
+              items:
+                type: object
+                required:
+                  - level
+                  - value
+                properties:
+                  level:
+                    type: integer
+                    minimum: 1
+                    maximum: 20
+                  value:
+                    type: integer
+
+    Automation:
+      type: string
+      enum:
+        - full
+        - partial
+        - manual
+      description: 'full : le moteur résout tout ; partial : il résout ce qui est décrit, le MJ complète ; manual : texte seulement.'
+
+    SrdDescription:
+      type: array
+      description: 'Texte du SRD découpé en paragraphes. Texte brut : jamais interprété comme du HTML ou du Markdown.'
+      items:
+        type: string
+        maxLength: 10000
+
+    Size:
+      type: string
+      enum:
+        - tiny
+        - small
+        - medium
+        - large
+        - huge
+        - gargantuan
+
+    RestPeriod:
+      type: string
+      enum:
+        - shortRest
+        - longRest
+        - dawn
+
+    Uses:
+      type: object
+      description: "Réserve d'utilisations : count, récupérée à chaque per ; regain absent = tout est récupéré."
+      required:
+        - count
+        - per
+      properties:
+        count:
+          $ref: '#/components/schemas/Quantity'
+        per:
+          $ref: '#/components/schemas/RestPeriod'
+        regain:
+          $ref: '#/components/schemas/Formula'
+
+    DamageAdjustment:
+      type: object
+      required:
+        - damageType
+        - except
+      properties:
+        damageType:
+          $ref: '#/components/schemas/RuleId'
+        except:
+          type: array
+          description: "Attaques non concernées ; vide si rien n'est exclu, jamais null."
+          items:
+            type: string
+            enum:
+              - magical
+              - silvered
+              - adamantine
+
+    # --- DONNÉES SRD : ACTION ---
+    Action:
+      type: object
+      description: >-
+        Forme unique des sorts, attaques de monstres et capacités, interprétée par le moteur de règles. Les
+        attaques d'armes des personnages ne sont pas stockées comme Action : le moteur les déduit de l'arme.
+      required:
+        - key
+        - name
+        - activation
+        - cost
+        - range
+        - targeting
+        - resolution
+        - duration
+        - automation
+      properties:
+        key:
+          type: string
+          pattern: '^[a-z0-9]+(-[a-z0-9]+)*$'
+          maxLength: 64
+          description: 'Unique dans son parent.'
+        name:
+          type: string
+          maxLength: 120
+        activation:
+          $ref: '#/components/schemas/Activation'
+        cost:
+          type: array
+          items:
+            $ref: '#/components/schemas/Cost'
+        range:
+          $ref: '#/components/schemas/Range'
+        targeting:
+          $ref: '#/components/schemas/Targeting'
+        resolution:
+          $ref: '#/components/schemas/Resolution'
+        duration:
+          $ref: '#/components/schemas/Duration'
+        scaling:
+          type: object
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/Scaling'
+        automation:
+          $ref: '#/components/schemas/Automation'
+      example:
+        key: cast
+        name: Boule de feu
+        activation:
+          type: action
+        cost:
+          - resource: spellSlot
+            level: 3
+        range:
+          type: distance
+          meters: 45
+        targeting:
+          type: zone
+          shape: sphere
+          sizeMeters: 6
+          origin: point
+        resolution:
+          type: save
+          ability: dex
+          dc: '@spellDc'
+          onFailedSave:
+            - key: fire
+              type: damage
+              dice: 8d6
+              damageType: fire
+          onSuccessfulSave:
+            - type: halfDamage
+        duration:
+          type: instantaneous
+          concentration: false
+        scaling:
+          type: perSlotLevel
+          aboveLevel: 3
+          effectKey: fire
+          addDice: 1d6
+        automation: full
+
+    Activation:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - action
+            - bonusAction
+            - reaction
+            - minute
+            - hour
+            - special
+        amount:
+          type: integer
+          minimum: 1
+          description: "Nombre de minutes ou d'heures."
+        trigger:
+          type: string
+          nullable: true
+          description: "Déclencheur d'une réaction, en texte."
+
+    Cost:
+      oneOf:
+        - $ref: '#/components/schemas/SpellSlotCost'
+        - $ref: '#/components/schemas/UsesCost'
+        - $ref: '#/components/schemas/ChargesCost'
+        - $ref: '#/components/schemas/RechargeCost'
+        - $ref: '#/components/schemas/LegendaryCost'
+      discriminator:
+        propertyName: resource
+        mapping:
+          spellSlot: '#/components/schemas/SpellSlotCost'
+          uses: '#/components/schemas/UsesCost'
+          charges: '#/components/schemas/ChargesCost'
+          recharge: '#/components/schemas/RechargeCost'
+          legendary: '#/components/schemas/LegendaryCost'
+
+    SpellSlotCost:
+      type: object
+      required:
+        - resource
+        - level
+      properties:
+        resource:
+          type: string
+          enum:
+            - spellSlot
+        level:
+          type: integer
+          minimum: 1
+          maximum: 9
+
+    UsesCost:
+      allOf:
+        - type: object
+          required:
+            - resource
+          properties:
+            resource:
+              type: string
+              enum:
+                - uses
+        - $ref: '#/components/schemas/Uses'
+
+    ChargesCost:
+      type: object
+      description: >-
+        Consomme de min à max charges de l'objet magique qui porte l'action (Item.charges). Baguette de
+        boules de feu : min 1, max 3, avec un Scaling perExtraCharge pour les charges en plus.
+      required:
+        - resource
+        - min
+        - max
+      properties:
+        resource:
+          type: string
+          enum:
+            - charges
+        min:
+          type: integer
+          minimum: 1
+        max:
+          type: integer
+          minimum: 1
+
+    RechargeCost:
+      type: object
+      description: 'Recharge 5–6 : min 5.'
+      required:
+        - resource
+        - min
+      properties:
+        resource:
+          type: string
+          enum:
+            - recharge
+        min:
+          type: integer
+          minimum: 2
+          maximum: 6
+
+    LegendaryCost:
+      type: object
+      required:
+        - resource
+        - points
+      properties:
+        resource:
+          type: string
+          enum:
+            - legendary
+        points:
+          type: integer
+          minimum: 1
+
+    Range:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - self
+            - touch
+            - distance
+            - sight
+            - unlimited
+        meters:
+          type: number
+          minimum: 0
+          description: 'Portée normale.'
+        longMeters:
+          type: number
+          minimum: 0
+          description: 'Longue portée (armes de jet et à distance).'
+        reachMeters:
+          type: number
+          minimum: 0
+          description: 'Allonge (attaques au corps à corps).'
+
+    Targeting:
+      oneOf:
+        - $ref: '#/components/schemas/SelfTargeting'
+        - $ref: '#/components/schemas/CreaturesTargeting'
+        - $ref: '#/components/schemas/ZoneTargeting'
+      discriminator:
+        propertyName: type
+        mapping:
+          self: '#/components/schemas/SelfTargeting'
+          creatures: '#/components/schemas/CreaturesTargeting'
+          zone: '#/components/schemas/ZoneTargeting'
+
+    SelfTargeting:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - self
+
+    CreaturesTargeting:
+      type: object
+      required:
+        - type
+        - count
+      properties:
+        type:
+          type: string
+          enum:
+            - creatures
+        count:
+          $ref: '#/components/schemas/Quantity'
+        filter:
+          type: string
+          enum:
+            - any
+            - ally
+            - enemy
+          default: any
+
+    ZoneTargeting:
+      type: object
+      required:
+        - type
+        - shape
+        - sizeMeters
+        - origin
+      properties:
+        type:
+          type: string
+          enum:
+            - zone
+        shape:
+          type: string
+          enum:
+            - sphere
+            - cone
+            - line
+            - cube
+            - cylinder
+        sizeMeters:
+          type: number
+          minimum: 0
+          description: 'Rayon (sphère, cylindre), longueur (cône, ligne) ou côté (cube).'
+        widthMeters:
+          type: number
+          minimum: 0
+          description: 'Largeur de la ligne.'
+        heightMeters:
+          type: number
+          minimum: 0
+          description: 'Hauteur du cylindre.'
+        origin:
+          type: string
+          enum:
+            - self
+            - point
+
+    Resolution:
+      oneOf:
+        - $ref: '#/components/schemas/AttackResolution'
+        - $ref: '#/components/schemas/SaveResolution'
+        - $ref: '#/components/schemas/AutomaticResolution'
+      discriminator:
+        propertyName: type
+        mapping:
+          attack: '#/components/schemas/AttackResolution'
+          save: '#/components/schemas/SaveResolution'
+          automatic: '#/components/schemas/AutomaticResolution'
+
+    AttackResolution:
+      type: object
+      required:
+        - type
+        - kind
+        - bonus
+        - onHit
+        - onMiss
+      properties:
+        type:
+          type: string
+          enum:
+            - attack
+        kind:
+          type: string
+          enum:
+            - melee
+            - ranged
+            - meleeSpell
+            - rangedSpell
+        bonus:
+          $ref: '#/components/schemas/Formula'
+        onHit:
+          type: array
+          items:
+            $ref: '#/components/schemas/Effect'
+        onMiss:
+          type: array
+          items:
+            $ref: '#/components/schemas/Effect'
+
+    SaveResolution:
+      type: object
+      required:
+        - type
+        - ability
+        - dc
+        - onFailedSave
+        - onSuccessfulSave
+      properties:
+        type:
+          type: string
+          enum:
+            - save
+        ability:
+          $ref: '#/components/schemas/AbilityCode'
+        dc:
+          $ref: '#/components/schemas/Formula'
+        onFailedSave:
+          type: array
+          items:
+            $ref: '#/components/schemas/Effect'
+        onSuccessfulSave:
+          type: array
+          items:
+            $ref: '#/components/schemas/Effect'
+
+    AutomaticResolution:
+      type: object
+      required:
+        - type
+        - effects
+      properties:
+        type:
+          type: string
+          enum:
+            - automatic
+        effects:
+          type: array
+          items:
+            $ref: '#/components/schemas/Effect'
+
+    Duration:
+      type: object
+      required:
+        - type
+        - concentration
+      properties:
+        type:
+          type: string
+          enum:
+            - instantaneous
+            - rounds
+            - minutes
+            - hours
+            - days
+            - untilDispelled
+            - special
+        amount:
+          type: integer
+          minimum: 1
+        concentration:
+          type: boolean
+
+    Scaling:
+      oneOf:
+        - $ref: '#/components/schemas/PerSlotLevelScaling'
+        - $ref: '#/components/schemas/ByCharacterLevelScaling'
+        - $ref: '#/components/schemas/PerExtraChargeScaling'
+      discriminator:
+        propertyName: type
+        mapping:
+          perSlotLevel: '#/components/schemas/PerSlotLevelScaling'
+          byCharacterLevel: '#/components/schemas/ByCharacterLevelScaling'
+          perExtraCharge: '#/components/schemas/PerExtraChargeScaling'
+
+    PerExtraChargeScaling:
+      type: object
+      description: "Pour chaque charge dépensée au-delà de aboveCharges, l'effet effectKey reçoit addDice en plus."
+      required:
+        - type
+        - aboveCharges
+        - effectKey
+        - addDice
+      properties:
+        type:
+          type: string
+          enum:
+            - perExtraCharge
+        aboveCharges:
+          type: integer
+          minimum: 1
+        effectKey:
+          type: string
+          maxLength: 64
+        addDice:
+          $ref: '#/components/schemas/Formula'
+
+    PerSlotLevelScaling:
+      type: object
+      required:
+        - type
+        - aboveLevel
+        - effectKey
+        - addDice
+      properties:
+        type:
+          type: string
+          enum:
+            - perSlotLevel
+        aboveLevel:
+          type: integer
+          minimum: 0
+          maximum: 9
+        effectKey:
+          type: string
+          maxLength: 64
+        addDice:
+          $ref: '#/components/schemas/Formula'
+
+    ByCharacterLevelScaling:
+      type: object
+      description: 'Pour les sorts mineurs : les dés de effectKey changent aux niveaux indiqués.'
+      required:
+        - type
+        - effectKey
+        - steps
+      properties:
+        type:
+          type: string
+          enum:
+            - byCharacterLevel
+        effectKey:
+          type: string
+          maxLength: 64
+        steps:
+          type: array
+          items:
+            type: object
+            required:
+              - level
+              - dice
+            properties:
+              level:
+                type: integer
+                minimum: 1
+                maximum: 20
+              dice:
+                $ref: '#/components/schemas/Formula'
+
+    # --- DONNÉES SRD : EFFETS PONCTUELS ---
+    Effect:
+      description: "Effet ponctuel d'une action. Chaque effet peut porter une key, que Scaling.effectKey désigne."
+      oneOf:
+        - $ref: '#/components/schemas/DamageEffect'
+        - $ref: '#/components/schemas/HalfDamageEffect'
+        - $ref: '#/components/schemas/HealingEffect'
+        - $ref: '#/components/schemas/TemporaryHitPointsEffect'
+        - $ref: '#/components/schemas/ConditionEffect'
+        - $ref: '#/components/schemas/ModifierEffect'
+        - $ref: '#/components/schemas/RollModeEffect'
+      discriminator:
+        propertyName: type
+        mapping:
+          damage: '#/components/schemas/DamageEffect'
+          halfDamage: '#/components/schemas/HalfDamageEffect'
+          healing: '#/components/schemas/HealingEffect'
+          temporaryHitPoints: '#/components/schemas/TemporaryHitPointsEffect'
+          condition: '#/components/schemas/ConditionEffect'
+          modifier: '#/components/schemas/ModifierEffect'
+          rollMode: '#/components/schemas/RollModeEffect'
+
+    EffectKey:
+      type: string
+      pattern: '^[a-z0-9]+(-[a-z0-9]+)*$'
+      maxLength: 64
+
+    DamageEffect:
+      type: object
+      required:
+        - type
+        - dice
+        - damageType
+      properties:
+        key:
+          $ref: '#/components/schemas/EffectKey'
+        type:
+          type: string
+          enum:
+            - damage
+        dice:
+          $ref: '#/components/schemas/Formula'
+        damageType:
+          $ref: '#/components/schemas/RuleId'
+
+    HalfDamageEffect:
+      type: object
+      description: >-
+        Sur une sauvegarde réussie : chacun des effets damage de onFailedSave est divisé par deux, sur les
+        mêmes jets, arrondi à l'unité inférieure. Les types de dégâts restent séparés (résistances).
+      required:
+        - type
+      properties:
+        key:
+          $ref: '#/components/schemas/EffectKey'
+        type:
+          type: string
+          enum:
+            - halfDamage
+
+    HealingEffect:
+      type: object
+      required:
+        - type
+        - dice
+      properties:
+        key:
+          $ref: '#/components/schemas/EffectKey'
+        type:
+          type: string
+          enum:
+            - healing
+        dice:
+          $ref: '#/components/schemas/Formula'
+
+    TemporaryHitPointsEffect:
+      type: object
+      required:
+        - type
+        - dice
+      properties:
+        key:
+          $ref: '#/components/schemas/EffectKey'
+        type:
+          type: string
+          enum:
+            - temporaryHitPoints
+        dice:
+          $ref: '#/components/schemas/Formula'
+
+    ConditionEffect:
+      type: object
+      required:
+        - type
+        - condition
+        - duration
+      properties:
+        key:
+          $ref: '#/components/schemas/EffectKey'
+        type:
+          type: string
+          enum:
+            - condition
+        condition:
+          $ref: '#/components/schemas/RuleId'
+        duration:
+          $ref: '#/components/schemas/Duration'
+        repeatSave:
+          type: object
+          nullable: true
+          required:
+            - ability
+            - dc
+            - timing
+          properties:
+            ability:
+              $ref: '#/components/schemas/AbilityCode'
+            dc:
+              $ref: '#/components/schemas/Formula'
+            timing:
+              type: string
+              enum:
+                - startOfTurn
+                - endOfTurn
+
+    ModifierEffect:
+      type: object
+      description: "Bonus ou malus numérique, par exemple 1d4 aux jets d'attaque pour Bénédiction."
+      required:
+        - type
+        - target
+        - value
+        - duration
+      properties:
+        key:
+          $ref: '#/components/schemas/EffectKey'
+        type:
+          type: string
+          enum:
+            - modifier
+        target:
+          type: string
+          enum:
+            - armorClass
+            - attackRolls
+            - savingThrows
+            - abilityChecks
+            - speed
+            - damage
+        value:
+          $ref: '#/components/schemas/Formula'
+        duration:
+          $ref: '#/components/schemas/Duration'
+
+    RollModeEffect:
+      type: object
+      description: >-
+        Avantage ou désavantage, ponctuel (dans Effect, pour la durée de l'action) ou permanent (dans
+        PassiveEffect). ability limite l'effet à une caractéristique (Entravé : sauvegardes de DEX) ;
+        withinMeters et beyondMeters gèrent les cas liés à la distance (À terre : deux rollMode).
+      required:
+        - type
+        - target
+        - mode
+        - appliesTo
+      properties:
+        key:
+          $ref: '#/components/schemas/EffectKey'
+        type:
+          type: string
+          enum:
+            - rollMode
+        target:
+          type: string
+          enum:
+            - attackRolls
+            - abilityChecks
+            - savingThrows
+        mode:
+          type: string
+          enum:
+            - advantage
+            - disadvantage
+        appliesTo:
+          type: string
+          enum:
+            - self
+            - attackersAgainst
+        ability:
+          $ref: '#/components/schemas/AbilityCode'
+        withinMeters:
+          type: number
+          minimum: 0
+        beyondMeters:
+          type: number
+          minimum: 0
+
+    # --- DONNÉES SRD : EFFETS PASSIFS ---
+    PassiveEffect:
+      description: "Effet permanent d'une capacité, d'un état ou d'un objet magique."
+      oneOf:
+        - $ref: '#/components/schemas/ProficiencyEffect'
+        - $ref: '#/components/schemas/DamageAdjustmentEffect'
+        - $ref: '#/components/schemas/ConditionImmunityEffect'
+        - $ref: '#/components/schemas/SenseEffect'
+        - $ref: '#/components/schemas/ArmorClassFormulaEffect'
+        - $ref: '#/components/schemas/SpeedEffect'
+        - $ref: '#/components/schemas/HitPointMaximumEffect'
+        - $ref: '#/components/schemas/AbilityScoreEffect'
+        - $ref: '#/components/schemas/RollModeEffect'
+        - $ref: '#/components/schemas/AutoFailEffect'
+        - $ref: '#/components/schemas/AutoCriticalEffect'
+        - $ref: '#/components/schemas/CannotActEffect'
+      discriminator:
+        propertyName: type
+        mapping:
+          proficiency: '#/components/schemas/ProficiencyEffect'
+          damageAdjustment: '#/components/schemas/DamageAdjustmentEffect'
+          conditionImmunity: '#/components/schemas/ConditionImmunityEffect'
+          sense: '#/components/schemas/SenseEffect'
+          armorClassFormula: '#/components/schemas/ArmorClassFormulaEffect'
+          speed: '#/components/schemas/SpeedEffect'
+          hitPointMaximum: '#/components/schemas/HitPointMaximumEffect'
+          abilityScore: '#/components/schemas/AbilityScoreEffect'
+          rollMode: '#/components/schemas/RollModeEffect'
+          autoFail: '#/components/schemas/AutoFailEffect'
+          autoCritical: '#/components/schemas/AutoCriticalEffect'
+          cannotAct: '#/components/schemas/CannotActEffect'
+
+    ProficiencyEffect:
+      type: object
+      required:
+        - type
+        - kind
+        - ref
+      properties:
+        type:
+          type: string
+          enum:
+            - proficiency
+        kind:
+          type: string
+          enum:
+            - skill
+            - savingThrow
+            - armor
+            - weapon
+            - tool
+            - language
+        ref:
+          $ref: '#/components/schemas/RuleId'
+        expertise:
+          type: boolean
+          default: false
+
+    DamageAdjustmentEffect:
+      allOf:
+        - type: object
+          required:
+            - type
+            - mode
+          properties:
+            type:
+              type: string
+              enum:
+                - damageAdjustment
+            mode:
+              type: string
+              enum:
+                - resistance
+                - vulnerability
+                - immunity
+        - $ref: '#/components/schemas/DamageAdjustment'
+
+    ConditionImmunityEffect:
+      type: object
+      required:
+        - type
+        - condition
+      properties:
+        type:
+          type: string
+          enum:
+            - conditionImmunity
+        condition:
+          $ref: '#/components/schemas/RuleId'
+
+    SenseEffect:
+      type: object
+      required:
+        - type
+        - sense
+        - meters
+      properties:
+        type:
+          type: string
+          enum:
+            - sense
+        sense:
+          type: string
+          enum:
+            - darkvision
+            - blindsight
+            - truesight
+            - tremorsense
+        meters:
+          type: number
+          minimum: 0
+          example: 18
+
+    ArmorClassFormulaEffect:
+      type: object
+      description: 'Défense sans armure : 10 + @dex + @con, bouclier permis (barbare) ou non (moine).'
+      required:
+        - type
+        - formula
+        - allowsShield
+      properties:
+        type:
+          type: string
+          enum:
+            - armorClassFormula
+        formula:
+          $ref: '#/components/schemas/Formula'
+        allowsShield:
+          type: boolean
+
+    SpeedEffect:
+      type: object
+      description: 'bonusMeters ou setMeters, jamais les deux ; setMeters 0 pour Agrippé.'
+      required:
+        - type
+        - movement
+      properties:
+        type:
+          type: string
+          enum:
+            - speed
+        movement:
+          type: string
+          enum:
+            - walk
+            - fly
+            - swim
+            - climb
+            - burrow
+        bonusMeters:
+          type: number
+        setMeters:
+          type: number
+          minimum: 0
+
+    HitPointMaximumEffect:
+      type: object
+      description: 'Par exemple la robustesse naine : +1 PV maximum par niveau.'
+      required:
+        - type
+        - perLevel
+      properties:
+        type:
+          type: string
+          enum:
+            - hitPointMaximum
+        perLevel:
+          type: integer
+
+    AbilityScoreEffect:
+      type: object
+      description: 'set (valeur fixe) ou bonus, jamais les deux ; max plafonne le résultat.'
+      required:
+        - type
+        - ability
+      properties:
+        type:
+          type: string
+          enum:
+            - abilityScore
+        ability:
+          $ref: '#/components/schemas/AbilityCode'
+        set:
+          type: integer
+          minimum: 1
+          maximum: 30
+        bonus:
+          type: integer
+        max:
+          type: integer
+          minimum: 1
+          maximum: 30
+
+    AutoFailEffect:
+      type: object
+      description: 'Rate automatiquement certaines sauvegardes (Paralysé : FOR et DEX).'
+      required:
+        - type
+        - savingThrows
+      properties:
+        type:
+          type: string
+          enum:
+            - autoFail
+        savingThrows:
+          type: array
+          items:
+            $ref: '#/components/schemas/AbilityCode'
+
+    AutoCriticalEffect:
+      type: object
+      description: 'Les coups portés à withinMeters ou moins sont critiques (Paralysé : 1,5 m).'
+      required:
+        - type
+        - withinMeters
+      properties:
+        type:
+          type: string
+          enum:
+            - autoCritical
+        withinMeters:
+          type: number
+          minimum: 0
+
+    CannotActEffect:
+      type: object
+      description: 'Neutralisé : ni actions ni réactions.'
+      required:
+        - type
+        - actions
+        - reactions
+        - movement
+      properties:
+        type:
+          type: string
+          enum:
+            - cannotAct
+        actions:
+          type: boolean
+        reactions:
+          type: boolean
+        movement:
+          type: boolean
+
+    # --- DONNÉES SRD : ENTITÉS ---
+    Feature:
+      type: object
+      required:
+        - id
+        - name
+        - description
+        - actions
+        - passive
+        - automation
+      properties:
+        id:
+          $ref: '#/components/schemas/RuleId'
+        name:
+          type: string
+          maxLength: 120
+        description:
+          $ref: '#/components/schemas/SrdDescription'
+        level:
+          type: integer
+          minimum: 1
+          maximum: 20
+          description: 'Niveau auquel une capacité de classe est obtenue.'
+        uses:
+          type: object
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/Uses'
+        actions:
+          type: array
+          description: 'Vide si la capacité est passive.'
+          items:
+            $ref: '#/components/schemas/Action'
+        passive:
+          type: array
+          items:
+            $ref: '#/components/schemas/PassiveEffect'
+        automation:
+          $ref: '#/components/schemas/Automation'
+
+    Species:
+      type: object
+      description: "Espèce aplatie : high-elf contient déjà les traits communs des elfes ; family ne sert qu'au regroupement à l'écran."
+      required:
+        - id
+        - name
+        - family
+        - size
+        - speedMeters
+        - abilityBonuses
+        - traits
+        - languages
+        - choiceGroups
+      properties:
+        id:
+          $ref: '#/components/schemas/RuleId'
+        name:
+          type: string
+          maxLength: 120
+        family:
+          $ref: '#/components/schemas/RuleId'
+        size:
+          $ref: '#/components/schemas/Size'
+        speedMeters:
+          type: number
+          minimum: 0
+          example: 9
+        abilityBonuses:
+          type: array
+          items:
+            type: object
+            required:
+              - ability
+              - value
+            properties:
+              ability:
+                $ref: '#/components/schemas/AbilityCode'
+              value:
+                type: integer
+        traits:
+          type: array
+          items:
+            $ref: '#/components/schemas/Feature'
+        languages:
+          type: array
+          items:
+            $ref: '#/components/schemas/RuleRef'
+        choiceGroups:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChoiceGroup'
+
+    ClassSpellcasting:
+      type: object
+      description: >-
+        standard : emplacements par niveau de personnage (slotsByLevel). pact (occultiste) : emplacements
+        tous du même niveau, récupérés au repos court (pactSlotsByLevel).
+      required:
+        - ability
+        - preparation
+        - slotProgression
+        - cantripsKnownByLevel
+      properties:
+        ability:
+          $ref: '#/components/schemas/AbilityCode'
+        preparation:
+          type: string
+          enum:
+            - prepared
+            - known
+        slotProgression:
+          type: string
+          enum:
+            - standard
+            - pact
+        slotsByLevel:
+          type: array
+          description: 'Progression standard seulement.'
+          items:
+            type: object
+            required:
+              - level
+              - slots
+            properties:
+              level:
+                type: integer
+                minimum: 1
+                maximum: 20
+              slots:
+                type: array
+                items:
+                  type: object
+                  required:
+                    - slotLevel
+                    - count
+                  properties:
+                    slotLevel:
+                      type: integer
+                      minimum: 1
+                      maximum: 9
+                    count:
+                      type: integer
+                      minimum: 0
+        pactSlotsByLevel:
+          type: array
+          description: 'Magie de pacte seulement.'
+          items:
+            type: object
+            required:
+              - level
+              - count
+              - slotLevel
+            properties:
+              level:
+                type: integer
+                minimum: 1
+                maximum: 20
+              count:
+                type: integer
+                minimum: 0
+              slotLevel:
+                type: integer
+                minimum: 1
+                maximum: 5
+        cantripsKnownByLevel:
+          $ref: '#/components/schemas/CountByLevel'
+        spellsKnownByLevel:
+          description: 'Préparation known seulement.'
+          allOf:
+            - $ref: '#/components/schemas/CountByLevel'
+
+    CountByLevel:
+      type: array
+      items:
+        type: object
+        required:
+          - level
+          - count
+        properties:
+          level:
+            type: integer
+            minimum: 1
+            maximum: 20
+          count:
+            type: integer
+            minimum: 0
+
+    ClassLevel:
+      type: object
+      required:
+        - level
+        - proficiencyBonus
+        - features
+        - subclassFeature
+      properties:
+        level:
+          type: integer
+          minimum: 1
+          maximum: 20
+        proficiencyBonus:
+          type: integer
+          minimum: 2
+          maximum: 6
+        features:
+          type: array
+          items:
+            $ref: '#/components/schemas/Feature'
+        subclassFeature:
+          type: boolean
+          description: 'Ce niveau donne une capacité de sous-classe.'
+
+    Subclass:
+      type: object
+      required:
+        - id
+        - name
+        - class
+        - levels
+      properties:
+        id:
+          $ref: '#/components/schemas/RuleId'
+        name:
+          type: string
+          maxLength: 120
+        class:
+          $ref: '#/components/schemas/RuleRef'
+        levels:
+          type: array
+          items:
+            type: object
+            required:
+              - level
+              - features
+            properties:
+              level:
+                type: integer
+                minimum: 1
+                maximum: 20
+              features:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Feature'
+
+    Class:
+      type: object
+      description: "Les 20 niveaux du SRD sont importés ; l'API n'expose que les niveaux jusqu'au réglage maxLevel du serveur (5 au MVP)."
+      required:
+        - id
+        - name
+        - hitDie
+        - primaryAbilities
+        - savingThrows
+        - proficiencies
+        - choiceGroups
+        - spellcasting
+        - levels
+        - subclasses
+      properties:
+        id:
+          $ref: '#/components/schemas/RuleId'
+        name:
+          type: string
+          maxLength: 120
+        hitDie:
+          type: string
+          pattern: '^d(6|8|10|12)$'
+          example: 'd10'
+        primaryAbilities:
+          type: array
+          items:
+            $ref: '#/components/schemas/AbilityCode'
+        savingThrows:
+          type: array
+          items:
+            $ref: '#/components/schemas/AbilityCode'
+        proficiencies:
+          type: object
+          required:
+            - armor
+            - weapons
+            - tools
+          properties:
+            armor:
+              type: array
+              items:
+                $ref: '#/components/schemas/RuleRef'
+            weapons:
+              type: array
+              items:
+                $ref: '#/components/schemas/RuleRef'
+            tools:
+              type: array
+              items:
+                $ref: '#/components/schemas/RuleRef'
+        choiceGroups:
+          type: array
+          description: 'Compétences et équipement de départ.'
+          items:
+            $ref: '#/components/schemas/ChoiceGroup'
+        spellcasting:
+          type: object
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/ClassSpellcasting'
+        levels:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClassLevel'
+        subclasses:
+          type: array
+          items:
+            $ref: '#/components/schemas/Subclass'
+
+    Background:
+      type: object
+      required:
+        - id
+        - name
+        - proficiencies
+        - choiceGroups
+        - equipment
+        - feature
+        - description
+      properties:
+        id:
+          $ref: '#/components/schemas/RuleId'
+        name:
+          type: string
+          maxLength: 120
+        proficiencies:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProficiencyEffect'
+        choiceGroups:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChoiceGroup'
+        equipment:
+          type: array
+          items:
+            $ref: '#/components/schemas/ItemQuantity'
+        feature:
+          $ref: '#/components/schemas/Feature'
+        description:
+          $ref: '#/components/schemas/SrdDescription'
+
+    ItemQuantity:
+      type: object
+      required:
+        - item
+        - quantity
+      properties:
+        item:
+          $ref: '#/components/schemas/RuleRef'
+        quantity:
+          type: integer
+          minimum: 1
+
+    Spell:
+      type: object
+      required:
+        - id
+        - name
+        - level
+        - school
+        - components
+        - ritual
+        - classes
+        - actions
+        - automation
+        - description
+      properties:
+        id:
+          $ref: '#/components/schemas/RuleId'
+        name:
+          type: string
+          maxLength: 120
+        level:
+          type: integer
+          minimum: 0
+          maximum: 9
+          description: '0 pour un sort mineur.'
+        school:
+          $ref: '#/components/schemas/RuleId'
+        components:
+          type: object
+          required:
+            - verbal
+            - somatic
+            - material
+          properties:
+            verbal:
+              type: boolean
+            somatic:
+              type: boolean
+            material:
+              type: object
+              nullable: true
+              required:
+                - text
+                - costCp
+                - consumed
+              properties:
+                text:
+                  type: string
+                  maxLength: 500
+                costCp:
+                  type: integer
+                  nullable: true
+                  minimum: 0
+                consumed:
+                  type: boolean
+        ritual:
+          type: boolean
+        classes:
+          type: array
+          items:
+            $ref: '#/components/schemas/RuleRef'
+        actions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Action'
+        automation:
+          $ref: '#/components/schemas/Automation'
+        description:
+          $ref: '#/components/schemas/SrdDescription'
+
+    ItemCategory:
+      type: string
+      enum:
+        - weapon
+        - armor
+        - gear
+        - tool
+        - pack
+        - magicItem
+
+    Rarity:
+      type: string
+      enum:
+        - common
+        - uncommon
+        - rare
+        - veryRare
+        - legendary
+        - artifact
+
+    ItemBase:
+      type: object
+      required:
+        - id
+        - name
+        - description
+      properties:
+        id:
+          $ref: '#/components/schemas/RuleId'
+        name:
+          type: string
+          maxLength: 120
+        costCp:
+          type: integer
+          nullable: true
+          minimum: 0
+          description: 'Prix en pièces de cuivre.'
+        weightKg:
+          type: number
+          nullable: true
+          minimum: 0
+        description:
+          $ref: '#/components/schemas/SrdDescription'
+
+    WeaponItem:
+      allOf:
+        - $ref: '#/components/schemas/ItemBase'
+        - type: object
+          required:
+            - category
+            - weaponCategory
+            - attackKind
+            - damage
+            - properties
+          properties:
+            category:
+              type: string
+              enum:
+                - weapon
+            weaponCategory:
+              type: string
+              enum:
+                - simple
+                - martial
+            attackKind:
+              type: string
+              enum:
+                - melee
+                - ranged
+            damage:
+              type: object
+              required:
+                - dice
+                - damageType
+              properties:
+                dice:
+                  $ref: '#/components/schemas/Formula'
+                damageType:
+                  $ref: '#/components/schemas/RuleId'
+            versatileDice:
+              nullable: true
+              type: string
+              allOf:
+                - $ref: '#/components/schemas/Formula'
+            properties:
+              type: array
+              description: "Vocabulaire du moteur : ammunition, finesse, heavy, light, loading, reach, special, thrown, two-handed, versatile. special (lance d'arçon, filet) n'est pas interprétable : l'arme passe en automation partial."
+              items:
+                $ref: '#/components/schemas/RuleId'
+            rangeMeters:
+              type: object
+              nullable: true
+              required:
+                - normal
+                - long
+              properties:
+                normal:
+                  type: number
+                  minimum: 0
+                long:
+                  type: number
+                  minimum: 0
+
+    ArmorItem:
+      allOf:
+        - $ref: '#/components/schemas/ItemBase'
+        - type: object
+          required:
+            - category
+            - armorCategory
+            - baseArmorClass
+            - dexterityCap
+            - stealthDisadvantage
+          properties:
+            category:
+              type: string
+              enum:
+                - armor
+            armorCategory:
+              type: string
+              enum:
+                - light
+                - medium
+                - heavy
+                - shield
+            baseArmorClass:
+              type: integer
+              minimum: 0
+            dexterityCap:
+              type: integer
+              nullable: true
+              minimum: 0
+              description: 'null : sans limite (légère) ; 2 : intermédiaire ; 0 : lourde.'
+            strengthRequirement:
+              type: integer
+              nullable: true
+              minimum: 1
+            stealthDisadvantage:
+              type: boolean
+
+    GearItem:
+      allOf:
+        - $ref: '#/components/schemas/ItemBase'
+        - type: object
+          required:
+            - category
+          properties:
+            category:
+              type: string
+              enum:
+                - gear
+
+    ToolItem:
+      allOf:
+        - $ref: '#/components/schemas/ItemBase'
+        - type: object
+          required:
+            - category
+          properties:
+            category:
+              type: string
+              enum:
+                - tool
+
+    PackItem:
+      allOf:
+        - $ref: '#/components/schemas/ItemBase'
+        - type: object
+          required:
+            - category
+            - contents
+          properties:
+            category:
+              type: string
+              enum:
+                - pack
+            contents:
+              type: array
+              items:
+                $ref: '#/components/schemas/ItemQuantity'
+
+    MagicItem:
+      allOf:
+        - $ref: '#/components/schemas/ItemBase'
+        - type: object
+          required:
+            - category
+            - rarity
+            - requiresAttunement
+            - baseItem
+            - charges
+            - passive
+            - actions
+            - automation
+          properties:
+            category:
+              type: string
+              enum:
+                - magicItem
+            rarity:
+              $ref: '#/components/schemas/Rarity'
+            requiresAttunement:
+              type: boolean
+            baseItem:
+              type: object
+              nullable: true
+              allOf:
+                - $ref: '#/components/schemas/RuleRef'
+            charges:
+              type: object
+              nullable: true
+              description: "Charges de l'objet, consommées par ChargesCost."
+              required:
+                - max
+                - per
+              properties:
+                max:
+                  $ref: '#/components/schemas/Quantity'
+                per:
+                  $ref: '#/components/schemas/RestPeriod'
+                regain:
+                  $ref: '#/components/schemas/Formula'
+            passive:
+              type: array
+              items:
+                $ref: '#/components/schemas/PassiveEffect'
+            actions:
+              type: array
+              items:
+                $ref: '#/components/schemas/Action'
+            automation:
+              $ref: '#/components/schemas/Automation'
+
+    Item:
+      oneOf:
+        - $ref: '#/components/schemas/WeaponItem'
+        - $ref: '#/components/schemas/ArmorItem'
+        - $ref: '#/components/schemas/GearItem'
+        - $ref: '#/components/schemas/ToolItem'
+        - $ref: '#/components/schemas/PackItem'
+        - $ref: '#/components/schemas/MagicItem'
+      discriminator:
+        propertyName: category
+        mapping:
+          weapon: '#/components/schemas/WeaponItem'
+          armor: '#/components/schemas/ArmorItem'
+          gear: '#/components/schemas/GearItem'
+          tool: '#/components/schemas/ToolItem'
+          pack: '#/components/schemas/PackItem'
+          magicItem: '#/components/schemas/MagicItem'
+
+    Condition:
+      type: object
+      required:
+        - id
+        - name
+        - description
+        - passive
+        - automation
+      properties:
+        id:
+          $ref: '#/components/schemas/RuleId'
+        name:
+          type: string
+          maxLength: 120
+        description:
+          $ref: '#/components/schemas/SrdDescription'
+        passive:
+          type: array
+          description: 'Effets mécaniques : désavantage aux attaques pour Empoisonné, etc.'
+          items:
+            $ref: '#/components/schemas/PassiveEffect'
+        automation:
+          $ref: '#/components/schemas/Automation'
+
+    MonsterSummary:
+      type: object
+      required:
+        - id
+        - name
+        - size
+        - type
+        - challengeRating
+        - xp
+        - armorClass
+        - hitPointsAverage
+      properties:
+        id:
+          $ref: '#/components/schemas/RuleId'
+        name:
+          type: string
+          maxLength: 120
+        size:
+          $ref: '#/components/schemas/Size'
+        type:
+          $ref: '#/components/schemas/RuleId'
+        challengeRating:
+          type: number
+          minimum: 0
+          maximum: 30
+          description: '0.25 pour 1/4.'
+          example: 2
+        xp:
+          type: integer
+          minimum: 0
+          example: 450
+        armorClass:
+          type: integer
+          minimum: 0
+          example: 11
+        hitPointsAverage:
+          type: integer
+          minimum: 1
+          example: 59
+
+    MonsterSpellcasting:
+      type: object
+      description: 'Valeurs fixes du monstre, qui remplacent @spellDc et @spellAttack dans les actions de ses sorts (entités Spell).'
+      required:
+        - ability
+        - dc
+        - attackBonus
+        - slots
+        - perDay
+        - atWill
+      properties:
+        ability:
+          $ref: '#/components/schemas/AbilityCode'
+        dc:
+          type: integer
+        attackBonus:
+          type: integer
+        slots:
+          type: array
+          nullable: true
+          items:
+            type: object
+            required:
+              - level
+              - count
+            properties:
+              level:
+                type: integer
+                minimum: 1
+                maximum: 9
+              count:
+                type: integer
+                minimum: 0
+        perDay:
+          type: array
+          items:
+            type: object
+            required:
+              - count
+              - spells
+            properties:
+              count:
+                type: integer
+                minimum: 1
+              spells:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RuleRef'
+        atWill:
+          type: array
+          items:
+            $ref: '#/components/schemas/RuleRef'
+
+    Monster:
+      description: 'Bloc de statistiques complet. Les bonus sont déjà calculés : les actions utilisent des valeurs fixes.'
+      allOf:
+        - $ref: '#/components/schemas/MonsterSummary'
+        - type: object
+          required:
+            - alignment
+            - hitDice
+            - speeds
+            - abilities
+            - savingThrows
+            - skills
+            - damageVulnerabilities
+            - damageResistances
+            - damageImmunities
+            - conditionImmunities
+            - senses
+            - languages
+            - proficiencyBonus
+            - traits
+            - actions
+            - reactions
+            - automation
+            - description
+          properties:
+            subtype:
+              type: string
+              nullable: true
+              maxLength: 60
+            alignment:
+              type: string
+              maxLength: 60
+            armorClassSource:
+              type: object
+              nullable: true
+              allOf:
+                - $ref: '#/components/schemas/RuleRef'
+            hitDice:
+              $ref: '#/components/schemas/Formula'
+            speeds:
+              type: object
+              description: 'En mètres.'
+              required:
+                - walk
+              properties:
+                walk:
+                  type: number
+                  minimum: 0
+                fly:
+                  type: number
+                  minimum: 0
+                swim:
+                  type: number
+                  minimum: 0
+                climb:
+                  type: number
+                  minimum: 0
+                burrow:
+                  type: number
+                  minimum: 0
+                hover:
+                  type: boolean
+            abilities:
+              type: object
+              required:
+                - str
+                - dex
+                - con
+                - int
+                - wis
+                - cha
+              properties:
+                str:
+                  type: integer
+                  minimum: 1
+                  maximum: 30
+                dex:
+                  type: integer
+                  minimum: 1
+                  maximum: 30
+                con:
+                  type: integer
+                  minimum: 1
+                  maximum: 30
+                int:
+                  type: integer
+                  minimum: 1
+                  maximum: 30
+                wis:
+                  type: integer
+                  minimum: 1
+                  maximum: 30
+                cha:
+                  type: integer
+                  minimum: 1
+                  maximum: 30
+            savingThrows:
+              type: array
+              items:
+                type: object
+                required:
+                  - ability
+                  - bonus
+                properties:
+                  ability:
+                    $ref: '#/components/schemas/AbilityCode'
+                  bonus:
+                    type: integer
+            skills:
+              type: array
+              items:
+                type: object
+                required:
+                  - skill
+                  - bonus
+                properties:
+                  skill:
+                    $ref: '#/components/schemas/RuleRef'
+                  bonus:
+                    type: integer
+            damageVulnerabilities:
+              type: array
+              items:
+                $ref: '#/components/schemas/DamageAdjustment'
+            damageResistances:
+              type: array
+              items:
+                $ref: '#/components/schemas/DamageAdjustment'
+            damageImmunities:
+              type: array
+              items:
+                $ref: '#/components/schemas/DamageAdjustment'
+            conditionImmunities:
+              type: array
+              items:
+                $ref: '#/components/schemas/RuleId'
+            senses:
+              type: object
+              description: 'En mètres.'
+              required:
+                - passivePerception
+              properties:
+                darkvision:
+                  type: number
+                  minimum: 0
+                blindsight:
+                  type: number
+                  minimum: 0
+                truesight:
+                  type: number
+                  minimum: 0
+                tremorsense:
+                  type: number
+                  minimum: 0
+                passivePerception:
+                  type: integer
+            languages:
+              type: array
+              items:
+                $ref: '#/components/schemas/RuleRef'
+            proficiencyBonus:
+              type: integer
+              minimum: 2
+              maximum: 9
+            traits:
+              type: array
+              items:
+                $ref: '#/components/schemas/Feature'
+            actions:
+              type: array
+              items:
+                $ref: '#/components/schemas/Action'
+            multiattack:
+              type: object
+              nullable: true
+              required:
+                - attacks
+              properties:
+                attacks:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - actionKey
+                      - count
+                    properties:
+                      actionKey:
+                        type: string
+                        maxLength: 64
+                      count:
+                        type: integer
+                        minimum: 1
+            reactions:
+              type: array
+              items:
+                $ref: '#/components/schemas/Action'
+            legendary:
+              type: object
+              nullable: true
+              description: 'Le coût de chaque action est porté par Cost.legendary.'
+              required:
+                - perRound
+                - actions
+              properties:
+                perRound:
+                  type: integer
+                  minimum: 1
+                actions:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Action'
+            spellcasting:
+              type: object
+              nullable: true
+              allOf:
+                - $ref: '#/components/schemas/MonsterSpellcasting'
+            automation:
+              $ref: '#/components/schemas/Automation'
+            description:
+              $ref: '#/components/schemas/SrdDescription'
+
+    # --- DONNÉES SRD : LISTES ET ATTRIBUTION ---
+    RuleRefPage:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/RuleRef'
+        nextCursor:
+          type: string
+          nullable: true
+
+    SpellSummary:
+      type: object
+      required:
+        - id
+        - name
+        - level
+        - school
+        - concentration
+        - ritual
+        - classes
+      properties:
+        id:
+          $ref: '#/components/schemas/RuleId'
+        name:
+          type: string
+          maxLength: 120
+        level:
+          type: integer
+          minimum: 0
+          maximum: 9
+        school:
+          $ref: '#/components/schemas/RuleId'
+        concentration:
+          type: boolean
+        ritual:
+          type: boolean
+        classes:
+          type: array
+          items:
+            $ref: '#/components/schemas/RuleRef'
+
+    SpellSummaryPage:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/SpellSummary'
+        nextCursor:
+          type: string
+          nullable: true
+
+    ItemSummary:
+      type: object
+      required:
+        - id
+        - name
+        - category
+        - rarity
+      properties:
+        id:
+          $ref: '#/components/schemas/RuleId'
+        name:
+          type: string
+          maxLength: 120
+        category:
+          $ref: '#/components/schemas/ItemCategory'
+        rarity:
+          nullable: true
+          description: 'Objets magiques seulement.'
+          type: string
+          allOf:
+            - $ref: '#/components/schemas/Rarity'
+
+    ItemSummaryPage:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ItemSummary'
+        nextCursor:
+          type: string
+          nullable: true
+
+    MonsterSummaryPage:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/MonsterSummary'
+        nextCursor:
+          type: string
+          nullable: true
+
+    SrdAttribution:
+      type: object
+      description: >-
+        Mention d'attribution affichée par la page de crédits du web et du mobile. text est la mention
+        officielle de l'ADR 0005, en anglais, telle quelle ; changes liste les modifications apportées au
+        SRD, exigées par la CC BY 4.0 (ADR 0009). Ces textes juridiques font exception à la règle « les
+        libellés viennent de l'interface ».
+      required:
+        - text
+        - sourceDocument
+        - sourceUrl
+        - license
+        - licenseUrl
+        - changes
+        - language
+        - rulesetVersion
+        - importedAt
+        - dataSource
+      properties:
+        text:
+          type: string
+          maxLength: 2000
+        sourceDocument:
+          type: string
+          example: 'System Reference Document 5.1'
+        sourceUrl:
+          type: string
+          format: uri
+          example: 'https://dnd.wizards.com/resources/systems-reference-document'
+        license:
+          type: string
+          enum:
+            - CC-BY-4.0
+        licenseUrl:
+          type: string
+          format: uri
+          example: 'https://creativecommons.org/licenses/by/4.0/legalcode'
+        changes:
+          type: array
+          items:
+            type: string
+            maxLength: 500
+          example:
+            - 'Modifié : converti en format structuré, unités converties au système métrique.'
+        language:
+          type: string
+          description: 'Langue des noms et descriptions SRD (BCP 47).'
+          example: 'en'
+        rulesetVersion:
+          type: string
+          example: 'srd-5.1-2026.10'
+        importedAt:
+          type: string
+          format: date-time
+        dataSource:
+          type: object
+          description: 'Source des données structurées, sous licence MIT ; texte complet dans THIRD_PARTY_NOTICES.md.'
+          required:
+            - name
+            - url
+            - license
+            - copyright
+          properties:
+            name:
+              type: string
+              example: '5e-bits, 5e-srd-api'
+            url:
+              type: string
+              format: uri
+              example: 'https://github.com/5e-bits/5e-srd-api'
+              description: 'Le dépôt GitHub, où se trouve la licence MIT citée.'
+            license:
+              type: string
+              enum:
+                - MIT
+            copyright:
+              type: string
+              example: 'Copyright (c) 2018-2020 Adrian Padua, Christopher Ward'
+
+    SpeciesSummary:
+      type: object
+      description: "Résumé affiché sur les cartes de l'étape Espèce de l'assistant."
+      required:
+        - id
+        - name
+        - family
+        - size
+        - speedMeters
+        - abilityBonuses
+      properties:
+        id:
+          $ref: '#/components/schemas/RuleId'
+        name:
+          type: string
+          maxLength: 120
+        family:
+          $ref: '#/components/schemas/RuleId'
+        size:
+          $ref: '#/components/schemas/Size'
+        speedMeters:
+          type: number
+          minimum: 0
+        abilityBonuses:
+          type: array
+          items:
+            type: object
+            required:
+              - ability
+              - value
+            properties:
+              ability:
+                $ref: '#/components/schemas/AbilityCode'
+              value:
+                type: integer
+
+    SpeciesSummaryPage:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/SpeciesSummary'
+        nextCursor:
+          type: string
+          nullable: true
+
+    ClassSummary:
+      type: object
+      description: "Résumé affiché sur les cartes de l'étape Classe de l'assistant (« DV d10 · FOR ou DEX · toutes les armures »)."
+      required:
+        - id
+        - name
+        - hitDie
+        - primaryAbilities
+        - armorCategories
+      properties:
+        id:
+          $ref: '#/components/schemas/RuleId'
+        name:
+          type: string
+          maxLength: 120
+        hitDie:
+          type: string
+          pattern: '^d(6|8|10|12)$'
+        primaryAbilities:
+          type: array
+          items:
+            $ref: '#/components/schemas/AbilityCode'
+        armorCategories:
+          type: array
+          description: "Catégories d'armure maîtrisées."
+          items:
+            type: string
+            enum:
+              - light
+              - medium
+              - heavy
+              - shield
+
+    ClassSummaryPage:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClassSummary'
+        nextCursor:
+          type: string
+          nullable: true
