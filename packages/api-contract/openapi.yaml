@@ -33,6 +33,8 @@ tags:
     description: 'Jets de dés lancés par le serveur, historique filtré selon le lecteur, probabilités (docs/technique/notation-des-des.md).'
   - name: Cartes
     description: 'Cartes, brouillard, pions, scène et vue joueurs (projection par spectateur).'
+  - name: Gestion de campagne
+    description: 'Notes du MJ, PNJ, lieux et quêtes (réservés au MJ), et documents révélés aux joueurs.'
   - name: Données SRD
     description: 'Contenu du SRD 5.1 (CC BY 4.0), en lecture seule, au format de règles interprété par le moteur (docs/technique/format-des-regles.md).'
   - name: Rencontres
@@ -2180,9 +2182,9 @@ paths:
       x-phase: P3
       summary: 'Créer une rencontre (MJ).'
       description: >-
-        Le serveur calcule la difficulté à l'enregistrement ; pendant la construction, le web la calcule en
-        direct avec le moteur de règles. 400 cells_count_mismatch si une créature a des cases prévues dont
-        le nombre diffère de count.
+        Le serveur calcule la difficulté à l'enregistrement ; pendant la construction, le web la calcule
+        en direct avec le moteur de règles. 400 cells_count_mismatch si une créature a des cases prévues
+        dont le nombre diffère de count. mapId doit désigner une carte de la même campagne, sinon 404.
       requestBody:
         required: true
         content:
@@ -2233,7 +2235,9 @@ paths:
       operationId: updateEncounter
       x-phase: P3
       summary: 'Modifier une rencontre (MJ).'
-      description: 'Un joueur reçoit 404. 400 cells_count_mismatch comme à la création.'
+      description: >-
+        Un joueur reçoit 404. 400 cells_count_mismatch comme à la création. mapId doit désigner une
+        carte de la même campagne, sinon 404.
       requestBody:
         required: true
         content:
@@ -2903,6 +2907,853 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /campaigns/{campaignId}/notes:
+    parameters:
+      - $ref: '#/components/parameters/CampaignId'
+    get:
+      tags:
+        - Gestion de campagne
+      operationId: listGmNotes
+      x-phase: P3
+      summary: 'Lister : Notes (MJ).'
+      description: >-
+        Préparation du MJ, jamais envoyée aux joueurs : un joueur reçoit 403.
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: 'Page de résultats.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GmNotePage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags:
+        - Gestion de campagne
+      operationId: createGmNote
+      x-phase: P3
+      summary: 'Créer la note (MJ).'
+      description: >-
+        Un joueur reçoit 403. Les références (locationId, mapId, areaId, liens d'une note) doivent
+        désigner des objets de la même campagne, sinon 404, comme si l'objet n'existait pas (protection
+        contre l'accès direct à l'objet d'autrui, OWASP API1:2023).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGmNoteInput'
+      responses:
+        '201':
+          description: 'Créé.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GmNote'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /notes/{noteId}:
+    parameters:
+      - name: noteId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Id'
+    get:
+      tags:
+        - Gestion de campagne
+      operationId: getGmNote
+      x-phase: P3
+      summary: 'Lire la note (MJ).'
+      description: >-
+        Un joueur reçoit 404, et non 403 : l'existence même de ces notes privées est une information
+        cachée.
+      responses:
+        '200':
+          description: 'Élément.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GmNote'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags:
+        - Gestion de campagne
+      operationId: updateGmNote
+      x-phase: P3
+      summary: 'Modifier la note (MJ).'
+      description: >-
+        Un joueur reçoit 404, et non 403 : l'existence même de ces notes privées est une information
+        cachée. Les références (locationId, mapId, areaId, liens d'une note) doivent désigner des objets
+        de la même campagne, sinon 404, comme si l'objet n'existait pas (protection contre l'accès
+        direct à l'objet d'autrui, OWASP API1:2023).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateGmNoteInput'
+      responses:
+        '200':
+          description: 'Modifié.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GmNote'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags:
+        - Gestion de campagne
+      operationId: deleteGmNote
+      x-phase: P3
+      summary: 'Supprimer la note (MJ).'
+      description: >-
+        Un joueur reçoit 404, et non 403 : l'existence même de ces notes privées est une information
+        cachée.
+      responses:
+        '204':
+          description: 'Supprimé.'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /campaigns/{campaignId}/npcs:
+    parameters:
+      - $ref: '#/components/parameters/CampaignId'
+    get:
+      tags:
+        - Gestion de campagne
+      operationId: listNpcs
+      x-phase: P3
+      summary: 'Lister : PNJ (MJ).'
+      description: >-
+        Préparation du MJ, jamais envoyée aux joueurs : un joueur reçoit 403.
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: 'Page de résultats.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NpcPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags:
+        - Gestion de campagne
+      operationId: createNpc
+      x-phase: P3
+      summary: 'Créer le PNJ (MJ).'
+      description: >-
+        Un joueur reçoit 403. Les références (locationId, mapId, areaId, liens d'une note) doivent
+        désigner des objets de la même campagne, sinon 404, comme si l'objet n'existait pas (protection
+        contre l'accès direct à l'objet d'autrui, OWASP API1:2023).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateNpcInput'
+      responses:
+        '201':
+          description: 'Créé.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Npc'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /npcs/{npcId}:
+    parameters:
+      - name: npcId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Id'
+    get:
+      tags:
+        - Gestion de campagne
+      operationId: getNpc
+      x-phase: P3
+      summary: 'Lire le PNJ (MJ).'
+      description: >-
+        Un joueur reçoit 404, et non 403 : l'existence même de ces notes privées est une information
+        cachée.
+      responses:
+        '200':
+          description: 'Élément.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Npc'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags:
+        - Gestion de campagne
+      operationId: updateNpc
+      x-phase: P3
+      summary: 'Modifier le PNJ (MJ).'
+      description: >-
+        Un joueur reçoit 404, et non 403 : l'existence même de ces notes privées est une information
+        cachée. Les références (locationId, mapId, areaId, liens d'une note) doivent désigner des objets
+        de la même campagne, sinon 404, comme si l'objet n'existait pas (protection contre l'accès
+        direct à l'objet d'autrui, OWASP API1:2023).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateNpcInput'
+      responses:
+        '200':
+          description: 'Modifié.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Npc'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags:
+        - Gestion de campagne
+      operationId: deleteNpc
+      x-phase: P3
+      summary: 'Supprimer le PNJ (MJ).'
+      description: >-
+        Un joueur reçoit 404, et non 403 : l'existence même de ces notes privées est une information
+        cachée.
+      responses:
+        '204':
+          description: 'Supprimé.'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /campaigns/{campaignId}/locations:
+    parameters:
+      - $ref: '#/components/parameters/CampaignId'
+    get:
+      tags:
+        - Gestion de campagne
+      operationId: listLocations
+      x-phase: P3
+      summary: 'Lister : Lieux (MJ).'
+      description: >-
+        Préparation du MJ, jamais envoyée aux joueurs : un joueur reçoit 403.
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: 'Page de résultats.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LocationPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags:
+        - Gestion de campagne
+      operationId: createLocation
+      x-phase: P3
+      summary: 'Créer le lieu (MJ).'
+      description: >-
+        Un joueur reçoit 403. Les références (locationId, mapId, areaId, liens d'une note) doivent
+        désigner des objets de la même campagne, sinon 404, comme si l'objet n'existait pas (protection
+        contre l'accès direct à l'objet d'autrui, OWASP API1:2023). areaId doit désigner une zone de la
+        carte mapId, sinon 400 area_not_on_map.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateLocationInput'
+      responses:
+        '201':
+          description: 'Créé.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Location'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /locations/{locationId}:
+    parameters:
+      - name: locationId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Id'
+    get:
+      tags:
+        - Gestion de campagne
+      operationId: getLocation
+      x-phase: P3
+      summary: 'Lire le lieu (MJ).'
+      description: >-
+        Un joueur reçoit 404, et non 403 : l'existence même de ces notes privées est une information
+        cachée.
+      responses:
+        '200':
+          description: 'Élément.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Location'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags:
+        - Gestion de campagne
+      operationId: updateLocation
+      x-phase: P3
+      summary: 'Modifier le lieu (MJ).'
+      description: >-
+        Un joueur reçoit 404, et non 403 : l'existence même de ces notes privées est une information
+        cachée. Les références (locationId, mapId, areaId, liens d'une note) doivent désigner des objets
+        de la même campagne, sinon 404, comme si l'objet n'existait pas (protection contre l'accès
+        direct à l'objet d'autrui, OWASP API1:2023). areaId doit désigner une zone de la carte mapId,
+        sinon 400 area_not_on_map.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateLocationInput'
+      responses:
+        '200':
+          description: 'Modifié.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Location'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags:
+        - Gestion de campagne
+      operationId: deleteLocation
+      x-phase: P3
+      summary: 'Supprimer le lieu (MJ).'
+      description: >-
+        Un joueur reçoit 404, et non 403 : l'existence même de ces notes privées est une information
+        cachée.
+      responses:
+        '204':
+          description: 'Supprimé.'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /campaigns/{campaignId}/quests:
+    parameters:
+      - $ref: '#/components/parameters/CampaignId'
+    get:
+      tags:
+        - Gestion de campagne
+      operationId: listQuests
+      x-phase: P3
+      summary: 'Lister : Quêtes (MJ).'
+      description: >-
+        Préparation du MJ, jamais envoyée aux joueurs : un joueur reçoit 403.
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: 'Page de résultats.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuestPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags:
+        - Gestion de campagne
+      operationId: createQuest
+      x-phase: P3
+      summary: 'Créer la quête (MJ).'
+      description: >-
+        Un joueur reçoit 403.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateQuestInput'
+      responses:
+        '201':
+          description: 'Créé.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Quest'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /quests/{questId}:
+    parameters:
+      - name: questId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Id'
+    get:
+      tags:
+        - Gestion de campagne
+      operationId: getQuest
+      x-phase: P3
+      summary: 'Lire la quête (MJ).'
+      description: >-
+        Un joueur reçoit 404, et non 403 : l'existence même de ces notes privées est une information
+        cachée.
+      responses:
+        '200':
+          description: 'Élément.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Quest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags:
+        - Gestion de campagne
+      operationId: updateQuest
+      x-phase: P3
+      summary: 'Modifier la quête (MJ).'
+      description: >-
+        Un joueur reçoit 404, et non 403 : l'existence même de ces notes privées est une information
+        cachée.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateQuestInput'
+      responses:
+        '200':
+          description: 'Modifié.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Quest'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags:
+        - Gestion de campagne
+      operationId: deleteQuest
+      x-phase: P3
+      summary: 'Supprimer la quête (MJ).'
+      description: >-
+        Un joueur reçoit 404, et non 403 : l'existence même de ces notes privées est une information
+        cachée.
+      responses:
+        '204':
+          description: 'Supprimé.'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /campaigns/{campaignId}/documents:
+    parameters:
+      - $ref: '#/components/parameters/CampaignId'
+    get:
+      tags:
+        - Gestion de campagne
+      operationId: listDocuments
+      x-phase: P3
+      security:
+        - displayAuth: []
+        - cookieAuth: []
+        - bearerAuth: []
+      summary: 'Lister les documents.'
+      description: >-
+        MJ : tous les documents, vue gm. Joueur ou jeton d'affichage : seulement les documents révélés,
+        vue party, filtrés dans la requête en base. Un document non révélé n'est jamais envoyé aux
+        joueurs, ni dans une liste, ni par son identifiant, ni son image : 404 partout.
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: 'Page de documents selon le lecteur.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentListView'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags:
+        - Gestion de campagne
+      operationId: createDocument
+      x-phase: P3
+      summary: 'Créer un document à révéler (MJ).'
+      description: >-
+        Un joueur reçoit 403. Le document est créé non révélé.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDocumentInput'
+      responses:
+        '201':
+          description: 'Document créé.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentGm'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /documents/{documentId}:
+    parameters:
+      - $ref: '#/components/parameters/DocumentId'
+    get:
+      tags:
+        - Gestion de campagne
+      operationId: getDocument
+      x-phase: P3
+      security:
+        - displayAuth: []
+        - cookieAuth: []
+        - bearerAuth: []
+      summary: 'Lire un document.'
+      description: >-
+        MJ : vue gm. Joueur ou jeton d'affichage : vue party si le document est révélé, 404 sinon. Un
+        document non révélé n'est jamais envoyé aux joueurs, ni dans une liste, ni par son identifiant,
+        ni son image : 404 partout.
+      responses:
+        '200':
+          description: 'Document selon le lecteur.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentView'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags:
+        - Gestion de campagne
+      operationId: updateDocument
+      x-phase: P3
+      summary: 'Modifier un document (MJ).'
+      description: >-
+        Joueur : 403 si le document est révélé, sinon 404. body n'est accepté que pour un document texte
+        (400 sinon) ; le type ne change pas après la création. Une modification d'un document révélé est
+        envoyée aux joueurs, sans gmNotes.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateDocumentInput'
+      responses:
+        '200':
+          description: 'Document modifié.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentGm'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags:
+        - Gestion de campagne
+      operationId: deleteDocument
+      x-phase: P3
+      summary: 'Supprimer un document (MJ).'
+      description: >-
+        Joueur : 403 si le document est révélé, sinon 404. S'il est affiché sur la vue joueurs, il en
+        est retiré.
+      responses:
+        '204':
+          description: 'Document supprimé.'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /documents/{documentId}/image:
+    parameters:
+      - $ref: '#/components/parameters/DocumentId'
+    put:
+      tags:
+        - Gestion de campagne
+      operationId: uploadDocumentImage
+      x-phase: P3
+      summary: "Envoyer l'image d'un document (MJ)."
+      description: >-
+        Mêmes règles que le fond de carte : PNG, JPEG ou WebP reconnu par ses premiers octets (415
+        sinon), 10 Mo et 8 192 × 8 192 pixels au plus vérifiés avant de décoder (413 sinon), réencodé en
+        WebP, ce qui supprime les métadonnées EXIF. La version de l'image change à chaque envoi. Joueur
+        : 403 si le document est révélé, sinon 404.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: 'Image enregistrée.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentGm'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+    get:
+      tags:
+        - Gestion de campagne
+      operationId: getDocumentImage
+      x-phase: P3
+      security:
+        - displayAuth: []
+        - cookieAuth: []
+        - bearerAuth: []
+      summary: "Lire l'image d'un document."
+      description: >-
+        MJ : image avec Cache-Control no-store. Joueur ou jeton d'affichage : seulement si le document
+        est révélé, avec le paramètre v égal à la version (URL fournie par DocumentParty.image.url),
+        Cache-Control private et Vary X-Display-Token, Authorization, Cookie ; 404 sinon. La vue joueurs
+        la charge avec fetch et son jeton, jamais avec une balise img.
+      parameters:
+        - name: v
+          in: query
+          required: false
+          description: "Version de l'image ; obligatoire pour la vue party, 404 si elle n'est plus actuelle."
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: "L'image en WebP."
+          headers:
+            Cache-Control:
+              description: 'no-store pour le MJ ; private, max-age=31536000, immutable pour la vue party.'
+              schema:
+                type: string
+            Vary:
+              description: 'Vue party : X-Display-Token, Authorization, Cookie.'
+              schema:
+                type: string
+          content:
+            image/webp:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /documents/{documentId}/reveal:
+    parameters:
+      - $ref: '#/components/parameters/DocumentId'
+    post:
+      tags:
+        - Gestion de campagne
+      operationId: revealDocument
+      x-phase: P3
+      summary: 'Révéler un document aux joueurs (MJ).'
+      description: >-
+        L'événement WebSocket document.revealed ne part qu'à ce moment. Révéler un document déjà révélé
+        répond 200. 409 document_empty pour un document image dont l'image n'a pas encore été envoyée.
+        Joueur : 403 si le document est révélé, sinon 404.
+      responses:
+        '200':
+          description: 'Document révélé.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentGm'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /documents/{documentId}/hide:
+    parameters:
+      - $ref: '#/components/parameters/DocumentId'
+    post:
+      tags:
+        - Gestion de campagne
+      operationId: hideDocument
+      x-phase: P3
+      summary: 'Recacher un document (MJ).'
+      description: >-
+        Coupe l'accès des joueurs pour la suite, mais ne peut pas effacer ce qu'ils ont déjà vu. S'il
+        est affiché sur la vue joueurs, il en est retiré. Recacher un document déjà caché répond 200.
+        Joueur : 403 si le document est révélé, sinon 404.
+      responses:
+        '200':
+          description: 'Document recaché.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentGm'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /campaigns/{campaignId}/scene/document:
+    parameters:
+      - $ref: '#/components/parameters/CampaignId'
+    put:
+      tags:
+        - Gestion de campagne
+      operationId: showDocumentOnDisplay
+      x-phase: P3
+      summary: 'Afficher un document révélé en grand sur la vue joueurs (MJ).'
+      description: >-
+        documentId null retire le document affiché. 409 document_not_revealed si le document n'est pas
+        révélé ; 409 document_empty pour un document image sans image. Un joueur reçoit 403.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShowDocumentInput'
+      responses:
+        '200':
+          description: 'Scène mise à jour.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SceneGmView'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
   /srd/species:
     get:
       tags:
@@ -3496,7 +4347,7 @@ components:
       description: >-
         Jeton d'affichage de la vue joueurs (createDisplaySession) : vue party seulement, en lecture
         seule, valable 12 heures, révocable par le MJ. Déclaré uniquement sur getScene, getMap,
-        getMapTile, listCampaignRolls, getRoll et listJournal ; sur toute autre route, un jeton d'affichage reconnu
+        getMapTile, listCampaignRolls, getRoll, listJournal, listDocuments, getDocument et getDocumentImage ; sur toute autre route, un jeton d'affichage reconnu
         reçoit 403 display_token_not_allowed (le jeton est valide mais n'a pas ce droit). Si ce jeton
         est présent, il s'applique seul : le cookie de session du MJ, que le navigateur joint aussi aux
         requêtes de la vue joueurs, est ignoré. La vue joueurs fait ses requêtes avec credentials omit,
@@ -3705,6 +4556,12 @@ components:
         $ref: '#/components/schemas/Id'
     EffectId:
       name: effectId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Id'
+    DocumentId:
+      name: documentId
       in: path
       required: true
       schema:
@@ -6827,6 +7684,7 @@ components:
         - round
         - initiative
         - currentTurn
+        - document
       properties:
         view:
           type: string
@@ -6852,6 +7710,12 @@ components:
           description: "tokenId dont c'est le tour ; null hors combat."
           allOf:
             - $ref: '#/components/schemas/Id'
+        document:
+          type: object
+          nullable: true
+          description: 'Document révélé affiché en grand sur la vue joueurs (showDocumentOnDisplay).'
+          allOf:
+            - $ref: '#/components/schemas/DocumentGm'
 
     ScenePartyView:
       type: object
@@ -6861,6 +7725,7 @@ components:
         - round
         - initiative
         - currentTurn
+        - document
       properties:
         view:
           type: string
@@ -6885,6 +7750,12 @@ components:
           description: "tokenId dont c'est le tour ; null hors combat et pendant le tour d'une créature cachée."
           allOf:
             - $ref: '#/components/schemas/Id'
+        document:
+          type: object
+          nullable: true
+          description: 'Document révélé affiché en grand sur la vue joueurs (showDocumentOnDisplay).'
+          allOf:
+            - $ref: '#/components/schemas/DocumentParty'
 
     SceneView:
       oneOf:
@@ -11169,3 +12040,728 @@ components:
         mapping:
           gm: '#/components/schemas/JournalGmPage'
           party: '#/components/schemas/JournalPartyPage'
+
+    # --- GESTION DE CAMPAGNE ---
+    GmNote:
+      type: object
+      description: 'Réservé au MJ, jamais envoyé aux joueurs.'
+      required:
+        - id
+        - title
+        - body
+        - links
+        - updatedAt
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        body:
+          type: string
+          maxLength: 20000
+          description: 'Texte brut, jamais interprété comme du HTML ou du Markdown.'
+        links:
+          type: array
+          maxItems: 50
+          items:
+            type: object
+            required:
+              - kind
+              - id
+            properties:
+              kind:
+                type: string
+                enum:
+                  - npc
+                  - location
+                  - quest
+                  - map
+                  - encounter
+              id:
+                $ref: '#/components/schemas/Id'
+        updatedAt:
+          type: string
+          format: date-time
+
+    GmNotePage:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/GmNote'
+        nextCursor:
+          type: string
+          nullable: true
+
+    CreateGmNoteInput:
+      type: object
+      additionalProperties: false
+      x-phase: P3
+      required:
+        - title
+        - body
+        - links
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        body:
+          type: string
+          maxLength: 20000
+          description: 'Texte brut, jamais interprété comme du HTML ou du Markdown.'
+        links:
+          type: array
+          maxItems: 50
+          items:
+            type: object
+            required:
+              - kind
+              - id
+            properties:
+              kind:
+                type: string
+                enum:
+                  - npc
+                  - location
+                  - quest
+                  - map
+                  - encounter
+              id:
+                $ref: '#/components/schemas/Id'
+
+    UpdateGmNoteInput:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      x-phase: P3
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        body:
+          type: string
+          maxLength: 20000
+          description: 'Texte brut, jamais interprété comme du HTML ou du Markdown.'
+        links:
+          type: array
+          maxItems: 50
+          items:
+            type: object
+            required:
+              - kind
+              - id
+            properties:
+              kind:
+                type: string
+                enum:
+                  - npc
+                  - location
+                  - quest
+                  - map
+                  - encounter
+              id:
+                $ref: '#/components/schemas/Id'
+
+    Npc:
+      type: object
+      description: 'Réservé au MJ, jamais envoyé aux joueurs.'
+      required:
+        - id
+        - name
+        - description
+        - statBlock
+        - locationId
+        - updatedAt
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        name:
+          type: string
+          minLength: 1
+          maxLength: 60
+        description:
+          type: string
+          maxLength: 20000
+          description: 'Texte brut, jamais interprété comme du HTML ou du Markdown.'
+        statBlock:
+          type: object
+          nullable: true
+          description: 'Bloc de statistiques SRD du PNJ.'
+          allOf:
+            - $ref: '#/components/schemas/RuleRef'
+        locationId:
+          type: string
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/Id'
+        updatedAt:
+          type: string
+          format: date-time
+
+    NpcPage:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Npc'
+        nextCursor:
+          type: string
+          nullable: true
+
+    CreateNpcInput:
+      type: object
+      additionalProperties: false
+      x-phase: P3
+      required:
+        - name
+        - description
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 60
+        description:
+          type: string
+          maxLength: 20000
+          description: 'Texte brut, jamais interprété comme du HTML ou du Markdown.'
+        locationId:
+          type: string
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/Id'
+        statBlockId:
+          type: string
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/RuleId'
+
+    UpdateNpcInput:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      x-phase: P3
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 60
+        description:
+          type: string
+          maxLength: 20000
+          description: 'Texte brut, jamais interprété comme du HTML ou du Markdown.'
+        locationId:
+          type: string
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/Id'
+        statBlockId:
+          type: string
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/RuleId'
+
+    Location:
+      type: object
+      description: 'Réservé au MJ, jamais envoyé aux joueurs.'
+      required:
+        - id
+        - name
+        - description
+        - mapId
+        - areaId
+        - updatedAt
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        name:
+          type: string
+          minLength: 1
+          maxLength: 60
+        description:
+          type: string
+          maxLength: 20000
+          description: 'Texte brut, jamais interprété comme du HTML ou du Markdown.'
+        mapId:
+          type: string
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/Id'
+        areaId:
+          type: string
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/Id'
+        updatedAt:
+          type: string
+          format: date-time
+
+    LocationPage:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Location'
+        nextCursor:
+          type: string
+          nullable: true
+
+    CreateLocationInput:
+      type: object
+      additionalProperties: false
+      x-phase: P3
+      required:
+        - name
+        - description
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 60
+        description:
+          type: string
+          maxLength: 20000
+          description: 'Texte brut, jamais interprété comme du HTML ou du Markdown.'
+        mapId:
+          type: string
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/Id'
+        areaId:
+          type: string
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/Id'
+
+    UpdateLocationInput:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      x-phase: P3
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 60
+        description:
+          type: string
+          maxLength: 20000
+          description: 'Texte brut, jamais interprété comme du HTML ou du Markdown.'
+        mapId:
+          type: string
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/Id'
+        areaId:
+          type: string
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/Id'
+
+    Quest:
+      type: object
+      description: 'Réservé au MJ, jamais envoyé aux joueurs.'
+      required:
+        - id
+        - title
+        - description
+        - status
+        - objectives
+        - updatedAt
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        description:
+          type: string
+          maxLength: 20000
+          description: 'Texte brut, jamais interprété comme du HTML ou du Markdown.'
+        status:
+          type: string
+          enum:
+            - active
+            - completed
+            - failed
+            - abandoned
+        objectives:
+          type: array
+          maxItems: 50
+          items:
+            type: object
+            required:
+              - text
+              - done
+            properties:
+              text:
+                type: string
+                minLength: 1
+                maxLength: 500
+              done:
+                type: boolean
+        updatedAt:
+          type: string
+          format: date-time
+
+    QuestPage:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Quest'
+        nextCursor:
+          type: string
+          nullable: true
+
+    CreateQuestInput:
+      type: object
+      additionalProperties: false
+      x-phase: P3
+      required:
+        - title
+        - description
+        - status
+        - objectives
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        description:
+          type: string
+          maxLength: 20000
+          description: 'Texte brut, jamais interprété comme du HTML ou du Markdown.'
+        status:
+          type: string
+          enum:
+            - active
+            - completed
+            - failed
+            - abandoned
+        objectives:
+          type: array
+          maxItems: 50
+          items:
+            type: object
+            required:
+              - text
+              - done
+            properties:
+              text:
+                type: string
+                minLength: 1
+                maxLength: 500
+              done:
+                type: boolean
+
+    UpdateQuestInput:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      x-phase: P3
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        description:
+          type: string
+          maxLength: 20000
+          description: 'Texte brut, jamais interprété comme du HTML ou du Markdown.'
+        status:
+          type: string
+          enum:
+            - active
+            - completed
+            - failed
+            - abandoned
+        objectives:
+          type: array
+          maxItems: 50
+          items:
+            type: object
+            required:
+              - text
+              - done
+            properties:
+              text:
+                type: string
+                minLength: 1
+                maxLength: 500
+              done:
+                type: boolean
+
+    DocumentKind:
+      type: string
+      enum:
+        - text
+        - image
+
+    DocumentGm:
+      type: object
+      required:
+        - view
+        - id
+        - title
+        - kind
+        - body
+        - image
+        - gmNotes
+        - revealed
+        - revealedAt
+      properties:
+        view:
+          type: string
+          enum:
+            - gm
+        id:
+          $ref: '#/components/schemas/Id'
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        kind:
+          $ref: '#/components/schemas/DocumentKind'
+        body:
+          type: string
+          nullable: true
+          maxLength: 20000
+          description: 'Texte brut, pour un document texte.'
+        image:
+          type: object
+          nullable: true
+          required:
+            - width
+            - height
+            - version
+          properties:
+            width:
+              type: integer
+              minimum: 1
+            height:
+              type: integer
+              minimum: 1
+            version:
+              type: integer
+              minimum: 1
+        gmNotes:
+          type: string
+          maxLength: 20000
+          description: 'Notes du MJ sur le document, jamais envoyées aux joueurs.'
+        revealed:
+          type: boolean
+        revealedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    DocumentParty:
+      type: object
+      description: 'Document révélé, vu par les joueurs : sans gmNotes.'
+      required:
+        - view
+        - id
+        - title
+        - kind
+        - body
+        - image
+        - revealedAt
+      properties:
+        view:
+          type: string
+          enum:
+            - party
+        id:
+          $ref: '#/components/schemas/Id'
+        title:
+          type: string
+          maxLength: 120
+        kind:
+          $ref: '#/components/schemas/DocumentKind'
+        body:
+          type: string
+          nullable: true
+          maxLength: 20000
+        image:
+          type: object
+          nullable: true
+          required:
+            - width
+            - height
+            - url
+          properties:
+            width:
+              type: integer
+              minimum: 1
+            height:
+              type: integer
+              minimum: 1
+            url:
+              type: string
+              format: uri-reference
+              description: 'URL versionnée de getDocumentImage (?v=), à charger avec fetch et le jeton.'
+              example: '/api/v1/documents/9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d/image?v=2'
+        revealedAt:
+          type: string
+          format: date-time
+
+    DocumentView:
+      oneOf:
+        - $ref: '#/components/schemas/DocumentGm'
+        - $ref: '#/components/schemas/DocumentParty'
+      discriminator:
+        propertyName: view
+        mapping:
+          gm: '#/components/schemas/DocumentGm'
+          party: '#/components/schemas/DocumentParty'
+
+    DocumentGmPage:
+      type: object
+      required:
+        - view
+        - items
+      properties:
+        view:
+          type: string
+          enum:
+            - gm
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentGm'
+        nextCursor:
+          type: string
+          nullable: true
+
+    DocumentPartyPage:
+      type: object
+      required:
+        - view
+        - items
+      properties:
+        view:
+          type: string
+          enum:
+            - party
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentParty'
+        nextCursor:
+          type: string
+          nullable: true
+
+    DocumentListView:
+      oneOf:
+        - $ref: '#/components/schemas/DocumentGmPage'
+        - $ref: '#/components/schemas/DocumentPartyPage'
+      discriminator:
+        propertyName: view
+        mapping:
+          gm: '#/components/schemas/DocumentGmPage'
+          party: '#/components/schemas/DocumentPartyPage'
+
+    CreateDocumentInput:
+      description: >-
+        Document texte (body obligatoire) ou image (sans body : l'image arrive ensuite par
+        uploadDocumentImage). Le type ne change plus après la création.
+      x-phase: P3
+      oneOf:
+        - $ref: '#/components/schemas/CreateTextDocumentInput'
+        - $ref: '#/components/schemas/CreateImageDocumentInput'
+      discriminator:
+        propertyName: kind
+        mapping:
+          text: '#/components/schemas/CreateTextDocumentInput'
+          image: '#/components/schemas/CreateImageDocumentInput'
+
+    CreateTextDocumentInput:
+      type: object
+      required:
+        - kind
+        - title
+        - body
+      additionalProperties: false
+      properties:
+        kind:
+          type: string
+          enum:
+            - text
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        body:
+          type: string
+          minLength: 1
+          maxLength: 20000
+        gmNotes:
+          type: string
+          maxLength: 20000
+
+    CreateImageDocumentInput:
+      type: object
+      required:
+        - kind
+        - title
+      additionalProperties: false
+      properties:
+        kind:
+          type: string
+          enum:
+            - image
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        gmNotes:
+          type: string
+          maxLength: 20000
+
+    UpdateDocumentInput:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      x-phase: P3
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        body:
+          type: string
+          maxLength: 20000
+        gmNotes:
+          type: string
+          maxLength: 20000
+
+    ShowDocumentInput:
+      type: object
+      required:
+        - documentId
+      additionalProperties: false
+      x-phase: P3
+      properties:
+        documentId:
+          type: string
+          nullable: true
+          description: 'null : retirer le document affiché.'
+          allOf:
+            - $ref: '#/components/schemas/Id'
