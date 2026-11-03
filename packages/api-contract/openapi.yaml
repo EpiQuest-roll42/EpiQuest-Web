@@ -37,6 +37,8 @@ tags:
     description: 'Contenu du SRD 5.1 (CC BY 4.0), en lecture seule, au format de règles interprété par le moteur (docs/technique/format-des-regles.md).'
   - name: Rencontres
     description: 'Préparation des rencontres par le MJ, calcul de la difficulté et placement sur la carte. Invisible des joueurs.'
+  - name: Combat
+    description: 'Combat assisté : initiative, actions proposées puis appliquées par le MJ, annulation, journal (annexe A1).'
 paths:
   /auth/register:
     post:
@@ -890,6 +892,62 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
+  /characters/{characterId}/effects:
+    parameters:
+      - $ref: '#/components/parameters/CharacterId'
+    post:
+      tags:
+        - Personnages
+      operationId: addCharacterEffect
+      summary: 'Ajouter un effet hors combat (MJ).'
+      description: >-
+        Par exemple un piège qui empoisonne. Réservé au MJ : le propriétaire reçoit 403. Pendant un combat actif : 409 character_in_combat, on passe
+        par proposeAction pour que l'effet soit affiché avant application et annulable.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddEffectInput'
+      responses:
+        '201':
+          description: 'Effet ajouté.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActiveEffect'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /characters/{characterId}/effects/{effectId}:
+    parameters:
+      - $ref: '#/components/parameters/CharacterId'
+      - $ref: '#/components/parameters/EffectId'
+    delete:
+      tags:
+        - Personnages
+      operationId: removeCharacterEffect
+      summary: 'Retirer un effet hors combat (MJ).'
+      description: >-
+        Réservé au MJ : le propriétaire reçoit 403. 404 si l'effet n'existe pas. Pendant un combat actif : 409 character_in_combat.
+      responses:
+        '204':
+          description: 'Effet retiré.'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
   /characters/{characterId}/creation/options:
     parameters:
       - $ref: '#/components/parameters/CharacterId'
@@ -1161,10 +1219,11 @@ paths:
       operationId: adjustHitPoints
       summary: 'Corriger les PV (propriétaire ou MJ).'
       description: >-
-        Correction manuelle, hors résolution du combat (qui viendra avec la section Combat). Avec dice,
+        Correction manuelle, hors combat. Avec dice,
         le serveur lance les dés (une potion bue entre deux scènes, par exemple) ; amount est réservé
-        aux corrections du MJ (403 amount_gm_only pour le propriétaire). Pendant un combat en cours,
-        seul le MJ peut corriger : 409 character_in_combat pour le propriétaire. 409
+        aux corrections du MJ (403 amount_gm_only pour le propriétaire). Pendant un combat actif : 409
+        character_in_combat pour tout le monde, MJ compris ; la correction passe par proposeAction
+        (source manual), affichée avant application et annulable. 409
         character_not_active pour un brouillon. Chaque correction est écrite dans le journal de la
         campagne (qui, quoi, quand). Les jets contre la mort sont remis à zéro dès que le personnage
         récupère des PV.
@@ -1201,8 +1260,8 @@ paths:
       summary: 'Prendre un repos court ou long (propriétaire ou MJ).'
       description: >-
         Pendant un repos court, le serveur lance les dés de vie dépensés (hitDiceToSpend). 400
-        not_enough_hit_dice s'il n'en reste pas assez. 409 character_in_combat pour le propriétaire
-        pendant un combat en cours ; 409 character_not_active pour un brouillon. Écrit dans le journal
+        not_enough_hit_dice s'il n'en reste pas assez. Pendant un combat actif : 409
+        character_in_combat pour tout le monde, MJ compris. 409 character_not_active pour un brouillon. Écrit dans le journal
         de la campagne.
       requestBody:
         required: true
@@ -1237,8 +1296,8 @@ paths:
       summary: 'Corriger les emplacements de sorts ou les dés de vie restants (propriétaire ou MJ).'
       description: >-
         Correction manuelle. Les jets contre la mort ne se corrigent pas ici : ils sont lancés par le
-        serveur (rollCheck, type death). 409 character_in_combat pour le propriétaire pendant un combat
-        en cours ; 409 character_not_active pour un brouillon. Écrit dans le journal de la campagne.
+        serveur. Pendant un combat actif : 409 character_in_combat pour tout le monde, MJ compris ; la
+        correction passe par proposeAction (source manual). 409 character_not_active pour un brouillon. Écrit dans le journal de la campagne.
       requestBody:
         required: true
         content:
@@ -1392,7 +1451,8 @@ paths:
         Le serveur calcule le modificateur à partir de la fiche et lance le d20. Visibilités : mêmes
         règles que rollDice (joueur : public ou private, 403 hidden_roll_gm_only ; MJ : public ou
         hidden, 400 private_roll_player_only ; personnage sans campagne : private seulement). Pour
-        type death : 409 not_dying si les PV ne sont pas à 0 ; le serveur met à jour deathSaves (un 20
+        type death : hors combat seulement (pendant un combat actif, 409 character_in_combat : seul
+        nextTurn crée le jet) ; 409 not_dying si les PV ne sont pas à 0 ; le serveur met à jour deathSaves (un 20
         naturel rend 1 PV, un 1 naturel compte deux échecs). 400 key_required si key manque pour skill,
         ability ou save ; 400 key_not_allowed si key est envoyé pour death. 409 character_not_active pour
         un brouillon.
@@ -2058,8 +2118,9 @@ paths:
       operationId: adjustCreatureHitPoints
       summary: "Corriger les PV d'une créature (MJ)."
       description: >-
-        Même entrée que adjustHitPoints (amount ou dice). 409 not_a_creature si le pion est celui d'un
-        personnage. Les joueurs n'en voient que l'état approximatif (healthState). Joueur : 403 si
+        Même entrée que adjustHitPoints (amount ou dice), hors combat. Pendant un combat actif : 409
+        creature_in_combat pour tout le monde, MJ compris ; la correction passe par proposeAction. 409
+        not_a_creature si le pion est celui d'un personnage. Les joueurs n'en voient que l'état approximatif (healthState). Joueur : 403 si
         c'est la carte active, sinon 404.
       requestBody:
         required: true
@@ -2241,6 +2302,471 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
+  /maps/{mapId}/tokens/{tokenId}/effects:
+    parameters:
+      - $ref: '#/components/parameters/MapId'
+      - $ref: '#/components/parameters/TokenId'
+    post:
+      tags:
+        - Cartes
+      operationId: addTokenEffect
+      summary: 'Ajouter un effet hors combat (MJ).'
+      description: >-
+        Par exemple un piège qui empoisonne. Réservé au MJ : un joueur reçoit 403 si c'est la carte active, sinon 404. Pendant un combat actif : 409 creature_in_combat, on passe
+        par proposeAction pour que l'effet soit affiché avant application et annulable.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddEffectInput'
+      responses:
+        '201':
+          description: 'Effet ajouté.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActiveEffect'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /maps/{mapId}/tokens/{tokenId}/effects/{effectId}:
+    parameters:
+      - $ref: '#/components/parameters/MapId'
+      - $ref: '#/components/parameters/TokenId'
+      - $ref: '#/components/parameters/EffectId'
+    delete:
+      tags:
+        - Cartes
+      operationId: removeTokenEffect
+      summary: 'Retirer un effet hors combat (MJ).'
+      description: >-
+        Réservé au MJ : un joueur reçoit 403 si c'est la carte active, sinon 404. 404 si l'effet n'existe pas. Pendant un combat actif : 409 creature_in_combat.
+      responses:
+        '204':
+          description: 'Effet retiré.'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /maps/{mapId}/combats:
+    parameters:
+      - $ref: '#/components/parameters/MapId'
+    post:
+      tags:
+        - Combat
+      operationId: startCombat
+      x-phase: P3
+      summary: 'Lancer un combat sur la carte (MJ).'
+      description: >-
+        Le serveur lance l'initiative de tous les combattants : jets public pour les personnages (chacun
+        connaît la sienne), hidden pour toutes les créatures (leur score n'est pas montré aux joueurs).
+        Sans tokenIds, tous les pions du calque tokens entrent dans le combat, créatures cachées comprises
+        (elles deviennent des combattants cachés), jamais ceux du calque gm. Une seule scène active donne
+        un seul combat actif : 409 combat_already_active si un combat est déjà en cours dans la campagne. Joueur : 403 si c'est la carte active, sinon
+        404.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartCombatInput'
+      responses:
+        '201':
+          description: "Combat lancé, ordre d'initiative calculé."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CombatGm'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /combats/{combatId}:
+    parameters:
+      - $ref: '#/components/parameters/CombatId'
+    get:
+      tags:
+        - Combat
+      operationId: getCombat
+      x-phase: P3
+      summary: 'Lire le combat (MJ).'
+      description: >-
+        Réservé au MJ : un joueur reçoit 403. Les joueurs connaissent le combat par la scène (getScene),
+        qui est leur seule source : initiative filtrée, round et currentTurn.
+      responses:
+        '200':
+          description: 'Le combat, vue MJ.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CombatGm'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /combats/{combatId}/combatants:
+    parameters:
+      - $ref: '#/components/parameters/CombatId'
+    post:
+      tags:
+        - Combat
+      operationId: addCombatant
+      x-phase: P3
+      summary: 'Ajouter un combattant en cours de combat (MJ).'
+      description: >-
+        Sans initiative fournie, le serveur la lance (même visibilité qu'au début du combat). 409
+        already_in_combat si le pion est déjà dans le combat.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddCombatantInput'
+      responses:
+        '201':
+          description: 'Combat mis à jour.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CombatGm'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /combats/{combatId}/combatants/{combatantId}:
+    parameters:
+      - $ref: '#/components/parameters/CombatId'
+      - $ref: '#/components/parameters/CombatantId'
+    patch:
+      tags:
+        - Combat
+      operationId: updateCombatant
+      x-phase: P3
+      summary: 'Corriger une initiative ou retirer un combattant (MJ).'
+      description: >-
+        Un combattant retiré (removed) reste dans le combat pour le MJ et le journal, et disparaît de
+        l'initiative des joueurs. Impossible de retirer le combattant dont c'est le tour (409
+        combatant_is_current : passer d'abord au tour suivant) ni l'acteur d'une action pending (409
+        pending_actions). 404 si le combattant n'existe pas.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCombatantInput'
+      responses:
+        '200':
+          description: 'Combat mis à jour.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CombatGm'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /combats/{combatId}/next-turn:
+    parameters:
+      - $ref: '#/components/parameters/CombatId'
+    post:
+      tags:
+        - Combat
+      operationId: nextTurn
+      x-phase: P3
+      summary: 'Passer au tour suivant (MJ).'
+      description: >-
+        Refusé tant qu'une action est pending (409 pending_actions). Fin du tour : durées décomptées,
+        effets à 0 retirés. Début du tour suivant : reactionUsed remis à faux, et création des
+        résolutions pending nécessaires, renvoyées dans la réponse : effets de début de tour (« prend
+        feu, 1d4 »), sauvegardes répétées contre un état, jet contre la mort d'un personnage à 0 PV
+        (seule voie pendant un combat), recharge d'une action de monstre.
+      responses:
+        '200':
+          description: 'Combat avancé, avec les résolutions créées.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NextTurnResult'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /combats/{combatId}/end:
+    parameters:
+      - $ref: '#/components/parameters/CombatId'
+    post:
+      tags:
+        - Combat
+      operationId: endCombat
+      x-phase: P3
+      summary: 'Terminer le combat (MJ).'
+      description: >-
+        Refusé tant qu'une action est pending (409 pending_actions). Les effets restent sur leurs sujets
+        (personnages et pions) après le combat.
+      responses:
+        '200':
+          description: 'Combat terminé.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CombatGm'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /combats/{combatId}/actions:
+    parameters:
+      - $ref: '#/components/parameters/CombatId'
+    post:
+      tags:
+        - Combat
+      operationId: proposeAction
+      x-phase: P3
+      summary: 'Proposer une action : le serveur la résout sans rien appliquer (statut pending).'
+      description: >-
+        Un joueur propose pour son propre personnage, à son tour, ou hors de son tour pour une action
+        dont l'activation vaut reaction si reactionUsed est faux (409 not_your_turn, 409 reaction_used)
+        ; 403 pour un autre combattant. Le MJ propose pour n'importe quel combattant, à tout moment
+        (actions légendaires comprises), et passe par source.kind manual pour « Ajouter un effet » ou
+        corriger des PV pendant un combat. Le serveur détecte les cibles (toutes les créatures dans la
+        zone, alliés compris), lance tous les dés et calcule résistances et immunités. Rien n'est
+        appliqué. Réponse au MJ : ActionResolutionGm. Réponse au joueur : ActionPendingParty, sans jets
+        ni cibles (leur nombre peut inclure des créatures cachées), pour qu'il ne puisse pas annuler un
+        raté et recommencer. Contrôles : la source doit appartenir à l'acteur (sort connu ou préparé, arme
+        ou objet dans l'inventaire et équipé s'il le faut, action du monstre désignée par actionKey), sinon
+        400 source_not_available ; effects est réservé au MJ (403 effects_gm_only pour un joueur) ;
+        actorCombatantId null n'est accepté que pour source.kind manual, de la part du MJ. Erreurs : 400
+        out_of_range, 409 resource_exhausted.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProposeActionInput'
+      responses:
+        '201':
+          description: 'Action proposée, en attente du MJ.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProposedAction'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /combats/{combatId}/actions/{actionId}:
+    parameters:
+      - $ref: '#/components/parameters/CombatId'
+      - $ref: '#/components/parameters/ActionId'
+    patch:
+      tags:
+        - Combat
+      operationId: updatePendingAction
+      x-phase: P3
+      summary: 'Corriger une action en attente : inclure ou exclure des cibles, forcer un résultat, ajouter des effets (MJ).'
+      description: >-
+        Une correction ne relance jamais un dé déjà lancé : ajouter une cible lance seulement ses dés,
+        les jets existants sont conservés. Pour relancer, il faut annuler la proposition et en faire une
+        nouvelle, ce qui reste visible dans le journal du MJ. Les lignes modifiées passent à overridden.
+        409 action_not_pending.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePendingActionInput'
+      responses:
+        '200':
+          description: 'Action corrigée, toujours pending.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionResolutionGm'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /combats/{combatId}/actions/{actionId}/apply:
+    parameters:
+      - $ref: '#/components/parameters/CombatId'
+      - $ref: '#/components/parameters/ActionId'
+    post:
+      tags:
+        - Combat
+      operationId: applyAction
+      x-phase: P3
+      summary: 'Appliquer une action (MJ).'
+      description: >-
+        Met à jour PV, effets, ressources, concentration et journal, puis envoie la version projetée
+        (ActionResolutionParty) à la vue joueurs. Un combattant concentré qui subit des dégâts reçoit
+        une résolution pending de sauvegarde de CON (DD 10, ou la moitié des dégâts si c'est plus) ;
+        lancer un nouveau sort de concentration met fin à l'ancien. 409 action_not_pending, 409
+        resource_exhausted.
+      responses:
+        '200':
+          description: 'Action appliquée.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionResolutionGm'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /combats/{combatId}/actions/{actionId}/cancel:
+    parameters:
+      - $ref: '#/components/parameters/CombatId'
+      - $ref: '#/components/parameters/ActionId'
+    post:
+      tags:
+        - Combat
+      operationId: cancelAction
+      x-phase: P3
+      summary: "Annuler une action en attente, sans l'appliquer."
+      description: >-
+        Le MJ annule n'importe quelle action pending ; un joueur seulement sa propre proposition, et
+        reçoit ActionPendingParty avec status cancelled. Les entrées actionCancelled du journal sont
+        réservées au MJ. 409 action_not_pending.
+      responses:
+        '200':
+          description: 'Action annulée.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProposedAction'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /combats/{combatId}/actions/{actionId}/undo:
+    parameters:
+      - $ref: '#/components/parameters/CombatId'
+      - $ref: '#/components/parameters/ActionId'
+    post:
+      tags:
+        - Combat
+      operationId: undoAction
+      x-phase: P3
+      summary: 'Défaire une action appliquée (MJ).'
+      description: >-
+        Rétablit PV, effets, ressources et concentration d'avant l'action. L'annulation se fait dans
+        l'ordre inverse : pour défaire une action ancienne, il faut d'abord défaire les plus récentes
+        qui touchent les mêmes cibles (409 undo_order). Les résolutions créées en retour (followUps)
+        sont défaites avec elle. 409 action_not_applied.
+      responses:
+        '200':
+          description: 'Action défaite.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionResolutionGm'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /campaigns/{campaignId}/journal:
+    parameters:
+      - $ref: '#/components/parameters/CampaignId'
+    get:
+      tags:
+        - Combat
+      operationId: listJournal
+      x-phase: P3
+      security:
+        - displayAuth: []
+        - cookieAuth: []
+        - bearerAuth: []
+      summary: 'Lire le journal de la partie, du plus récent au plus ancien.'
+      description: >-
+        MJ : vue gm, toutes les entrées. Joueur ou jeton d'affichage : vue party, sans les entrées
+        actionCancelled ni manualCorrection, sans ce qui concerne des créatures ou des effets cachés,
+        sans les jets private des autres ni les jets hidden. Le filtrage est fait dans la requête en
+        base, comme pour les jets. Le front écrit les phrases, pour l'interface comme pour le lecteur
+        d'écran.
+      parameters:
+        - $ref: '#/components/parameters/SessionIdFilter'
+        - $ref: '#/components/parameters/SessionFilter'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: 'Page du journal.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JournalView'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /campaigns/{campaignId}/scene:
     parameters:
       - $ref: '#/components/parameters/CampaignId'
@@ -2970,7 +3496,7 @@ components:
       description: >-
         Jeton d'affichage de la vue joueurs (createDisplaySession) : vue party seulement, en lecture
         seule, valable 12 heures, révocable par le MJ. Déclaré uniquement sur getScene, getMap,
-        getMapTile, listCampaignRolls et getRoll ; sur toute autre route, un jeton d'affichage reconnu
+        getMapTile, listCampaignRolls, getRoll et listJournal ; sur toute autre route, un jeton d'affichage reconnu
         reçoit 403 display_token_not_allowed (le jeton est valide mais n'a pas ce droit). Si ce jeton
         est présent, il s'applique seul : le cookie de session du MJ, que le navigateur joint aussi aux
         requêtes de la vue joueurs, est ignoré. La vue joueurs fait ses requêtes avec credentials omit,
@@ -3155,6 +3681,30 @@ components:
         $ref: '#/components/schemas/Id'
     MapId:
       name: mapId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Id'
+    CombatId:
+      name: combatId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Id'
+    CombatantId:
+      name: combatantId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Id'
+    ActionId:
+      name: actionId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Id'
+    EffectId:
+      name: effectId
       in: path
       required: true
       schema:
@@ -4092,8 +4642,9 @@ components:
           $ref: '#/components/schemas/HitPoints'
         conditions:
           type: array
+          description: 'Effets visibles, par leur nom, sans les effets cachés.'
           items:
-            $ref: '#/components/schemas/RuleRef'
+            $ref: '#/components/schemas/VisibleEffect'
 
     InventoryEntry:
       type: object
@@ -4167,7 +4718,7 @@ components:
         - inventory
         - currency
         - carryWeight
-        - conditions
+        - effects
         - campaign
         - rulesetVersion
         - createdAt
@@ -4419,10 +4970,14 @@ components:
             capacity:
               type: number
               minimum: 0
-        conditions:
+        effects:
           type: array
+          readOnly: true
+          description: >-
+            Effets en cours (états SRD et effets libres), seule source des états. La vue owner exclut les
+            effets hiddenFromPlayers ; la vue gm les contient tous.
           items:
-            $ref: '#/components/schemas/RuleRef'
+            $ref: '#/components/schemas/ActiveEffect'
         campaign:
           type: object
           nullable: true
@@ -4956,7 +5511,8 @@ components:
       type: object
       description: >-
         Contexte du jet, à partir duquel l'interface écrit son libellé (par exemple « Perception (SAG) »).
-        Les types attack et damage viendront avec la section Combat.
+        initiative, attack, damage, concentration et recharge sont lancés par le combat ; hitPoints pour les
+        PV d'une créature (hitPointMethod roll) ou de la montée de niveau ; healing pour une potion (dice).
       required:
         - type
         - ref
@@ -4970,6 +5526,13 @@ components:
             - save
             - death
             - abilityScore
+            - initiative
+            - attack
+            - damage
+            - concentration
+            - recharge
+            - hitPoints
+            - healing
         ref:
           description: 'RuleId de la compétence, ou code de caractéristique ; null si le type suffit.'
           type: string
@@ -5819,22 +6382,6 @@ components:
         - gm
       description: 'gm : calque MJ, jamais envoyé aux joueurs.'
 
-    TokenCondition:
-      type: object
-      required:
-        - condition
-        - hidden
-      properties:
-        condition:
-          description: >-
-            État du SRD (empoisonné, à terre…). Les effets libres du MJ (« prend feu, 1d4 par tour pendant
-            2 tours ») viendront avec la section Combat, qui élargira ce champ par un oneOf.
-          allOf:
-            - $ref: '#/components/schemas/RuleRef'
-        hidden:
-          type: boolean
-          description: "Effet caché aux joueurs (par exemple un poison qu'ils n'ont pas remarqué)."
-
     CharacterTokenGm:
       type: object
       required:
@@ -5867,7 +6414,7 @@ components:
         - monster
         - displayName
         - hitPoints
-        - conditions
+        - effects
         - hidden
       properties:
         kind:
@@ -5886,10 +6433,11 @@ components:
           $ref: '#/components/schemas/DisplayName'
         hitPoints:
           $ref: '#/components/schemas/HitPoints'
-        conditions:
+        effects:
           type: array
+          description: 'Effets en cours sur la créature (états SRD et effets libres), seule source des états.'
           items:
-            $ref: '#/components/schemas/TokenCondition'
+            $ref: '#/components/schemas/ActiveEffect'
         hidden:
           type: boolean
           description: "Créature cachée (invisible, en embuscade) : absente des pions et de l'initiative des joueurs."
@@ -5931,8 +6479,9 @@ components:
           $ref: '#/components/schemas/HitPoints'
         conditions:
           type: array
+          description: 'Effets visibles, par leur nom, sans les effets cachés.'
           items:
-            $ref: '#/components/schemas/RuleRef'
+            $ref: '#/components/schemas/VisibleEffect'
 
     CreatureTokenParty:
       type: object
@@ -5961,9 +6510,9 @@ components:
           $ref: '#/components/schemas/HealthState'
         conditions:
           type: array
-          description: 'États SRD visibles des joueurs : sans le champ hidden et sans les états marqués cachés.'
+          description: 'Effets visibles, par leur nom (« En feu »), sans les effets marqués hiddenFromPlayers.'
           items:
-            $ref: '#/components/schemas/RuleRef'
+            $ref: '#/components/schemas/VisibleEffect'
 
     TokenParty:
       oneOf:
@@ -9428,3 +9977,1195 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/TokenGm'
+
+    # --- COMBAT : EFFETS ACTIFS ---
+    FreeEffect:
+      type: object
+      description: >-
+        Effet libre ajouté par le MJ, que les règles ne prévoient pas. Exemple de la fiche : « prend feu »,
+        startOfTurn, 1d4 de feu, 2 tours.
+      required:
+        - type
+        - name
+        - trigger
+      properties:
+        type:
+          type: string
+          enum:
+            - free
+        name:
+          type: string
+          minLength: 1
+          maxLength: 60
+          example: 'En feu'
+        description:
+          type: string
+          maxLength: 500
+          description: 'Texte brut, jamais interprété comme du HTML ou du Markdown.'
+        trigger:
+          type: string
+          enum:
+            - startOfTurn
+            - endOfTurn
+            - none
+        dice:
+          type: string
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/Formula'
+        damageType:
+          type: string
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/RuleId'
+        durationRounds:
+          type: integer
+          nullable: true
+          minimum: 1
+
+    AppliedEffect:
+      description: "Un effet du format SRD (par exemple l'état poisoned) ou un effet libre."
+      oneOf:
+        - $ref: '#/components/schemas/Effect'
+        - $ref: '#/components/schemas/FreeEffect'
+
+    ActiveEffect:
+      type: object
+      description: >-
+        Effet en cours sur un sujet : le personnage, ou le pion pour une créature. Il survit à la fin du
+        combat ; le combat le lit sans en être propriétaire. C'est la seule source des états.
+      required:
+        - id
+        - effect
+        - source
+        - remainingRounds
+        - hiddenFromPlayers
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        effect:
+          $ref: '#/components/schemas/AppliedEffect'
+        source:
+          type: object
+          nullable: true
+          description: "Action ou combattant d'origine."
+          required:
+            - kind
+            - id
+          properties:
+            kind:
+              type: string
+              enum:
+                - action
+                - combatant
+            id:
+              $ref: '#/components/schemas/Id'
+        remainingRounds:
+          type: integer
+          nullable: true
+          minimum: 0
+          description: "null : jusqu'à ce qu'on le retire."
+        hiddenFromPlayers:
+          type: boolean
+
+    VisibleEffect:
+      type: object
+      description: 'Effet vu par les joueurs : son nom seulement, jamais un effet marqué hiddenFromPlayers.'
+      required:
+        - name
+        - condition
+      properties:
+        name:
+          type: string
+          maxLength: 60
+          example: 'En feu'
+        condition:
+          type: object
+          nullable: true
+          description: 'État SRD ; null pour un effet libre.'
+          allOf:
+            - $ref: '#/components/schemas/RuleRef'
+
+    AddEffectInput:
+      type: object
+      required:
+        - effect
+      additionalProperties: false
+      x-phase: P3
+      properties:
+        effect:
+          $ref: '#/components/schemas/AppliedEffect'
+        remainingRounds:
+          type: integer
+          nullable: true
+          minimum: 1
+        hiddenFromPlayers:
+          type: boolean
+          default: false
+
+    # --- COMBAT : COMBAT ET COMBATTANTS ---
+    CombatGm:
+      type: object
+      required:
+        - id
+        - campaignId
+        - mapId
+        - sessionId
+        - status
+        - round
+        - currentTurn
+        - combatants
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        campaignId:
+          $ref: '#/components/schemas/Id'
+        mapId:
+          $ref: '#/components/schemas/Id'
+        sessionId:
+          type: string
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/Id'
+        status:
+          type: string
+          enum:
+            - active
+            - ended
+        round:
+          type: integer
+          minimum: 1
+        currentTurn:
+          type: string
+          nullable: true
+          description: "combatantId dont c'est le tour."
+          allOf:
+            - $ref: '#/components/schemas/Id'
+        combatants:
+          type: array
+          description: "Dans l'ordre d'initiative."
+          items:
+            $ref: '#/components/schemas/CombatantGm'
+
+    CombatantGm:
+      type: object
+      description: 'Les effets du combattant sont portés par son pion ou sa fiche (ActiveEffect), pas par le combattant.'
+      required:
+        - id
+        - tokenId
+        - kind
+        - initiative
+        - initiativeRollId
+        - hidden
+        - seenByParty
+        - concentration
+        - reactionUsed
+        - removed
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        tokenId:
+          $ref: '#/components/schemas/Id'
+        kind:
+          type: string
+          enum:
+            - character
+            - creature
+        initiative:
+          type: integer
+        initiativeRollId:
+          type: string
+          nullable: true
+          description: "null si l'initiative a été fixée par le MJ."
+          allOf:
+            - $ref: '#/components/schemas/Id'
+        hidden:
+          type: boolean
+          description: 'Repris du pion.'
+        seenByParty:
+          type: boolean
+          description: "Vu au moins une fois pendant ce combat (dans une case visible) : reste dans l'initiative des joueurs."
+        concentration:
+          type: object
+          nullable: true
+          required:
+            - source
+            - effectIds
+          properties:
+            source:
+              $ref: '#/components/schemas/RuleRef'
+            effectIds:
+              type: array
+              items:
+                $ref: '#/components/schemas/Id'
+        reactionUsed:
+          type: boolean
+          description: 'Remis à faux au début du tour du combattant.'
+        removed:
+          type: boolean
+          description: "Retiré du combat : reste dans la liste du MJ et dans le journal, mais n'apparaît plus dans l'initiative des joueurs."
+
+    StartCombatInput:
+      type: object
+      additionalProperties: false
+      x-phase: P3
+      properties:
+        tokenIds:
+          type: array
+          maxItems: 100
+          description: 'Pions qui entrent dans le combat ; absent = tous les pions du calque tokens.'
+          items:
+            $ref: '#/components/schemas/Id'
+
+    AddCombatantInput:
+      type: object
+      required:
+        - tokenId
+      additionalProperties: false
+      x-phase: P3
+      properties:
+        tokenId:
+          $ref: '#/components/schemas/Id'
+        initiative:
+          type: integer
+          nullable: true
+          description: "null ou absent : le serveur lance l'initiative."
+
+    UpdateCombatantInput:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      x-phase: P3
+      properties:
+        initiative:
+          type: integer
+        removed:
+          type: boolean
+          enum:
+            - true
+          description: 'Retire le combattant du combat.'
+
+    # --- COMBAT : RÉSOLUTION D'UNE ACTION ---
+    ResolutionStatus:
+      type: string
+      enum:
+        - pending
+        - applied
+        - cancelled
+        - undone
+
+    ResolutionSourceKind:
+      type: string
+      enum:
+        - spell
+        - weapon
+        - feature
+        - monsterAction
+        - item
+        - manual
+        - turnEffect
+        - concentration
+        - deathSave
+
+    ResolutionSource:
+      type: object
+      required:
+        - kind
+        - ref
+        - name
+      properties:
+        kind:
+          $ref: '#/components/schemas/ResolutionSourceKind'
+        ref:
+          type: object
+          nullable: true
+          description: 'Sort, arme, capacité ou objet SRD ; null pour une action manuelle.'
+          allOf:
+            - $ref: '#/components/schemas/RuleRef'
+        name:
+          type: string
+          maxLength: 120
+          example: 'Boule de feu'
+
+    ResolutionCost:
+      type: object
+      description: "Ressource dépensée par l'action."
+      required:
+        - resource
+        - amount
+      properties:
+        resource:
+          type: string
+          enum:
+            - spellSlot
+            - charges
+            - uses
+        level:
+          type: integer
+          nullable: true
+          minimum: 1
+          maximum: 9
+          description: "Niveau de l'emplacement de sort."
+        amount:
+          type: integer
+          minimum: 1
+
+    AttackCheck:
+      type: object
+      required:
+        - kind
+        - roll
+        - armorClass
+        - hit
+        - critical
+      properties:
+        kind:
+          type: string
+          enum:
+            - attack
+        roll:
+          $ref: '#/components/schemas/RollResult'
+        armorClass:
+          type: integer
+        hit:
+          type: boolean
+        critical:
+          type: boolean
+
+    SaveCheck:
+      type: object
+      required:
+        - kind
+        - roll
+        - ability
+        - dc
+        - success
+      properties:
+        kind:
+          type: string
+          enum:
+            - save
+        roll:
+          $ref: '#/components/schemas/RollResult'
+        ability:
+          $ref: '#/components/schemas/AbilityCode'
+        dc:
+          type: integer
+        success:
+          type: boolean
+
+    ResolutionCheck:
+      oneOf:
+        - $ref: '#/components/schemas/AttackCheck'
+        - $ref: '#/components/schemas/SaveCheck'
+      discriminator:
+        propertyName: kind
+        mapping:
+          attack: '#/components/schemas/AttackCheck'
+          save: '#/components/schemas/SaveCheck'
+
+    DamageOutcome:
+      type: object
+      required:
+        - type
+        - rolled
+        - damageType
+        - adjustment
+        - final
+      properties:
+        type:
+          type: string
+          enum:
+            - damage
+        rolled:
+          type: integer
+          minimum: 0
+        damageType:
+          $ref: '#/components/schemas/RuleId'
+        adjustment:
+          type: string
+          enum:
+            - none
+            - resistance
+            - vulnerability
+            - immunity
+        final:
+          type: integer
+          minimum: 0
+
+    HealingOutcome:
+      type: object
+      required:
+        - type
+        - amount
+      properties:
+        type:
+          type: string
+          enum:
+            - healing
+        amount:
+          type: integer
+          minimum: 0
+        temporary:
+          type: boolean
+          default: false
+          description: 'PV temporaires plutôt que soins.'
+
+    EffectOutcome:
+      type: object
+      description: 'État SRD ou effet libre posé sur la cible.'
+      required:
+        - type
+        - effect
+      properties:
+        type:
+          type: string
+          enum:
+            - effect
+        effect:
+          $ref: '#/components/schemas/ActiveEffect'
+
+    ResolutionOutcome:
+      oneOf:
+        - $ref: '#/components/schemas/DamageOutcome'
+        - $ref: '#/components/schemas/HealingOutcome'
+        - $ref: '#/components/schemas/EffectOutcome'
+      discriminator:
+        propertyName: type
+        mapping:
+          damage: '#/components/schemas/DamageOutcome'
+          healing: '#/components/schemas/HealingOutcome'
+          effect: '#/components/schemas/EffectOutcome'
+
+    ResolutionTarget:
+      type: object
+      required:
+        - combatantId
+        - included
+        - check
+        - outcomes
+        - hitPointsBefore
+        - hitPointsAfter
+        - overridden
+      properties:
+        combatantId:
+          $ref: '#/components/schemas/Id'
+        included:
+          type: boolean
+          description: 'Le MJ peut retirer une cible détectée (exclue) ou en ajouter une.'
+        check:
+          type: object
+          nullable: true
+          description: "Jet d'attaque ou de sauvegarde ; null pour une action sans jet."
+          allOf:
+            - $ref: '#/components/schemas/ResolutionCheck'
+        outcomes:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResolutionOutcome'
+        hitPointsBefore:
+          $ref: '#/components/schemas/HitPointsSnapshot'
+        hitPointsAfter:
+          $ref: '#/components/schemas/HitPointsSnapshot'
+        overridden:
+          type: boolean
+          description: 'Le MJ a modifié cette ligne.'
+
+    HitPointsSnapshot:
+      type: object
+      description: "PV actuels et temporaires ; les dégâts entament d'abord les PV temporaires."
+      required:
+        - current
+        - temporary
+      properties:
+        current:
+          type: integer
+          minimum: 0
+        temporary:
+          type: integer
+          minimum: 0
+
+    ActionResolutionGm:
+      type: object
+      required:
+        - view
+        - id
+        - combatId
+        - status
+        - proposedBy
+        - actor
+        - source
+        - cost
+        - area
+        - sharedRolls
+        - targets
+        - followUps
+        - createdAt
+        - appliedAt
+        - undoneAt
+      properties:
+        view:
+          type: string
+          enum:
+            - gm
+        id:
+          $ref: '#/components/schemas/Id'
+        combatId:
+          $ref: '#/components/schemas/Id'
+        status:
+          $ref: '#/components/schemas/ResolutionStatus'
+        proposedBy:
+          $ref: '#/components/schemas/UserPublic'
+        actor:
+          type: string
+          nullable: true
+          description: 'combatantId ; null pour une action manuelle du MJ sans acteur.'
+          allOf:
+            - $ref: '#/components/schemas/Id'
+        source:
+          $ref: '#/components/schemas/ResolutionSource'
+        cost:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResolutionCost'
+        area:
+          type: object
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/AreaSpec'
+        sharedRolls:
+          type: array
+          description: 'Jets communs à toutes les cibles, par exemple les 8d6 de la boule de feu.'
+          items:
+            $ref: '#/components/schemas/RollResult'
+        targets:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResolutionTarget'
+        followUps:
+          type: array
+          description: 'Résolutions créées en retour (sauvegarde de concentration, par exemple).'
+          items:
+            $ref: '#/components/schemas/Id'
+        createdAt:
+          type: string
+          format: date-time
+        appliedAt:
+          type: string
+          format: date-time
+          nullable: true
+        undoneAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    ActionPendingParty:
+      type: object
+      description: >-
+        Ce que reçoit le joueur qui a proposé l'action tant qu'elle n'est pas appliquée : « En attente du
+        MJ », sans jets ni cibles. S'il est annulé, seulement status cancelled.
+      required:
+        - view
+        - id
+        - status
+        - actorName
+        - sourceName
+      properties:
+        view:
+          type: string
+          enum:
+            - party
+        id:
+          $ref: '#/components/schemas/Id'
+        status:
+          type: string
+          enum:
+            - pending
+            - cancelled
+        actorName:
+          type: string
+          maxLength: 60
+        sourceName:
+          type: string
+          maxLength: 120
+
+    ProposedAction:
+      oneOf:
+        - $ref: '#/components/schemas/ActionResolutionGm'
+        - $ref: '#/components/schemas/ActionPendingParty'
+      discriminator:
+        propertyName: view
+        mapping:
+          gm: '#/components/schemas/ActionResolutionGm'
+          party: '#/components/schemas/ActionPendingParty'
+
+    CreatureTargetParty:
+      type: object
+      description: 'Créature visible touchée : son résultat et son nouvel état approximatif, jamais les dégâts subis (ils révéleraient ses résistances).'
+      required:
+        - kind
+        - name
+        - result
+        - healthState
+        - effectsApplied
+      properties:
+        kind:
+          type: string
+          enum:
+            - creature
+        name:
+          $ref: '#/components/schemas/DisplayName'
+        result:
+          $ref: '#/components/schemas/TargetResult'
+        healthState:
+          $ref: '#/components/schemas/HealthState'
+        effectsApplied:
+          type: array
+          items:
+            $ref: '#/components/schemas/VisibleEffect'
+
+    CharacterTargetParty:
+      type: object
+      description: 'Personnage touché : son résultat et les dégâts subis (ses PV exacts sont déjà visibles).'
+      required:
+        - kind
+        - name
+        - result
+        - damageTaken
+        - effectsApplied
+      properties:
+        kind:
+          type: string
+          enum:
+            - character
+        name:
+          $ref: '#/components/schemas/CharacterName'
+        result:
+          $ref: '#/components/schemas/TargetResult'
+        damageTaken:
+          type: integer
+          minimum: 0
+        effectsApplied:
+          type: array
+          items:
+            $ref: '#/components/schemas/VisibleEffect'
+
+    TargetResult:
+      type: string
+      enum:
+        - hit
+        - miss
+        - saved
+        - failed
+        - none
+
+    ActionResolutionParty:
+      type: object
+      description: >-
+        Action appliquée, vue par les joueurs. Jamais la CA ou le DD d'un monstre, son bonus, les PV avant
+        et après, les cibles cachées ni les effets hiddenFromPlayers. damageRolls est le jet de dégâts commun
+        (« Boule de feu · 28 dégâts », annexe A3). Fuite assumée : une créature immunisée ne change pas
+        d'état.
+      required:
+        - view
+        - id
+        - status
+        - actorName
+        - sourceName
+        - damageRolls
+        - targets
+      properties:
+        view:
+          type: string
+          enum:
+            - party
+        id:
+          $ref: '#/components/schemas/Id'
+        status:
+          type: string
+          enum:
+            - applied
+            - undone
+        actorName:
+          type: string
+          maxLength: 60
+        sourceName:
+          type: string
+          maxLength: 120
+        damageRolls:
+          type: array
+          items:
+            $ref: '#/components/schemas/RollResult'
+        targets:
+          type: array
+          description: 'Seulement les cibles visibles.'
+          items:
+            oneOf:
+              - $ref: '#/components/schemas/CreatureTargetParty'
+              - $ref: '#/components/schemas/CharacterTargetParty'
+            discriminator:
+              propertyName: kind
+              mapping:
+                creature: '#/components/schemas/CreatureTargetParty'
+                character: '#/components/schemas/CharacterTargetParty'
+
+    NextTurnResult:
+      type: object
+      required:
+        - combat
+        - pendingActions
+      properties:
+        combat:
+          $ref: '#/components/schemas/CombatGm'
+        pendingActions:
+          type: array
+          description: 'Résolutions pending créées au début du tour, à valider par le MJ.'
+          items:
+            $ref: '#/components/schemas/ActionResolutionGm'
+
+    # --- COMBAT : ENTRÉES ---
+    ProposeActionInput:
+      type: object
+      required:
+        - source
+      additionalProperties: false
+      x-phase: P3
+      properties:
+        actorCombatantId:
+          type: string
+          nullable: true
+          description: 'Combattant qui agit. null seulement pour une action manuelle (source.kind manual) du MJ ; un joueur indique toujours son propre combattant.'
+          allOf:
+            - $ref: '#/components/schemas/Id'
+        source:
+          type: object
+          additionalProperties: false
+          required:
+            - kind
+          properties:
+            kind:
+              $ref: '#/components/schemas/ResolutionSourceKind'
+            ref:
+              description: 'Sort, arme, capacité, objet ou monstre ; absent pour une action manuelle.'
+              allOf:
+                - $ref: '#/components/schemas/RuleId'
+            actionKey:
+              type: string
+              maxLength: 64
+              description: "Action choisie (Action.key) quand l'élément en a plusieurs."
+        slotLevel:
+          type: integer
+          minimum: 1
+          maximum: 9
+        chargesSpent:
+          type: integer
+          minimum: 1
+        targetCombatantIds:
+          type: array
+          maxItems: 50
+          description: 'Cibles choisies ; un identifiant inconnu ou non visible donne la même erreur (404).'
+          items:
+            $ref: '#/components/schemas/Id'
+        area:
+          $ref: '#/components/schemas/AreaSpec'
+        advantage:
+          $ref: '#/components/schemas/Advantage'
+        effects:
+          type: array
+          maxItems: 10
+          description: 'Réservé au MJ (403 effects_gm_only pour un joueur). Action manuelle (« Ajouter un effet ») : effets SRD ou libres à poser sur les cibles.'
+          items:
+            $ref: '#/components/schemas/AddEffectInput'
+
+    UpdatePendingActionInput:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      x-phase: P3
+      properties:
+        targets:
+          type: array
+          maxItems: 50
+          items:
+            type: object
+            required:
+              - combatantId
+            additionalProperties: false
+            properties:
+              combatantId:
+                $ref: '#/components/schemas/Id'
+              included:
+                type: boolean
+              result:
+                $ref: '#/components/schemas/TargetResult'
+              damage:
+                type: integer
+                minimum: 0
+                description: 'Dégâts finaux forcés par le MJ.'
+        addTargets:
+          type: array
+          maxItems: 50
+          description: 'Nouvelles cibles : seuls leurs dés sont lancés.'
+          items:
+            $ref: '#/components/schemas/Id'
+        addEffects:
+          type: array
+          maxItems: 10
+          items:
+            $ref: '#/components/schemas/AddEffectInput'
+
+    # --- COMBAT : JOURNAL ---
+    JournalEntryBase:
+      type: object
+      required:
+        - id
+        - sessionId
+        - createdAt
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        sessionId:
+          type: string
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/Id'
+        createdAt:
+          type: string
+          format: date-time
+
+    JournalActionGm:
+      description: 'Action appliquée.'
+      allOf:
+        - $ref: '#/components/schemas/JournalEntryBase'
+        - type: object
+          required:
+            - type
+            - resolution
+          properties:
+            type:
+              type: string
+              enum:
+                - action
+            resolution:
+              $ref: '#/components/schemas/ActionResolutionGm'
+
+    JournalActionUndoneGm:
+      description: 'Action défaite.'
+      allOf:
+        - $ref: '#/components/schemas/JournalEntryBase'
+        - type: object
+          required:
+            - type
+            - resolution
+          properties:
+            type:
+              type: string
+              enum:
+                - actionUndone
+            resolution:
+              $ref: '#/components/schemas/ActionResolutionGm'
+
+    JournalActionCancelledGm:
+      description: 'Action annulée avant application. Réservé au MJ : pas de variante Party.'
+      allOf:
+        - $ref: '#/components/schemas/JournalEntryBase'
+        - type: object
+          required:
+            - type
+            - resolution
+          properties:
+            type:
+              type: string
+              enum:
+                - actionCancelled
+            resolution:
+              $ref: '#/components/schemas/ActionResolutionGm'
+
+    JournalManualCorrectionGm:
+      description: 'Correction manuelle hors combat (PV, repos, ressources, effets). Réservé au MJ : pas de variante Party.'
+      allOf:
+        - $ref: '#/components/schemas/JournalEntryBase'
+        - type: object
+          required:
+            - type
+            - subject
+            - route
+          properties:
+            type:
+              type: string
+              enum:
+                - manualCorrection
+            subject:
+              type: object
+              required:
+                - kind
+                - id
+              properties:
+                kind:
+                  type: string
+                  enum:
+                    - character
+                    - token
+                id:
+                  $ref: '#/components/schemas/Id'
+            route:
+              type: string
+              maxLength: 64
+              description: 'operationId de la correction (adjustHitPoints, takeRest…).'
+
+    JournalRollGm:
+      description: 'Jet de dés.'
+      allOf:
+        - $ref: '#/components/schemas/JournalEntryBase'
+        - type: object
+          required:
+            - type
+            - roll
+          properties:
+            type:
+              type: string
+              enum:
+                - roll
+            roll:
+              $ref: '#/components/schemas/RollResult'
+
+    JournalTurnStartGm:
+      description: 'Début de tour.'
+      allOf:
+        - $ref: '#/components/schemas/JournalEntryBase'
+        - type: object
+          required:
+            - type
+            - combatId
+            - round
+            - combatantId
+          properties:
+            type:
+              type: string
+              enum:
+                - turnStart
+            combatId:
+              $ref: '#/components/schemas/Id'
+            round:
+              type: integer
+              minimum: 1
+            combatantId:
+              $ref: '#/components/schemas/Id'
+
+    JournalCombatStartGm:
+      description: 'Début de combat.'
+      allOf:
+        - $ref: '#/components/schemas/JournalEntryBase'
+        - type: object
+          required:
+            - type
+            - combatId
+            - mapId
+          properties:
+            type:
+              type: string
+              enum:
+                - combatStart
+            combatId:
+              $ref: '#/components/schemas/Id'
+            mapId:
+              $ref: '#/components/schemas/Id'
+
+    JournalCombatEndGm:
+      description: 'Fin de combat.'
+      allOf:
+        - $ref: '#/components/schemas/JournalEntryBase'
+        - type: object
+          required:
+            - type
+            - combatId
+          properties:
+            type:
+              type: string
+              enum:
+                - combatEnd
+            combatId:
+              $ref: '#/components/schemas/Id'
+
+    JournalActionParty:
+      description: 'Action appliquée, projetée.'
+      allOf:
+        - $ref: '#/components/schemas/JournalEntryBase'
+        - type: object
+          required:
+            - type
+            - resolution
+          properties:
+            type:
+              type: string
+              enum:
+                - action
+            resolution:
+              $ref: '#/components/schemas/ActionResolutionParty'
+
+    JournalActionUndoneParty:
+      description: 'Action défaite, projetée.'
+      allOf:
+        - $ref: '#/components/schemas/JournalEntryBase'
+        - type: object
+          required:
+            - type
+            - resolution
+          properties:
+            type:
+              type: string
+              enum:
+                - actionUndone
+            resolution:
+              $ref: '#/components/schemas/ActionResolutionParty'
+
+    JournalRollParty:
+      description: 'Jet public, ou jet privé du lecteur.'
+      allOf:
+        - $ref: '#/components/schemas/JournalEntryBase'
+        - type: object
+          required:
+            - type
+            - roll
+          properties:
+            type:
+              type: string
+              enum:
+                - roll
+            roll:
+              $ref: '#/components/schemas/RollResult'
+
+    JournalTurnStartParty:
+      description: "Début du tour d'un combattant visible ; aucune entrée pendant le tour d'une créature cachée."
+      allOf:
+        - $ref: '#/components/schemas/JournalEntryBase'
+        - type: object
+          required:
+            - type
+            - round
+            - actorName
+          properties:
+            type:
+              type: string
+              enum:
+                - turnStart
+            round:
+              type: integer
+              minimum: 1
+            actorName:
+              type: string
+              maxLength: 60
+
+    JournalCombatStartParty:
+      description: 'Début de combat.'
+      allOf:
+        - $ref: '#/components/schemas/JournalEntryBase'
+        - type: object
+          required:
+            - type
+          properties:
+            type:
+              type: string
+              enum:
+                - combatStart
+
+    JournalCombatEndParty:
+      description: 'Fin de combat.'
+      allOf:
+        - $ref: '#/components/schemas/JournalEntryBase'
+        - type: object
+          required:
+            - type
+          properties:
+            type:
+              type: string
+              enum:
+                - combatEnd
+
+    JournalEntryGm:
+      description: 'Entrée du journal, vue MJ.'
+      oneOf:
+        - $ref: '#/components/schemas/JournalActionGm'
+        - $ref: '#/components/schemas/JournalActionUndoneGm'
+        - $ref: '#/components/schemas/JournalActionCancelledGm'
+        - $ref: '#/components/schemas/JournalManualCorrectionGm'
+        - $ref: '#/components/schemas/JournalRollGm'
+        - $ref: '#/components/schemas/JournalTurnStartGm'
+        - $ref: '#/components/schemas/JournalCombatStartGm'
+        - $ref: '#/components/schemas/JournalCombatEndGm'
+      discriminator:
+        propertyName: type
+        mapping:
+          action: '#/components/schemas/JournalActionGm'
+          actionUndone: '#/components/schemas/JournalActionUndoneGm'
+          actionCancelled: '#/components/schemas/JournalActionCancelledGm'
+          manualCorrection: '#/components/schemas/JournalManualCorrectionGm'
+          roll: '#/components/schemas/JournalRollGm'
+          turnStart: '#/components/schemas/JournalTurnStartGm'
+          combatStart: '#/components/schemas/JournalCombatStartGm'
+          combatEnd: '#/components/schemas/JournalCombatEndGm'
+
+    JournalEntryParty:
+      description: "Entrée du journal, vue joueurs. Les types actionCancelled et manualCorrection n'existent pas ici : ils n'arrivent jamais chez les joueurs."
+      oneOf:
+        - $ref: '#/components/schemas/JournalActionParty'
+        - $ref: '#/components/schemas/JournalActionUndoneParty'
+        - $ref: '#/components/schemas/JournalRollParty'
+        - $ref: '#/components/schemas/JournalTurnStartParty'
+        - $ref: '#/components/schemas/JournalCombatStartParty'
+        - $ref: '#/components/schemas/JournalCombatEndParty'
+      discriminator:
+        propertyName: type
+        mapping:
+          action: '#/components/schemas/JournalActionParty'
+          actionUndone: '#/components/schemas/JournalActionUndoneParty'
+          roll: '#/components/schemas/JournalRollParty'
+          turnStart: '#/components/schemas/JournalTurnStartParty'
+          combatStart: '#/components/schemas/JournalCombatStartParty'
+          combatEnd: '#/components/schemas/JournalCombatEndParty'
+
+    JournalGmPage:
+      type: object
+      required:
+        - view
+        - items
+      properties:
+        view:
+          type: string
+          enum:
+            - gm
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/JournalEntryGm'
+        nextCursor:
+          type: string
+          nullable: true
+
+    JournalPartyPage:
+      type: object
+      required:
+        - view
+        - items
+      properties:
+        view:
+          type: string
+          enum:
+            - party
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/JournalEntryParty'
+        nextCursor:
+          type: string
+          nullable: true
+
+    JournalView:
+      oneOf:
+        - $ref: '#/components/schemas/JournalGmPage'
+        - $ref: '#/components/schemas/JournalPartyPage'
+      discriminator:
+        propertyName: view
+        mapping:
+          gm: '#/components/schemas/JournalGmPage'
+          party: '#/components/schemas/JournalPartyPage'
