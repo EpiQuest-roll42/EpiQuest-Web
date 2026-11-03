@@ -29,6 +29,10 @@ tags:
     description: 'Campagnes, invitations et membres (rôles MJ et joueur).'
   - name: Personnages
     description: 'Fiches de personnage, création guidée et vues par lecteur (propriétaire, MJ, groupe).'
+  - name: Dés
+    description: 'Jets de dés lancés par le serveur, historique filtré selon le lecteur, probabilités (docs/technique/notation-des-des.md).'
+  - name: Cartes
+    description: 'Cartes, brouillard, pions, scène et vue joueurs (projection par spectateur).'
 paths:
   /auth/register:
     post:
@@ -905,6 +909,1155 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
+  /rolls:
+    post:
+      tags:
+        - Dés
+      operationId: rollDice
+      summary: 'Lancer des dés.'
+      description: >-
+        Le serveur analyse et lance l'expression (notation : docs/technique/notation-des-des.md). Sans
+        campaignId, c'est un jet personnel, toujours private et non enregistré : id vaut null, et
+        visibility public ou hidden renvoie 400 visibility_requires_campaign. characterId est alors
+        accepté pour ses propres personnages uniquement, brouillons compris. Avec campaignId, un
+        non-membre reçoit 404 ; un joueur choisit public ou private (403 hidden_roll_gm_only pour hidden)
+        et n'indique que son propre personnage rattaché à la campagne ; le MJ choisit public ou hidden
+        (400 private_roll_player_only pour private) et peut indiquer n'importe quel personnage de sa
+        campagne. Un characterId non autorisé renvoie 404. Diffusion WebSocket de roll.created : public
+        sur les deux canaux, private sur le canal MJ et vers le lanceur, hidden sur le canal MJ seulement.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RollInput'
+      responses:
+        '201':
+          description: 'Jet lancé.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RollResult'
+        '400':
+          $ref: '#/components/responses/DiceBadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /rolls/{rollId}:
+    parameters:
+      - name: rollId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Id'
+    get:
+      tags:
+        - Dés
+      operationId: getRoll
+      security:
+        - displayAuth: []
+        - cookieAuth: []
+        - bearerAuth: []
+      summary: 'Lire un jet.'
+      description: >-
+        404 si le jet n'est pas visible du lecteur, y compris pour un membre de la campagne : un 403
+        confirmerait l'existence d'un jet privé ou caché, ce qui est déjà une information cachée.
+        C'est la seule exception à la règle « membre sans le droit → 403 ».
+      responses:
+        '200':
+          description: 'Le jet.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RollResult'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /campaigns/{campaignId}/rolls:
+    parameters:
+      - $ref: '#/components/parameters/CampaignId'
+    get:
+      tags:
+        - Dés
+      operationId: listCampaignRolls
+      security:
+        - displayAuth: []
+        - cookieAuth: []
+        - bearerAuth: []
+      summary: "Lister les jets d'une campagne, du plus récent au plus ancien."
+      description: >-
+        Le MJ reçoit tous les jets ; un joueur reçoit les jets publics et ses propres jets privés ; la vue
+        joueurs (jeton d'affichage) ne reçoit que les jets publics. Le
+        filtrage selon le lecteur est fait dans la requête en base, pas après coup : une page ne doit
+        jamais compter moins d'éléments que limit à cause d'un jet masqué. Aucun numéro séquentiel
+        n'est renvoyé, et le curseur est opaque.
+      parameters:
+        - name: characterId
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Id'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: 'Page de jets.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RollResultPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /dice/probabilities:
+    post:
+      tags:
+        - Dés
+      operationId: getDiceProbabilities
+      summary: "Calculer la distribution exacte d'une expression, sans lancer les dés."
+      description: >-
+        Sert aussi à valider l'expression pendant la saisie, avec les mêmes erreurs de notation que
+        rollDice. Le web calcule localement avec le moteur de règles (ADR 0007) : la route sert surtout
+        au mobile, qui attend 300 ms sans frappe avant de l'appeler. 400 too_complex_for_probabilities
+        si l'expression a plus de 2 000 totaux possibles (connu dès l'analyse, avant tout calcul) ou
+        plus de 20 dés dans des termes avec kh, kl, ! ou r.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProbabilityInput'
+      responses:
+        '200':
+          description: 'Distribution des totaux.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiceProbabilities'
+        '400':
+          $ref: '#/components/responses/DiceBadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /characters/{characterId}/creation/ability-rolls:
+    parameters:
+      - $ref: '#/components/parameters/CharacterId'
+    post:
+      tags:
+        - Personnages
+      operationId: rollAbilityScores
+      summary: 'Tirer les caractéristiques : 6 × 4d6kh3 lancés par le serveur (propriétaire, brouillon).'
+      description: >-
+        Un seul tirage par personnage : 409 abilities_already_rolled si les valeurs ont déjà été tirées,
+        ce qui empêche de relancer jusqu'à obtenir un bon résultat. Les six jets sont private, de
+        contexte abilityScore ; leurs totaux sont enregistrés dans les options de création
+        (rolledValues). 409 character_not_draft si le personnage est finalisé.
+      responses:
+        '201':
+          description: 'Les six jets.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AbilityRolls'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /characters/{characterId}/hit-points:
+    parameters:
+      - $ref: '#/components/parameters/CharacterId'
+    post:
+      tags:
+        - Personnages
+      operationId: adjustHitPoints
+      summary: 'Corriger les PV (propriétaire ou MJ).'
+      description: >-
+        Correction manuelle, hors résolution du combat (qui viendra avec la section Combat). Avec dice,
+        le serveur lance les dés (une potion bue entre deux scènes, par exemple) ; amount est réservé
+        aux corrections du MJ (403 amount_gm_only pour le propriétaire). Pendant un combat en cours,
+        seul le MJ peut corriger : 409 character_in_combat pour le propriétaire. 409
+        character_not_active pour un brouillon. Chaque correction est écrite dans le journal de la
+        campagne (qui, quoi, quand). Les jets contre la mort sont remis à zéro dès que le personnage
+        récupère des PV.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HitPointsAdjustmentInput'
+      responses:
+        '200':
+          description: 'Fiche mise à jour, dans la vue du lecteur, avec les dés lancés.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CharacterActionResult'
+        '400':
+          $ref: '#/components/responses/DiceBadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /characters/{characterId}/rests:
+    parameters:
+      - $ref: '#/components/parameters/CharacterId'
+    post:
+      tags:
+        - Personnages
+      operationId: takeRest
+      summary: 'Prendre un repos court ou long (propriétaire ou MJ).'
+      description: >-
+        Pendant un repos court, le serveur lance les dés de vie dépensés (hitDiceToSpend). 400
+        not_enough_hit_dice s'il n'en reste pas assez. 409 character_in_combat pour le propriétaire
+        pendant un combat en cours ; 409 character_not_active pour un brouillon. Écrit dans le journal
+        de la campagne.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RestInput'
+      responses:
+        '200':
+          description: 'Fiche mise à jour, dans la vue du lecteur, avec les dés de vie lancés.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CharacterActionResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /characters/{characterId}/resources:
+    parameters:
+      - $ref: '#/components/parameters/CharacterId'
+    patch:
+      tags:
+        - Personnages
+      operationId: updateResources
+      summary: 'Corriger les emplacements de sorts ou les dés de vie restants (propriétaire ou MJ).'
+      description: >-
+        Correction manuelle. Les jets contre la mort ne se corrigent pas ici : ils sont lancés par le
+        serveur (rollCheck, type death). 409 character_in_combat pour le propriétaire pendant un combat
+        en cours ; 409 character_not_active pour un brouillon. Écrit dans le journal de la campagne.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateResourcesInput'
+      responses:
+        '200':
+          description: 'Fiche mise à jour, dans la vue du lecteur.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CharacterSheetView'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /characters/{characterId}/inventory:
+    parameters:
+      - $ref: '#/components/parameters/CharacterId'
+    post:
+      tags:
+        - Personnages
+      operationId: addInventoryItem
+      summary: "Ajouter un objet à l'inventaire (propriétaire ou MJ)."
+      description: "Un objet SRD (itemId) ou un objet hors SRD (customName). 400 unknown_item si itemId n'existe pas. 409 character_not_active pour un brouillon : pendant la création, l'inventaire et l'argent sont remplis par updateCreation (étape equipment), où le moteur de règles valide les choix."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddInventoryItemInput'
+      responses:
+        '201':
+          description: 'Fiche mise à jour, dans la vue du lecteur.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CharacterSheetView'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /characters/{characterId}/inventory/{entryId}:
+    parameters:
+      - $ref: '#/components/parameters/CharacterId'
+      - name: entryId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Id'
+    patch:
+      tags:
+        - Personnages
+      operationId: updateInventoryItem
+      summary: "Modifier la quantité ou l'équipement d'un objet (propriétaire ou MJ)."
+      description: "404 si l'entrée n'existe pas ; 400 armor_already_equipped si une autre armure est déjà équipée. 409 character_not_active pour un brouillon : pendant la création, l'inventaire et l'argent sont remplis par updateCreation (étape equipment), où le moteur de règles valide les choix."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateInventoryItemInput'
+      responses:
+        '200':
+          description: 'Fiche mise à jour, dans la vue du lecteur.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CharacterSheetView'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    delete:
+      tags:
+        - Personnages
+      operationId: removeInventoryItem
+      summary: "Retirer un objet de l'inventaire (propriétaire ou MJ)."
+      description: "404 si l'entrée n'existe pas. 409 character_not_active pour un brouillon : pendant la création, l'inventaire et l'argent sont remplis par updateCreation (étape equipment), où le moteur de règles valide les choix."
+      responses:
+        '204':
+          description: 'Objet retiré.'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /characters/{characterId}/currency:
+    parameters:
+      - $ref: '#/components/parameters/CharacterId'
+    put:
+      tags:
+        - Personnages
+      operationId: setCurrency
+      summary: "Remplacer l'argent du personnage (propriétaire ou MJ)."
+      description: "409 character_not_active pour un brouillon : pendant la création, l'inventaire et l'argent sont remplis par updateCreation (étape equipment), où le moteur de règles valide les choix."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CurrencyInput'
+      responses:
+        '200':
+          description: 'Fiche mise à jour, dans la vue du lecteur.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CharacterSheetView'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /characters/{characterId}/checks:
+    parameters:
+      - $ref: '#/components/parameters/CharacterId'
+    post:
+      tags:
+        - Personnages
+      operationId: rollCheck
+      summary: 'Lancer un test de compétence, de caractéristique, un jet de sauvegarde ou un jet contre la mort (propriétaire ou MJ).'
+      description: >-
+        Le serveur calcule le modificateur à partir de la fiche et lance le d20. Visibilités : mêmes
+        règles que rollDice (joueur : public ou private, 403 hidden_roll_gm_only ; MJ : public ou
+        hidden, 400 private_roll_player_only ; personnage sans campagne : private seulement). Pour
+        type death : 409 not_dying si les PV ne sont pas à 0 ; le serveur met à jour deathSaves (un 20
+        naturel rend 1 PV, un 1 naturel compte deux échecs). 400 key_required si key manque pour skill,
+        ability ou save ; 400 key_not_allowed si key est envoyé pour death. 409 character_not_active pour
+        un brouillon.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckInput'
+      responses:
+        '201':
+          description: 'Jet lancé, avec son contexte.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RollResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /characters/{characterId}/level-up/options:
+    parameters:
+      - $ref: '#/components/parameters/CharacterId'
+    get:
+      tags:
+        - Personnages
+      operationId: getLevelUpOptions
+      x-phase: P3
+      summary: 'Lire les choix de la montée de niveau (propriétaire ou MJ).'
+      description: '409 level_max_reached au niveau maximal.'
+      responses:
+        '200':
+          description: 'Options du niveau suivant.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LevelUpOptions'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /characters/{characterId}/level-up:
+    parameters:
+      - $ref: '#/components/parameters/CharacterId'
+    post:
+      tags:
+        - Personnages
+      operationId: levelUp
+      x-phase: P3
+      summary: 'Monter de niveau (propriétaire seul).'
+      description: >-
+        Réservé au propriétaire : 403 pour le MJ et les autres joueurs. Avec hitPointMethod roll, le
+        serveur lance le dé de vie. 409 level_max_reached au niveau maximal.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LevelUpInput'
+      responses:
+        '200':
+          description: 'Fiche mise à jour, avec le dé de vie lancé le cas échéant.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CharacterActionResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /characters/{characterId}/sheet.pdf:
+    parameters:
+      - $ref: '#/components/parameters/CharacterId'
+    get:
+      tags:
+        - Personnages
+      operationId: exportCharacterSheet
+      x-phase: P3
+      summary: 'Exporter la fiche en PDF (propriétaire ou MJ).'
+      description: >-
+        Fiche aux couleurs de Lanterne, sans aucune marque « Dungeons & Dragons », avec la mention
+        d'attribution du SRD 5.1. La vue du MJ n'inclut pas les notes du joueur. 409
+        character_not_active pour un brouillon.
+      responses:
+        '200':
+          description: 'La fiche en PDF.'
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /campaigns/{campaignId}/maps:
+    parameters:
+      - $ref: '#/components/parameters/CampaignId'
+    get:
+      tags:
+        - Cartes
+      operationId: listMaps
+      summary: 'Lister les cartes de la campagne (MJ).'
+      description: 'Réservé au MJ : un joueur reçoit 403, il ne voit que la carte active, par getScene.'
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: 'Page de cartes.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MapSummaryPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags:
+        - Cartes
+      operationId: createMap
+      summary: 'Créer une carte (MJ).'
+      description: 'La grille ne change plus après la création, pour ne pas déplacer les pions et les murs déjà posés. revealAll est faux par défaut.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMapInput'
+      responses:
+        '201':
+          description: 'Carte créée.'
+          headers:
+            ETag:
+              $ref: '#/components/headers/GeometryETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MapGmView'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /maps/{mapId}:
+    parameters:
+      - $ref: '#/components/parameters/MapId'
+    get:
+      tags:
+        - Cartes
+      operationId: getMap
+      security:
+        - displayAuth: []
+        - cookieAuth: []
+        - bearerAuth: []
+      summary: 'Lire une carte.'
+      description: >-
+        Le MJ reçoit la vue gm, avec un en-tête ETag égal à geometryVersion. Un joueur, ou la vue
+        joueurs avec son jeton d'affichage, reçoit la vue party, et seulement pour la carte active : 404
+        pour toute autre carte, dont il ne doit pas connaître l'existence.
+      responses:
+        '200':
+          description: 'Vue de la carte selon le lecteur.'
+          headers:
+            ETag:
+              $ref: '#/components/headers/GeometryETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MapView'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags:
+        - Cartes
+      operationId: updateMap
+      summary: 'Renommer la carte ou changer autoReveal et revealAll (MJ).'
+      description: "Joueur : 403 si c'est la carte active, sinon 404."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMapInput'
+      responses:
+        '200':
+          description: 'Carte modifiée.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MapGmView'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags:
+        - Cartes
+      operationId: deleteMap
+      x-phase: P3
+      summary: 'Supprimer une carte (MJ).'
+      description: "409 map_active si c'est la carte active. Joueur : 403 si c'est la carte active, sinon 404."
+      responses:
+        '204':
+          description: 'Carte supprimée.'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /maps/{mapId}/background:
+    parameters:
+      - $ref: '#/components/parameters/MapId'
+    put:
+      tags:
+        - Cartes
+      operationId: uploadMapBackground
+      summary: 'Envoyer le fond de carte (MJ).'
+      description: >-
+        PNG, JPEG ou WebP, reconnu par ses premiers octets et non par son extension (415 sinon). 10 Mo
+        et 8 192 × 8 192 pixels au plus, vérifiés avant de décoder l'image (413 sinon), pour éviter les
+        bombes de décompression. Le serveur réencode l'image en WebP, ce qui supprime les métadonnées
+        EXIF, et la redimensionne pour qu'une case fasse 64 pixels. Joueur : 403 si c'est la carte
+        active, sinon 404.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: 'Fond enregistré.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MapGmView'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+  /maps/{mapId}/tiles/{x}/{y}:
+    parameters:
+      - $ref: '#/components/parameters/MapId'
+      - name: x
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 12
+      - name: y
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 12
+    get:
+      tags:
+        - Cartes
+      operationId: getMapTile
+      security:
+        - displayAuth: []
+        - cookieAuth: []
+        - bearerAuth: []
+      summary: 'Lire une tuile du fond de carte (8 × 8 cases, 512 × 512 pixels).'
+      description: >-
+        MJ : tuile complète, sans paramètre mask, avec Cache-Control no-store, pour qu'une tuile
+        complète ne soit jamais en cache dans le navigateur que partagent la fenêtre du MJ et la vue
+        joueurs. Vue party : le paramètre mask est obligatoire ; le serveur calcule l'empreinte du
+        masque actuel de la tuile et répond 404 si elle diffère de celle de l'URL. Il ne calcule jamais
+        une tuile à partir d'un masque fourni par le client. Les cases cachées sont masquées côté serveur
+        avant l'envoi, et une tuile entièrement cachée renvoie 404. Le contenu étant entièrement
+        déterminé par l'URL, la réponse est cachée avec immutable. La vue joueurs charge les tuiles avec
+        fetch et son jeton, jamais avec une balise img, qui enverrait le cookie du MJ.
+      parameters:
+        - name: mask
+          in: query
+          required: false
+          description: 'Empreinte du masque de la tuile, fournie par MapPartyView.background.tiles. Obligatoire pour la vue party.'
+          schema:
+            type: string
+            maxLength: 64
+      responses:
+        '200':
+          description: 'La tuile en WebP.'
+          headers:
+            Cache-Control:
+              description: 'no-store pour la tuile complète du MJ ; private, max-age=31536000, immutable pour une tuile masquée.'
+              schema:
+                type: string
+            Vary:
+              description: 'Tuiles masquées de la vue joueurs : X-Display-Token, Authorization, Cookie, pour que le cache distingue chaque lecteur. Inutile sur les tuiles du MJ, qui sont en no-store.'
+              schema:
+                type: string
+                enum:
+                  - X-Display-Token, Authorization, Cookie
+          content:
+            image/webp:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /maps/{mapId}/geometry:
+    parameters:
+      - $ref: '#/components/parameters/MapId'
+    put:
+      tags:
+        - Cartes
+      operationId: replaceMapGeometry
+      x-phase: P3
+      summary: "Enregistrer d'un bloc les murs, portes, zones et décor (MJ)."
+      description: >-
+        Un élément avec id est conservé, un élément sans id est créé, un élément absent est supprimé.
+        If-Match doit contenir l'ETag lu par getMap : 412 si la version a changé (un autre onglet a
+        modifié la carte), 428 si If-Match est absent. Murs et portes seulement sur une grille carrée :
+        400 walls_require_square_grid sur une grille hexagonale. Joueur : 403 si c'est la carte active,
+        sinon 404.
+      parameters:
+        - name: If-Match
+          in: header
+          required: false
+          description: 'ETag de la géométrie lue, par exemple "12". Son absence donne 428.'
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MapGeometryInput'
+      responses:
+        '200':
+          description: 'Géométrie enregistrée.'
+          headers:
+            ETag:
+              $ref: '#/components/headers/GeometryETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MapGmView'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /maps/{mapId}/doors/{doorId}:
+    parameters:
+      - $ref: '#/components/parameters/MapId'
+      - name: doorId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Id'
+    patch:
+      tags:
+        - Cartes
+      operationId: updateDoor
+      x-phase: P3
+      summary: 'Ouvrir ou fermer une porte (MJ).'
+      description: >-
+        Une porte devient ou cesse d'être secrète par la géométrie, pas ici. 404 si la porte n'existe
+        pas. Joueur : 403 si c'est la carte active, sinon 404.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateDoorInput'
+      responses:
+        '200':
+          description: 'Porte modifiée.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DoorGm'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /maps/{mapId}/fog:
+    parameters:
+      - $ref: '#/components/parameters/MapId'
+    post:
+      tags:
+        - Cartes
+      operationId: updateFog
+      x-phase: P3
+      summary: 'Révéler ou recacher des cases à la main (MJ).'
+      description: >-
+        reveal et hide ajoutent les cases aux révélations ou aux masquages manuels ; reset les vide.
+        Joueur : 403 si c'est la carte active, sinon 404.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FogUpdateInput'
+      responses:
+        '200':
+          description: 'Brouillard mis à jour.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FogGm'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /maps/{mapId}/tokens:
+    parameters:
+      - $ref: '#/components/parameters/MapId'
+    post:
+      tags:
+        - Cartes
+      operationId: createMapToken
+      summary: 'Poser un pion de personnage ou de créature (MJ).'
+      description: >-
+        Les joueurs ne déplacent pas les pions : le MJ les déplace, ou saisit les actions annoncées. Un
+        personnage doit être rattaché à la campagne (404 sinon) et n'a qu'un pion par carte (409
+        character_already_on_map). 409 cell_occupied si la case est prise. Pour une créature, le serveur
+        fixe les PV à la moyenne du monstre, ou lance ses dés de vie avec hitPointMethod roll. Joueur :
+        403 si c'est la carte active, sinon 404.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMapTokenInput'
+      responses:
+        '201':
+          description: 'Pion posé.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenGm'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /maps/{mapId}/tokens/{tokenId}:
+    parameters:
+      - $ref: '#/components/parameters/MapId'
+      - $ref: '#/components/parameters/TokenId'
+    patch:
+      tags:
+        - Cartes
+      operationId: updateMapToken
+      summary: 'Déplacer ou modifier un pion (MJ).'
+      description: >-
+        404 si le pion n'existe pas. 400 move_blocked (P3) si un mur bloque le déplacement. Joueur : 403
+        si c'est la carte active, sinon 404.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMapTokenInput'
+      responses:
+        '200':
+          description: 'Pion modifié.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenGm'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    delete:
+      tags:
+        - Cartes
+      operationId: deleteMapToken
+      summary: 'Retirer un pion (MJ).'
+      description: "Joueur : 403 si c'est la carte active, sinon 404."
+      responses:
+        '204':
+          description: 'Pion retiré.'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /maps/{mapId}/tokens/{tokenId}/hit-points:
+    parameters:
+      - $ref: '#/components/parameters/MapId'
+      - $ref: '#/components/parameters/TokenId'
+    post:
+      tags:
+        - Cartes
+      operationId: adjustCreatureHitPoints
+      summary: "Corriger les PV d'une créature (MJ)."
+      description: >-
+        Même entrée que adjustHitPoints (amount ou dice). 409 not_a_creature si le pion est celui d'un
+        personnage. Les joueurs n'en voient que l'état approximatif (healthState). Joueur : 403 si
+        c'est la carte active, sinon 404.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HitPointsAdjustmentInput'
+      responses:
+        '200':
+          description: 'Pion de la créature mis à jour.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenGm'
+        '400':
+          $ref: '#/components/responses/DiceBadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /campaigns/{campaignId}/scene:
+    parameters:
+      - $ref: '#/components/parameters/CampaignId'
+    get:
+      tags:
+        - Cartes
+      operationId: getScene
+      security:
+        - displayAuth: []
+        - cookieAuth: []
+        - bearerAuth: []
+      summary: 'Lire la scène : carte active, brouillard, pions, initiative et round.'
+      description: >-
+        Point d'entrée de la vue joueurs, qui reçoit ensuite les changements par WebSocket, après
+        projection. MJ : vue gm. Joueur ou jeton d'affichage : vue party, où une créature cachée est
+        retirée de l'initiative (et non anonymisée), une créature déjà vue pendant ce combat y reste,
+        avec son dernier état vu, et currentTurn vaut null pendant le tour d'une créature cachée (fuite
+        assumée : le front affiche « Tour du MJ »).
+      responses:
+        '200':
+          description: 'Vue de la scène selon le lecteur.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SceneView'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags:
+        - Cartes
+      operationId: setActiveMap
+      summary: 'Changer la carte affichée (MJ).'
+      description: 'mapId null : aucune carte affichée. 404 si la carte est inconnue.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetActiveMapInput'
+      responses:
+        '200':
+          description: 'Scène mise à jour.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SceneGmView'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /campaigns/{campaignId}/display-sessions:
+    parameters:
+      - $ref: '#/components/parameters/CampaignId'
+    get:
+      tags:
+        - Cartes
+      operationId: listDisplaySessions
+      summary: "Lister les jetons d'affichage de la vue joueurs (MJ)."
+      description: "Le jeton lui-même n'est jamais renvoyé ici : il n'est affiché qu'une fois, à sa création."
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: 'Page de jetons.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DisplaySessionPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags:
+        - Cartes
+      operationId: createDisplaySession
+      summary: "Créer un jeton d'affichage pour la vue joueurs (MJ)."
+      description: >-
+        Le jeton, valable 12 heures, ne donne que la vue party, en lecture seule. Il est transmis à la
+        fenêtre de la vue joueurs par le fragment d'URL (/vue-joueurs#<jeton>), que le front efface
+        aussitôt avec history.replaceState pour ne garder le jeton qu'en mémoire.
+      responses:
+        '201':
+          description: "Jeton créé. token n'est renvoyé qu'ici."
+          headers:
+            Cache-Control:
+              description: 'Empêche le stockage de la réponse contenant le jeton.'
+              schema:
+                type: string
+                enum:
+                  - no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DisplaySessionCreated'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /campaigns/{campaignId}/display-sessions/{sessionId}:
+    parameters:
+      - $ref: '#/components/parameters/CampaignId'
+      - name: sessionId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Id'
+    delete:
+      tags:
+        - Cartes
+      operationId: revokeDisplaySession
+      summary: "Révoquer un jeton d'affichage (MJ)."
+      responses:
+        '204':
+          description: 'Jeton révoqué.'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
 components:
   securitySchemes:
     bearerAuth:
@@ -916,6 +2069,27 @@ components:
       in: cookie
       name: lanterne_session
       description: "Cookie de session `httpOnly`, utilisé par l'application web."
+    displayAuth:
+      type: apiKey
+      in: header
+      name: X-Display-Token
+      description: >-
+        Jeton d'affichage de la vue joueurs (createDisplaySession) : vue party seulement, en lecture
+        seule, valable 12 heures, révocable par le MJ. Déclaré uniquement sur getScene, getMap,
+        getMapTile, listCampaignRolls et getRoll ; sur toute autre route, un jeton d'affichage reconnu
+        reçoit 403 display_token_not_allowed (le jeton est valide mais n'a pas ce droit). Si ce jeton
+        est présent, il s'applique seul : le cookie de session du MJ, que le navigateur joint aussi aux
+        requêtes de la vue joueurs, est ignoré. La vue joueurs fait ses requêtes avec credentials omit,
+        et son WebSocket s'authentifie par un premier message contenant le jeton, jamais par l'URL.
+        Depuis le sous-domaine de la vue joueurs, cet en-tête déclenche une requête CORS préalable : l'API
+        doit l'autoriser dans Access-Control-Allow-Headers.
+
+  headers:
+    GeometryETag:
+      description: 'Version de la géométrie de la carte (geometryVersion), à renvoyer dans If-Match.'
+      schema:
+        type: string
+        example: '"12"'
 
   responses:
     BadRequest:
@@ -1005,6 +2179,54 @@ components:
                 title: Forbidden
                 status: 403
 
+    DiceBadRequest:
+      description: >-
+        Expression de dés invalide ou requête incorrecte. Les erreurs de notation (field = expression)
+        portent la position et la longueur du passage fautif, en unités UTF-16 de la chaîne envoyée.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          examples:
+            keepOutOfRange:
+              summary: 'kh7 sur 4 dés.'
+              value:
+                type: '/problems/validation-error'
+                title: Bad Request
+                status: 400
+                errors:
+                  - field: expression
+                    code: keep_out_of_range
+                    position: 3
+                    length: 3
+                    params:
+                      min: 1
+                      max: 4
+    PayloadTooLarge:
+      description: 'Fichier trop lourd (plus de 10 Mo) ou image trop grande (plus de 8 192 × 8 192 pixels).'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    UnsupportedMediaType:
+      description: 'Format refusé : seuls PNG, JPEG et WebP sont acceptés, reconnus par leurs premiers octets.'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    PreconditionFailed:
+      description: "La version indiquée dans If-Match n'est plus la version actuelle : relire la carte avant d'enregistrer."
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    PreconditionRequired:
+      description: "If-Match est obligatoire sur cette route, pour ne pas écraser la modification d'un autre onglet."
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+
   parameters:
     CampaignId:
       name: campaignId
@@ -1014,6 +2236,18 @@ components:
         $ref: '#/components/schemas/Id'
     CharacterId:
       name: characterId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Id'
+    MapId:
+      name: mapId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Id'
+    TokenId:
+      name: tokenId
       in: path
       required: true
       schema:
@@ -1097,6 +2331,20 @@ components:
             Code d'erreur lisible par une machine en anglais (ex: 'too_short', 'already_taken', 'password_required'). 
             Les clients utilisent ce code pour générer les libellés traduits dans l'interface utilisateur.
           example: 'too_short'
+        position:
+          type: integer
+          minimum: 0
+          description: >-
+            Erreur de notation de dés seulement : index du premier caractère fautif dans la chaîne telle
+            qu'envoyée, en unités UTF-16, espaces compris.
+        length:
+          type: integer
+          minimum: 0
+          description: 'Erreur de notation de dés seulement : nombre de caractères à souligner ; 0 pour une fin inattendue.'
+        params:
+          type: object
+          additionalProperties: true
+          description: "Valeurs utiles au message construit par l'interface, par exemple { min: 1, max: 4 }."
 
     Problem:
       type: object
@@ -1131,7 +2379,9 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/FieldError'
-          description: "Liste optionnelle d'erreurs de validation spécifiques aux champs pour les formulaires."
+          description: >-
+            Liste optionnelle d'erreurs de validation spécifiques aux champs pour les formulaires. Une erreur
+            sur une expression de dés (field = expression) remplit aussi position, length et params.
 
     UserPublic:
       type: object
@@ -2551,3 +3801,1871 @@ components:
                 items:
                   type: string
                   maxLength: 64
+
+    # --- DÉS ---
+    DiceExpression:
+      type: string
+      minLength: 1
+      maxLength: 100
+      description: 'Expression de dés (grammaire : docs/technique/notation-des-des.md). Casse et espaces ignorés.'
+      example: '2d6+3'
+
+    Advantage:
+      type: string
+      enum:
+        - none
+        - advantage
+        - disadvantage
+      default: none
+      description: "Avantage ou désavantage : le serveur réécrit l'unique terme 1d20 en 2d20kh1 ou 2d20kl1."
+
+    RollVisibility:
+      type: string
+      enum:
+        - public
+        - private
+        - hidden
+      description: >-
+        public : toute la campagne (joueur ou MJ) ; private : le lanceur et le MJ (joueur seulement, et
+        toujours pour un jet personnel) ; hidden : le MJ seul (MJ seulement).
+
+    DieResult:
+      type: object
+      required:
+        - value
+        - kept
+        - rerolledFrom
+        - fromExplosion
+      properties:
+        value:
+          type: integer
+          minimum: 1
+          description: 'Valeur finale du dé.'
+        kept:
+          type: boolean
+        rerolledFrom:
+          type: integer
+          nullable: true
+          description: "Valeur remplacée par la relance ; null si le dé n'a pas été relancé."
+        fromExplosion:
+          type: boolean
+          description: 'Dé ajouté par une explosion.'
+
+    DiceTerm:
+      type: object
+      required:
+        - kind
+        - sign
+        - count
+        - sides
+        - keep
+        - explode
+        - reroll
+        - dice
+        - subtotal
+      properties:
+        kind:
+          type: string
+          enum:
+            - dice
+        sign:
+          $ref: '#/components/schemas/TermSign'
+        count:
+          type: integer
+          minimum: 1
+          maximum: 100
+        sides:
+          type: integer
+          minimum: 2
+          maximum: 100
+        keep:
+          type: object
+          nullable: true
+          required:
+            - mode
+            - count
+          properties:
+            mode:
+              type: string
+              enum:
+                - highest
+                - lowest
+            count:
+              type: integer
+              minimum: 1
+        explode:
+          type: boolean
+        reroll:
+          type: object
+          nullable: true
+          description: 'equal : relance les dés qui font value ; atMost : relance les dés qui font value ou moins. Une seule relance par dé.'
+          required:
+            - mode
+            - value
+          properties:
+            mode:
+              type: string
+              enum:
+                - equal
+                - atMost
+            value:
+              type: integer
+              minimum: 1
+        dice:
+          type: array
+          items:
+            $ref: '#/components/schemas/DieResult'
+        subtotal:
+          type: integer
+          description: 'Somme des dés gardés, sans le signe.'
+      example:
+        kind: dice
+        sign: plus
+        count: 4
+        sides: 6
+        keep:
+          mode: highest
+          count: 3
+        explode: false
+        reroll: null
+        dice:
+          - { value: 6, kept: true, rerolledFrom: null, fromExplosion: false }
+          - { value: 5, kept: true, rerolledFrom: null, fromExplosion: false }
+          - { value: 3, kept: true, rerolledFrom: null, fromExplosion: false }
+          - { value: 2, kept: false, rerolledFrom: null, fromExplosion: false }
+        subtotal: 14
+
+    ConstantTerm:
+      type: object
+      required:
+        - kind
+        - sign
+        - value
+      properties:
+        kind:
+          type: string
+          enum:
+            - constant
+        sign:
+          $ref: '#/components/schemas/TermSign'
+        value:
+          type: integer
+          minimum: 0
+          maximum: 1000
+
+    TermSign:
+      type: string
+      enum:
+        - plus
+        - minus
+
+    RollTerm:
+      oneOf:
+        - $ref: '#/components/schemas/DiceTerm'
+        - $ref: '#/components/schemas/ConstantTerm'
+      discriminator:
+        propertyName: kind
+        mapping:
+          dice: '#/components/schemas/DiceTerm'
+          constant: '#/components/schemas/ConstantTerm'
+
+    RollContext:
+      type: object
+      description: >-
+        Contexte du jet, à partir duquel l'interface écrit son libellé (par exemple « Perception (SAG) »).
+        Les types attack et damage viendront avec la section Combat.
+      required:
+        - type
+        - ref
+      properties:
+        type:
+          type: string
+          enum:
+            - free
+            - skill
+            - ability
+            - save
+            - death
+            - abilityScore
+        ref:
+          description: 'RuleId de la compétence, ou code de caractéristique ; null si le type suffit.'
+          type: string
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/RuleId'
+
+    RollResult:
+      type: object
+      description: 'Jet lancé par le serveur. Aucun numéro séquentiel : il révélerait les jets cachés.'
+      required:
+        - id
+        - expression
+        - advantage
+        - terms
+        - total
+        - capped
+        - visibility
+        - roller
+        - character
+        - campaignId
+        - context
+        - createdAt
+      properties:
+        id:
+          description: "null pour un jet personnel, qui n'est pas enregistré."
+          type: string
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/Id'
+        expression:
+          type: string
+          description: 'Forme normalisée, avantage appliqué.'
+          example: '2d20kh1+5'
+        advantage:
+          $ref: '#/components/schemas/Advantage'
+        terms:
+          type: array
+          items:
+            $ref: '#/components/schemas/RollTerm'
+        total:
+          type: integer
+          example: 19
+        capped:
+          type: boolean
+          description: 'true si un plafond (400 dés lancés, 10 explosions par dé de base) a arrêté le jet.'
+        visibility:
+          $ref: '#/components/schemas/RollVisibility'
+        roller:
+          $ref: '#/components/schemas/UserPublic'
+        character:
+          type: object
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/CharacterRef'
+        campaignId:
+          type: string
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/Id'
+        context:
+          type: object
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/RollContext'
+        createdAt:
+          type: string
+          format: date-time
+
+    RollResultPage:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/RollResult'
+        nextCursor:
+          type: string
+          nullable: true
+          description: 'Curseur de la page suivante ; null sur la dernière page.'
+
+    DiceProbabilities:
+      type: object
+      required:
+        - expression
+        - min
+        - max
+        - mean
+        - distribution
+      properties:
+        expression:
+          type: string
+          example: '2d6'
+        min:
+          type: integer
+          example: 2
+        max:
+          type: integer
+          example: 12
+        mean:
+          type: number
+          example: 7
+        distribution:
+          type: array
+          maxItems: 2000
+          description: 'Probabilité exacte de chaque total, triée par total. La somme vaut 1.'
+          items:
+            type: object
+            required:
+              - total
+              - probability
+            properties:
+              total:
+                type: integer
+              probability:
+                type: number
+                minimum: 0
+                maximum: 1
+
+    RollInput:
+      type: object
+      required:
+        - expression
+      additionalProperties: false
+      properties:
+        expression:
+          $ref: '#/components/schemas/DiceExpression'
+        advantage:
+          $ref: '#/components/schemas/Advantage'
+        visibility:
+          description: 'public par défaut dans une campagne ; private, seule valeur possible, pour un jet personnel.'
+          allOf:
+            - $ref: '#/components/schemas/RollVisibility'
+        campaignId:
+          $ref: '#/components/schemas/Id'
+        characterId:
+          $ref: '#/components/schemas/Id'
+
+    ProbabilityInput:
+      type: object
+      required:
+        - expression
+      additionalProperties: false
+      properties:
+        expression:
+          $ref: '#/components/schemas/DiceExpression'
+        advantage:
+          $ref: '#/components/schemas/Advantage'
+
+    # --- PERSONNAGES : ACTIONS DE JEU ---
+    CharacterSheetView:
+      description: >-
+        Vue de la fiche complète selon le lecteur, renvoyée par les actions de jeu : owner pour le
+        propriétaire, gm pour le MJ (sans les notes).
+      oneOf:
+        - $ref: '#/components/schemas/CharacterOwnerView'
+        - $ref: '#/components/schemas/CharacterGmView'
+      discriminator:
+        propertyName: view
+        mapping:
+          owner: '#/components/schemas/CharacterOwnerView'
+          gm: '#/components/schemas/CharacterGmView'
+
+    CharacterActionResult:
+      type: object
+      description: "Résultat d'une action qui lance des dés : la fiche mise à jour et les jets du serveur."
+      required:
+        - character
+        - rolls
+      properties:
+        character:
+          $ref: '#/components/schemas/CharacterSheetView'
+        rolls:
+          type: array
+          description: "Jets lancés par le serveur pour cette action ; vide si aucun dé n'a été lancé."
+          items:
+            $ref: '#/components/schemas/RollResult'
+
+    AbilityRolls:
+      type: object
+      required:
+        - rolls
+      properties:
+        rolls:
+          type: array
+          minItems: 6
+          maxItems: 6
+          description: 'Six jets 4d6kh3, de contexte abilityScore et de visibilité private.'
+          items:
+            $ref: '#/components/schemas/RollResult'
+
+    LevelUpOptions:
+      type: object
+      x-phase: P3
+      required:
+        - fromLevel
+        - toLevel
+        - hitPoints
+        - grantedFeatures
+        - groups
+        - abilityIncrease
+      properties:
+        fromLevel:
+          type: integer
+          minimum: 1
+          maximum: 4
+        toLevel:
+          type: integer
+          minimum: 2
+          maximum: 5
+        hitPoints:
+          type: object
+          required:
+            - die
+            - average
+          properties:
+            die:
+              type: string
+              pattern: '^d(4|6|8|10|12|20)$'
+              example: 'd10'
+            average:
+              type: integer
+              example: 6
+        grantedFeatures:
+          type: array
+          description: "Capacités obtenues d'office à ce niveau."
+          items:
+            $ref: '#/components/schemas/RuleRef'
+        groups:
+          type: array
+          description: 'Choix à faire (sous-classe, sorts…), au même format que la création.'
+          items:
+            $ref: '#/components/schemas/ChoiceGroup'
+        abilityIncrease:
+          type: object
+          nullable: true
+          description: 'Augmentation de caractéristiques offerte à ce niveau ; null sinon.'
+          required:
+            - points
+            - maxPerAbility
+            - cap
+          properties:
+            points:
+              type: integer
+              example: 2
+            maxPerAbility:
+              type: integer
+              example: 2
+            cap:
+              type: integer
+              example: 20
+
+    HitPointsAdjustmentInput:
+      description: 'amount (corrections du MJ) ou dice (lancés par le serveur), jamais les deux.'
+      oneOf:
+        - type: object
+          title: HitPointsAmount
+          required:
+            - kind
+            - amount
+          additionalProperties: false
+          properties:
+            kind:
+              $ref: '#/components/schemas/HitPointsAdjustmentKind'
+            amount:
+              type: integer
+              minimum: 1
+              maximum: 999
+        - type: object
+          title: HitPointsDice
+          required:
+            - kind
+            - dice
+          additionalProperties: false
+          properties:
+            kind:
+              $ref: '#/components/schemas/HitPointsAdjustmentKind'
+            dice:
+              $ref: '#/components/schemas/DiceExpression'
+
+    HitPointsAdjustmentKind:
+      type: string
+      enum:
+        - damage
+        - healing
+        - temporary
+      description: 'Dégâts, soins, ou PV temporaires.'
+
+    RestInput:
+      type: object
+      required:
+        - type
+      additionalProperties: false
+      properties:
+        type:
+          type: string
+          enum:
+            - short
+            - long
+        hitDiceToSpend:
+          type: integer
+          minimum: 0
+          maximum: 20
+          description: 'Repos court seulement : nombre de dés de vie à dépenser.'
+
+    UpdateResourcesInput:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        spellSlotsUsed:
+          type: array
+          maxItems: 9
+          items:
+            type: object
+            additionalProperties: false
+            required:
+              - level
+              - used
+            properties:
+              level:
+                type: integer
+                minimum: 1
+                maximum: 9
+              used:
+                type: integer
+                minimum: 0
+        hitDiceRemaining:
+          type: integer
+          minimum: 0
+
+    AddInventoryItemInput:
+      description: 'Un objet SRD (itemId) ou un objet hors SRD (customName), jamais les deux.'
+      oneOf:
+        - type: object
+          title: SrdItem
+          required:
+            - itemId
+          additionalProperties: false
+          properties:
+            itemId:
+              $ref: '#/components/schemas/RuleId'
+            quantity:
+              type: integer
+              minimum: 1
+              maximum: 999
+              default: 1
+        - type: object
+          title: CustomItem
+          required:
+            - customName
+          additionalProperties: false
+          properties:
+            customName:
+              type: string
+              minLength: 1
+              maxLength: 60
+            quantity:
+              type: integer
+              minimum: 1
+              maximum: 999
+              default: 1
+
+    UpdateInventoryItemInput:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 999
+        equipped:
+          type: boolean
+
+    CurrencyInput:
+      type: object
+      required:
+        - cp
+        - sp
+        - ep
+        - gp
+        - pp
+      additionalProperties: false
+      properties:
+        cp:
+          type: integer
+          minimum: 0
+        sp:
+          type: integer
+          minimum: 0
+        ep:
+          type: integer
+          minimum: 0
+        gp:
+          type: integer
+          minimum: 0
+        pp:
+          type: integer
+          minimum: 0
+
+    CheckInput:
+      description: >-
+        Test avec une clé (compétence, caractéristique, sauvegarde) ou jet contre la mort, sans clé. Le
+        serveur renvoie key_required ou key_not_allowed dans FieldError.code si la validation échoue.
+      oneOf:
+        - $ref: '#/components/schemas/KeyedCheckInput'
+        - $ref: '#/components/schemas/DeathSaveInput'
+      discriminator:
+        propertyName: type
+        mapping:
+          skill: '#/components/schemas/KeyedCheckInput'
+          ability: '#/components/schemas/KeyedCheckInput'
+          save: '#/components/schemas/KeyedCheckInput'
+          death: '#/components/schemas/DeathSaveInput'
+
+    KeyedCheckInput:
+      type: object
+      required:
+        - type
+        - key
+      additionalProperties: false
+      properties:
+        type:
+          type: string
+          enum:
+            - skill
+            - ability
+            - save
+        key:
+          description: 'RuleId de la compétence (type skill) ou code de caractéristique (types ability et save).'
+          allOf:
+            - $ref: '#/components/schemas/RuleId'
+        advantage:
+          $ref: '#/components/schemas/Advantage'
+        visibility:
+          $ref: '#/components/schemas/RollVisibility'
+
+    DeathSaveInput:
+      type: object
+      required:
+        - type
+      additionalProperties: false
+      description: 'Jet contre la mort : aucune clé, un key envoyé est refusé.'
+      properties:
+        type:
+          type: string
+          enum:
+            - death
+        advantage:
+          $ref: '#/components/schemas/Advantage'
+        visibility:
+          $ref: '#/components/schemas/RollVisibility'
+
+    LevelUpInput:
+      type: object
+      required:
+        - hitPointMethod
+      additionalProperties: false
+      x-phase: P3
+      properties:
+        hitPointMethod:
+          type: string
+          enum:
+            - average
+            - roll
+          description: 'average : la valeur moyenne du dé de vie ; roll : le serveur lance le dé.'
+        choices:
+          type: array
+          maxItems: 50
+          items:
+            type: object
+            additionalProperties: false
+            required:
+              - groupId
+              - optionIds
+            properties:
+              groupId:
+                type: string
+                maxLength: 64
+              optionIds:
+                type: array
+                maxItems: 50
+                items:
+                  type: string
+                  maxLength: 64
+        abilityIncreases:
+          type: object
+          additionalProperties: false
+          description: 'Points ajoutés à chaque caractéristique, par exemple { dex: 2 }.'
+          properties:
+            str:
+              type: integer
+              minimum: 1
+              maximum: 2
+            dex:
+              type: integer
+              minimum: 1
+              maximum: 2
+            con:
+              type: integer
+              minimum: 1
+              maximum: 2
+            int:
+              type: integer
+              minimum: 1
+              maximum: 2
+            wis:
+              type: integer
+              minimum: 1
+              maximum: 2
+            cha:
+              type: integer
+              minimum: 1
+              maximum: 2
+
+    # --- CARTES : GRILLE ET CASES ---
+    GridType:
+      type: string
+      enum:
+        - square
+        - hex
+      description: 'Grille carrée ou hexagonale. Murs et portes seulement sur une grille carrée (MVP).'
+
+    GridSpec:
+      type: object
+      description: >-
+        Coordonnées lisibles, pour la carte et sa vue textuelle : colonnes A, B, … Z, AA…, lignes à partir
+        de 1 (C4 = col 2, row 3). Grille hexagonale : coordonnées décalées odd-r. Une case vaut 1,5 m,
+        diagonales comprises (règles de base du SRD 5.1, ADR 0009).
+      required:
+        - type
+        - cols
+        - rows
+        - cellSizeMeters
+      properties:
+        type:
+          $ref: '#/components/schemas/GridType'
+        cols:
+          type: integer
+          minimum: 1
+          maximum: 100
+        rows:
+          type: integer
+          minimum: 1
+          maximum: 100
+        cellSizeMeters:
+          type: number
+          enum:
+            - 1.5
+          readOnly: true
+
+    Cell:
+      type: object
+      required:
+        - col
+        - row
+      properties:
+        col:
+          type: integer
+          minimum: 0
+          maximum: 99
+        row:
+          type: integer
+          minimum: 0
+          maximum: 99
+
+    Vertex:
+      type: object
+      description: 'Sommet de la grille carrée : (0, 0) est le coin haut gauche de la case (0, 0).'
+      required:
+        - x
+        - y
+      properties:
+        x:
+          type: integer
+          minimum: 0
+          maximum: 100
+        y:
+          type: integer
+          minimum: 0
+          maximum: 100
+
+    CellSet:
+      type: object
+      description: >-
+        Ensemble de cases, une case par bit. La case (col, row) porte l'indice i = row × cols + col, la
+        ligne 0 en haut et la colonne 0 à gauche. L'octet k contient les cases 8k à 8k + 7, bit de poids
+        fort en premier ; le dernier octet est complété par des zéros. data est encodé en base64 standard
+        (RFC 4648), avec remplissage. La longueur décodée vaut exactement ceil(cols × rows / 8) octets,
+        sinon 400. Exemple : grille 3 × 2, cases (0, 0) et (2, 1) → bits 100001 → octet 10000100 (0x84)
+        → "hA==".
+      required:
+        - encoding
+        - data
+      properties:
+        encoding:
+          type: string
+          enum:
+            - bitset
+        data:
+          type: string
+          format: byte
+          maxLength: 1700
+      example:
+        encoding: bitset
+        data: 'hA=='
+
+    HealthState:
+      type: string
+      enum:
+        - unharmed
+        - wounded
+        - down
+      description: "État approximatif d'une créature pour les joueurs : wounded dès 1 PV perdu, down à 0 PV."
+
+    # --- CARTES : GÉOMÉTRIE ---
+    MapBackground:
+      type: object
+      description: 'Fond découpé en tuiles de 8 × 8 cases ; une case fait 64 pixels, une tuile 512.'
+      required:
+        - tileSize
+        - cellPixels
+        - tilesX
+        - tilesY
+      properties:
+        tileSize:
+          type: integer
+          enum:
+            - 512
+        cellPixels:
+          type: integer
+          enum:
+            - 64
+        tilesX:
+          type: integer
+          minimum: 1
+          maximum: 13
+        tilesY:
+          type: integer
+          minimum: 1
+          maximum: 13
+
+    MapBackgroundParty:
+      description: "Fond vu par les joueurs : seules les tuiles qui ne sont pas entièrement cachées sont listées, avec leur empreinte de masque. Une tuile absente de la liste n'est pas demandée."
+      allOf:
+        - $ref: '#/components/schemas/MapBackground'
+        - type: object
+          required:
+            - tiles
+          properties:
+            tiles:
+              type: array
+              items:
+                type: object
+                required:
+                  - x
+                  - y
+                  - mask
+                properties:
+                  x:
+                    type: integer
+                    minimum: 0
+                  y:
+                    type: integer
+                    minimum: 0
+                  mask:
+                    type: string
+                    maxLength: 64
+                    description: "Empreinte des cases non cachées de la tuile et de la version du fond, à passer dans le paramètre mask de getMapTile. Elle change si le brouillard découvre ou recache une case de la tuile, ou si le MJ renvoie une image ; la différence entre visible et explored n'y entre pas (l'assombrissement se fait côté front). Chaque changement de brouillard envoie par WebSocket la nouvelle liste tiles."
+
+    WallGm:
+      type: object
+      required:
+        - id
+        - from
+        - to
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        from:
+          $ref: '#/components/schemas/Vertex'
+        to:
+          $ref: '#/components/schemas/Vertex'
+
+    WallParty:
+      type: object
+      description: 'Mur vu par les joueurs, sans identifiant. Une porte secrète est envoyée comme un mur.'
+      required:
+        - from
+        - to
+      properties:
+        from:
+          $ref: '#/components/schemas/Vertex'
+        to:
+          $ref: '#/components/schemas/Vertex'
+
+    DoorState:
+      type: string
+      enum:
+        - open
+        - closed
+
+    DoorGm:
+      type: object
+      required:
+        - id
+        - from
+        - to
+        - state
+        - secret
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        from:
+          $ref: '#/components/schemas/Vertex'
+        to:
+          $ref: '#/components/schemas/Vertex'
+        state:
+          $ref: '#/components/schemas/DoorState'
+        secret:
+          type: boolean
+
+    DoorParty:
+      type: object
+      description: >-
+        Porte vue par les joueurs, sans identifiant. Sur une case explored, state est le dernier état vu
+        (instantané pris quand la porte était dans une case visible), jamais l'état actuel.
+      required:
+        - from
+        - to
+        - state
+      properties:
+        from:
+          $ref: '#/components/schemas/Vertex'
+        to:
+          $ref: '#/components/schemas/Vertex'
+        state:
+          $ref: '#/components/schemas/DoorState'
+
+    AreaGm:
+      type: object
+      required:
+        - id
+        - name
+        - cells
+        - public
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        name:
+          $ref: '#/components/schemas/AreaName'
+        cells:
+          $ref: '#/components/schemas/CellSet'
+        public:
+          type: boolean
+
+    AreaParty:
+      type: object
+      description: "Zone publique vue par les joueurs : cells est l'intersection avec les cases visible et explored ; une zone dont l'intersection est vide n'est pas envoyée."
+      required:
+        - id
+        - name
+        - cells
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        name:
+          $ref: '#/components/schemas/AreaName'
+        cells:
+          $ref: '#/components/schemas/CellSet'
+
+    AreaName:
+      type: string
+      minLength: 1
+      maxLength: 60
+      example: 'Salle B'
+
+    DecorKind:
+      type: string
+      pattern: '^[a-z0-9]+(-[a-z0-9]+)*$'
+      maxLength: 64
+      description: "Clé d'un catalogue d'icônes libres fourni par le front (par exemple chest)."
+      example: 'chest'
+
+    DecorGm:
+      type: object
+      required:
+        - id
+        - kind
+        - cell
+        - rotation
+        - layer
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        kind:
+          $ref: '#/components/schemas/DecorKind'
+        cell:
+          $ref: '#/components/schemas/Cell'
+        rotation:
+          $ref: '#/components/schemas/Rotation'
+        layer:
+          type: string
+          enum:
+            - decor
+            - gm
+          description: 'gm : calque MJ (un piège, un repère), jamais envoyé aux joueurs.'
+
+    DecorParty:
+      type: object
+      description: 'Décor vu par les joueurs, avec la même règle que les murs : calque decor seulement, jamais le calque gm (les pièges), sur les cases visible ou explored, sans identifiant.'
+      required:
+        - kind
+        - cell
+        - rotation
+      properties:
+        kind:
+          $ref: '#/components/schemas/DecorKind'
+        cell:
+          $ref: '#/components/schemas/Cell'
+        rotation:
+          $ref: '#/components/schemas/Rotation'
+
+    Rotation:
+      type: integer
+      enum:
+        - 0
+        - 90
+        - 180
+        - 270
+
+    # --- CARTES : PIONS ---
+    TokenLayer:
+      type: string
+      enum:
+        - tokens
+        - gm
+      description: 'gm : calque MJ, jamais envoyé aux joueurs.'
+
+    TokenCondition:
+      type: object
+      required:
+        - condition
+        - hidden
+      properties:
+        condition:
+          description: >-
+            État du SRD (empoisonné, à terre…). Les effets libres du MJ (« prend feu, 1d4 par tour pendant
+            2 tours ») viendront avec la section Combat, qui élargira ce champ par un oneOf.
+          allOf:
+            - $ref: '#/components/schemas/RuleRef'
+        hidden:
+          type: boolean
+          description: "Effet caché aux joueurs (par exemple un poison qu'ils n'ont pas remarqué)."
+
+    CharacterTokenGm:
+      type: object
+      required:
+        - kind
+        - id
+        - cell
+        - layer
+        - characterId
+      properties:
+        kind:
+          type: string
+          enum:
+            - character
+        id:
+          $ref: '#/components/schemas/Id'
+        cell:
+          $ref: '#/components/schemas/Cell'
+        layer:
+          $ref: '#/components/schemas/TokenLayer'
+        characterId:
+          $ref: '#/components/schemas/Id'
+
+    CreatureTokenGm:
+      type: object
+      required:
+        - kind
+        - id
+        - cell
+        - layer
+        - monster
+        - displayName
+        - hitPoints
+        - conditions
+        - hidden
+      properties:
+        kind:
+          type: string
+          enum:
+            - creature
+        id:
+          $ref: '#/components/schemas/Id'
+        cell:
+          $ref: '#/components/schemas/Cell'
+        layer:
+          $ref: '#/components/schemas/TokenLayer'
+        monster:
+          $ref: '#/components/schemas/RuleRef'
+        displayName:
+          $ref: '#/components/schemas/DisplayName'
+        hitPoints:
+          $ref: '#/components/schemas/HitPoints'
+        conditions:
+          type: array
+          items:
+            $ref: '#/components/schemas/TokenCondition'
+        hidden:
+          type: boolean
+          description: "Créature cachée (invisible, en embuscade) : absente des pions et de l'initiative des joueurs."
+
+    TokenGm:
+      oneOf:
+        - $ref: '#/components/schemas/CharacterTokenGm'
+        - $ref: '#/components/schemas/CreatureTokenGm'
+      discriminator:
+        propertyName: kind
+        mapping:
+          character: '#/components/schemas/CharacterTokenGm'
+          creature: '#/components/schemas/CreatureTokenGm'
+
+    CharacterTokenParty:
+      type: object
+      required:
+        - kind
+        - id
+        - cell
+        - characterId
+        - name
+        - hitPoints
+        - conditions
+      properties:
+        kind:
+          type: string
+          enum:
+            - character
+        id:
+          $ref: '#/components/schemas/Id'
+        cell:
+          $ref: '#/components/schemas/Cell'
+        characterId:
+          $ref: '#/components/schemas/Id'
+        name:
+          $ref: '#/components/schemas/CharacterName'
+        hitPoints:
+          $ref: '#/components/schemas/HitPoints'
+        conditions:
+          type: array
+          items:
+            $ref: '#/components/schemas/RuleRef'
+
+    CreatureTokenParty:
+      type: object
+      description: >-
+        Créature vue par les joueurs, seulement sur une case visible et si elle n'est pas cachée. Jamais
+        de monsterId ni de PV : c'est le lien entre le pion et le monstre qui doit rester secret.
+      required:
+        - kind
+        - id
+        - cell
+        - displayName
+        - healthState
+        - conditions
+      properties:
+        kind:
+          type: string
+          enum:
+            - creature
+        id:
+          $ref: '#/components/schemas/Id'
+        cell:
+          $ref: '#/components/schemas/Cell'
+        displayName:
+          $ref: '#/components/schemas/DisplayName'
+        healthState:
+          $ref: '#/components/schemas/HealthState'
+        conditions:
+          type: array
+          description: 'États SRD visibles des joueurs : sans le champ hidden et sans les états marqués cachés.'
+          items:
+            $ref: '#/components/schemas/RuleRef'
+
+    TokenParty:
+      oneOf:
+        - $ref: '#/components/schemas/CharacterTokenParty'
+        - $ref: '#/components/schemas/CreatureTokenParty'
+      discriminator:
+        propertyName: kind
+        mapping:
+          character: '#/components/schemas/CharacterTokenParty'
+          creature: '#/components/schemas/CreatureTokenParty'
+
+    DisplayName:
+      type: string
+      minLength: 1
+      maxLength: 40
+      example: 'Silhouette encapuchonnée'
+
+    # --- CARTES : BROUILLARD ET VUES ---
+    FogGm:
+      type: object
+      description: >-
+        Si revealAll est vrai, toutes les cases sont visible. Sinon, visible = (ligne de vue des
+        personnages si autoReveal) ∪ manualReveals − manualHides. Le filtre des créatures cachées
+        s'applique dans tous les cas.
+      required:
+        - visible
+        - explored
+        - manualReveals
+        - manualHides
+      properties:
+        visible:
+          $ref: '#/components/schemas/CellSet'
+        explored:
+          $ref: '#/components/schemas/CellSet'
+        manualReveals:
+          $ref: '#/components/schemas/CellSet'
+        manualHides:
+          $ref: '#/components/schemas/CellSet'
+
+    FogParty:
+      type: object
+      description: "Une case qui n'est ni visible ni explored est hidden : les joueurs n'en reçoivent rien, pas même le fond."
+      required:
+        - visible
+        - explored
+      properties:
+        visible:
+          $ref: '#/components/schemas/CellSet'
+        explored:
+          $ref: '#/components/schemas/CellSet'
+
+    MapGmView:
+      type: object
+      required:
+        - view
+        - id
+        - name
+        - grid
+        - background
+        - walls
+        - doors
+        - areas
+        - decor
+        - tokens
+        - fog
+        - autoReveal
+        - revealAll
+        - geometryVersion
+      properties:
+        view:
+          type: string
+          enum:
+            - gm
+        id:
+          $ref: '#/components/schemas/Id'
+        name:
+          $ref: '#/components/schemas/MapName'
+        grid:
+          $ref: '#/components/schemas/GridSpec'
+        background:
+          type: object
+          nullable: true
+          description: "null tant qu'aucun fond n'a été envoyé."
+          allOf:
+            - $ref: '#/components/schemas/MapBackground'
+        walls:
+          type: array
+          items:
+            $ref: '#/components/schemas/WallGm'
+        doors:
+          type: array
+          items:
+            $ref: '#/components/schemas/DoorGm'
+        areas:
+          type: array
+          items:
+            $ref: '#/components/schemas/AreaGm'
+        decor:
+          type: array
+          items:
+            $ref: '#/components/schemas/DecorGm'
+        tokens:
+          type: array
+          items:
+            $ref: '#/components/schemas/TokenGm'
+        fog:
+          $ref: '#/components/schemas/FogGm'
+        autoReveal:
+          type: boolean
+          description: '(P3) La ligne de vue des personnages révèle les cases automatiquement.'
+        revealAll:
+          type: boolean
+          description: 'Toute la carte est visible, sans brouillard (une ville, un plan connu). Faux par défaut.'
+        geometryVersion:
+          type: integer
+          minimum: 0
+          description: "Version de la géométrie, renvoyée aussi dans l'en-tête ETag."
+
+    MapPartyView:
+      type: object
+      description: >-
+        Vue des joueurs : uniquement ce qui est sur les cases visible et explored. Créatures seulement sur
+        les cases visible et si elles ne sont pas cachées. Rien du calque MJ, pas de porte secrète (envoyée
+        comme un mur), pas d'identifiant de mur ni de porte.
+      required:
+        - view
+        - id
+        - name
+        - grid
+        - background
+        - walls
+        - doors
+        - areas
+        - decor
+        - tokens
+        - fog
+      properties:
+        view:
+          type: string
+          enum:
+            - party
+        id:
+          $ref: '#/components/schemas/Id'
+        name:
+          $ref: '#/components/schemas/MapName'
+        grid:
+          $ref: '#/components/schemas/GridSpec'
+        background:
+          type: object
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/MapBackgroundParty'
+        walls:
+          type: array
+          items:
+            $ref: '#/components/schemas/WallParty'
+        doors:
+          type: array
+          items:
+            $ref: '#/components/schemas/DoorParty'
+        areas:
+          type: array
+          items:
+            $ref: '#/components/schemas/AreaParty'
+        decor:
+          type: array
+          items:
+            $ref: '#/components/schemas/DecorParty'
+        tokens:
+          type: array
+          items:
+            $ref: '#/components/schemas/TokenParty'
+        fog:
+          $ref: '#/components/schemas/FogParty'
+
+    MapView:
+      oneOf:
+        - $ref: '#/components/schemas/MapGmView'
+        - $ref: '#/components/schemas/MapPartyView'
+      discriminator:
+        propertyName: view
+        mapping:
+          gm: '#/components/schemas/MapGmView'
+          party: '#/components/schemas/MapPartyView'
+
+    MapName:
+      type: string
+      minLength: 1
+      maxLength: 60
+      example: 'Mine de Phandelver'
+
+    MapSummary:
+      type: object
+      required:
+        - id
+        - name
+        - grid
+        - active
+        - updatedAt
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        name:
+          $ref: '#/components/schemas/MapName'
+        grid:
+          $ref: '#/components/schemas/GridSpec'
+        active:
+          type: boolean
+          description: 'Carte affichée en ce moment.'
+        updatedAt:
+          type: string
+          format: date-time
+
+    MapSummaryPage:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/MapSummary'
+        nextCursor:
+          type: string
+          nullable: true
+
+    # --- CARTES : SCÈNE ET INITIATIVE ---
+    InitiativeEntryGm:
+      type: object
+      required:
+        - tokenId
+        - score
+        - hidden
+      properties:
+        tokenId:
+          $ref: '#/components/schemas/Id'
+        score:
+          type: integer
+        hidden:
+          type: boolean
+
+    CharacterInitiativeParty:
+      type: object
+      required:
+        - kind
+        - tokenId
+        - characterId
+        - name
+        - hitPoints
+      properties:
+        kind:
+          type: string
+          enum:
+            - character
+        tokenId:
+          $ref: '#/components/schemas/Id'
+        characterId:
+          $ref: '#/components/schemas/Id'
+        name:
+          $ref: '#/components/schemas/CharacterName'
+        hitPoints:
+          $ref: '#/components/schemas/HitPoints'
+
+    CreatureInitiativeParty:
+      type: object
+      description: 'Créature déjà vue pendant ce combat. Sortie du champ de vision, healthState est le dernier état vu.'
+      required:
+        - kind
+        - tokenId
+        - displayName
+        - healthState
+      properties:
+        kind:
+          type: string
+          enum:
+            - creature
+        tokenId:
+          $ref: '#/components/schemas/Id'
+        displayName:
+          $ref: '#/components/schemas/DisplayName'
+        healthState:
+          $ref: '#/components/schemas/HealthState'
+
+    InitiativeEntryParty:
+      description: "Entrée de l'initiative vue par les joueurs, sans score : l'ordre du tableau donne l'ordre de jeu."
+      oneOf:
+        - $ref: '#/components/schemas/CharacterInitiativeParty'
+        - $ref: '#/components/schemas/CreatureInitiativeParty'
+      discriminator:
+        propertyName: kind
+        mapping:
+          character: '#/components/schemas/CharacterInitiativeParty'
+          creature: '#/components/schemas/CreatureInitiativeParty'
+
+    SceneGmView:
+      type: object
+      required:
+        - view
+        - activeMap
+        - round
+        - initiative
+        - currentTurn
+      properties:
+        view:
+          type: string
+          enum:
+            - gm
+        activeMap:
+          type: object
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/MapGmView'
+        round:
+          type: integer
+          nullable: true
+          minimum: 1
+          description: 'null hors combat.'
+        initiative:
+          type: array
+          items:
+            $ref: '#/components/schemas/InitiativeEntryGm'
+        currentTurn:
+          type: string
+          nullable: true
+          description: "tokenId dont c'est le tour ; null hors combat."
+          allOf:
+            - $ref: '#/components/schemas/Id'
+
+    ScenePartyView:
+      type: object
+      required:
+        - view
+        - activeMap
+        - round
+        - initiative
+        - currentTurn
+      properties:
+        view:
+          type: string
+          enum:
+            - party
+        activeMap:
+          type: object
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/MapPartyView'
+        round:
+          type: integer
+          nullable: true
+          minimum: 1
+        initiative:
+          type: array
+          items:
+            $ref: '#/components/schemas/InitiativeEntryParty'
+        currentTurn:
+          type: string
+          nullable: true
+          description: "tokenId dont c'est le tour ; null hors combat et pendant le tour d'une créature cachée."
+          allOf:
+            - $ref: '#/components/schemas/Id'
+
+    SceneView:
+      oneOf:
+        - $ref: '#/components/schemas/SceneGmView'
+        - $ref: '#/components/schemas/ScenePartyView'
+      discriminator:
+        propertyName: view
+        mapping:
+          gm: '#/components/schemas/SceneGmView'
+          party: '#/components/schemas/ScenePartyView'
+
+    # --- CARTES : JETONS D'AFFICHAGE ---
+    DisplaySessionCreated:
+      type: object
+      required:
+        - id
+        - token
+        - expiresAt
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        token:
+          type: string
+          description: "Jeton d'affichage, renvoyé uniquement à la création."
+          example: 'dsp_4f9c2a7e1b3d8f6a0c5e9b2d7a1f3c8e'
+        expiresAt:
+          type: string
+          format: date-time
+
+    DisplaySession:
+      type: object
+      required:
+        - id
+        - createdAt
+        - expiresAt
+        - lastUsedAt
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        createdAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+        lastUsedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    DisplaySessionPage:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/DisplaySession'
+        nextCursor:
+          type: string
+          nullable: true
+
+    # --- CARTES : ENTRÉES ---
+    CreateMapInput:
+      type: object
+      required:
+        - name
+        - grid
+      additionalProperties: false
+      properties:
+        name:
+          $ref: '#/components/schemas/MapName'
+        grid:
+          type: object
+          additionalProperties: false
+          required:
+            - type
+            - cols
+            - rows
+          properties:
+            type:
+              $ref: '#/components/schemas/GridType'
+            cols:
+              type: integer
+              minimum: 1
+              maximum: 100
+            rows:
+              type: integer
+              minimum: 1
+              maximum: 100
+
+    UpdateMapInput:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        name:
+          $ref: '#/components/schemas/MapName'
+        autoReveal:
+          type: boolean
+        revealAll:
+          type: boolean
+
+    MapGeometryInput:
+      type: object
+      description: 'Un élément avec id est conservé, sans id il est créé, absent il est supprimé. Les plafonds protègent aussi le calcul de la ligne de vue.'
+      required:
+        - walls
+        - doors
+        - areas
+        - decor
+      additionalProperties: false
+      x-phase: P3
+      properties:
+        walls:
+          type: array
+          maxItems: 2000
+          items:
+            type: object
+            additionalProperties: false
+            required:
+              - from
+              - to
+            properties:
+              id:
+                $ref: '#/components/schemas/Id'
+              from:
+                $ref: '#/components/schemas/Vertex'
+              to:
+                $ref: '#/components/schemas/Vertex'
+        doors:
+          type: array
+          maxItems: 200
+          items:
+            type: object
+            additionalProperties: false
+            required:
+              - from
+              - to
+              - state
+              - secret
+            properties:
+              id:
+                $ref: '#/components/schemas/Id'
+              from:
+                $ref: '#/components/schemas/Vertex'
+              to:
+                $ref: '#/components/schemas/Vertex'
+              state:
+                $ref: '#/components/schemas/DoorState'
+              secret:
+                type: boolean
+        areas:
+          type: array
+          maxItems: 100
+          items:
+            type: object
+            additionalProperties: false
+            required:
+              - name
+              - cells
+              - public
+            properties:
+              id:
+                $ref: '#/components/schemas/Id'
+              name:
+                $ref: '#/components/schemas/AreaName'
+              cells:
+                $ref: '#/components/schemas/CellSet'
+              public:
+                type: boolean
+        decor:
+          type: array
+          maxItems: 1000
+          items:
+            type: object
+            additionalProperties: false
+            required:
+              - kind
+              - cell
+              - rotation
+              - layer
+            properties:
+              id:
+                $ref: '#/components/schemas/Id'
+              kind:
+                $ref: '#/components/schemas/DecorKind'
+              cell:
+                $ref: '#/components/schemas/Cell'
+              rotation:
+                $ref: '#/components/schemas/Rotation'
+              layer:
+                type: string
+                enum:
+                  - decor
+                  - gm
+
+    UpdateDoorInput:
+      type: object
+      required:
+        - state
+      additionalProperties: false
+      x-phase: P3
+      properties:
+        state:
+          $ref: '#/components/schemas/DoorState'
+
+    FogUpdateInput:
+      x-phase: P3
+      oneOf:
+        - $ref: '#/components/schemas/FogCellsInput'
+        - $ref: '#/components/schemas/FogResetInput'
+      discriminator:
+        propertyName: action
+        mapping:
+          reveal: '#/components/schemas/FogCellsInput'
+          hide: '#/components/schemas/FogCellsInput'
+          reset: '#/components/schemas/FogResetInput'
+
+    FogCellsInput:
+      type: object
+      required:
+        - action
+        - cells
+      additionalProperties: false
+      properties:
+        action:
+          type: string
+          enum:
+            - reveal
+            - hide
+        cells:
+          $ref: '#/components/schemas/CellSet'
+
+    FogResetInput:
+      type: object
+      description: 'Vide les révélations et les masquages manuels.'
+      required:
+        - action
+      additionalProperties: false
+      properties:
+        action:
+          type: string
+          enum:
+            - reset
+
+    CreateMapTokenInput:
+      oneOf:
+        - $ref: '#/components/schemas/CreateCharacterTokenInput'
+        - $ref: '#/components/schemas/CreateCreatureTokenInput'
+      discriminator:
+        propertyName: kind
+        mapping:
+          character: '#/components/schemas/CreateCharacterTokenInput'
+          creature: '#/components/schemas/CreateCreatureTokenInput'
+
+    CreateCharacterTokenInput:
+      type: object
+      required:
+        - kind
+        - characterId
+        - cell
+      additionalProperties: false
+      properties:
+        kind:
+          type: string
+          enum:
+            - character
+        characterId:
+          $ref: '#/components/schemas/Id'
+        cell:
+          $ref: '#/components/schemas/Cell'
+
+    CreateCreatureTokenInput:
+      type: object
+      required:
+        - kind
+        - monsterId
+        - cell
+      additionalProperties: false
+      properties:
+        kind:
+          type: string
+          enum:
+            - creature
+        monsterId:
+          $ref: '#/components/schemas/RuleId'
+        cell:
+          $ref: '#/components/schemas/Cell'
+        displayName:
+          description: 'Le nom du monstre par défaut.'
+          allOf:
+            - $ref: '#/components/schemas/DisplayName'
+        hidden:
+          type: boolean
+          default: false
+        layer:
+          allOf:
+            - $ref: '#/components/schemas/TokenLayer'
+          default: tokens
+        hitPointMethod:
+          type: string
+          enum:
+            - average
+            - roll
+          default: average
+          description: 'average : PV moyens du monstre ; roll : le serveur lance ses dés de vie.'
+
+    UpdateMapTokenInput:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        cell:
+          $ref: '#/components/schemas/Cell'
+        displayName:
+          $ref: '#/components/schemas/DisplayName'
+        hidden:
+          type: boolean
+        layer:
+          $ref: '#/components/schemas/TokenLayer'
+
+    SetActiveMapInput:
+      type: object
+      required:
+        - mapId
+      additionalProperties: false
+      properties:
+        mapId:
+          description: 'null : aucune carte affichée.'
+          type: string
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/Id'
