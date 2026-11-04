@@ -108,6 +108,31 @@ jobs:
             echo "::notice::No test scripts are configured; skipping tests."
           fi
 
+  typecheck-and-build:
+    name: Typecheck and build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Build
+        run: pnpm build
+
   docker:
     name: Docker build
     needs: changes
@@ -148,6 +173,7 @@ jobs:
       - changes
       - lint
       - tests
+      - typecheck-and-build
       - docker
     runs-on: ubuntu-latest
     steps:
@@ -156,6 +182,7 @@ jobs:
           CHANGES_RESULT: ${{ needs.changes.result }}
           LINT_RESULT: ${{ needs.lint.result }}
           TESTS_RESULT: ${{ needs.tests.result }}
+          TYPECHECK_AND_BUILD_RESULT: ${{ needs.typecheck-and-build.result }}
           DOCKER_RESULT: ${{ needs.docker.result }}
         run: |
           if [[ "$CHANGES_RESULT" != "success" ]]; then
@@ -163,7 +190,7 @@ jobs:
             exit 1
           fi
 
-          for result in "$LINT_RESULT" "$TESTS_RESULT" "$DOCKER_RESULT"; do
+          for result in "$LINT_RESULT" "$TESTS_RESULT" "$TYPECHECK_AND_BUILD_RESULT" "$DOCKER_RESULT"; do
             if [[ "$result" == "failure" || "$result" == "cancelled" ]]; then
               echo "::error::A required CI job failed or was cancelled."
               exit 1
