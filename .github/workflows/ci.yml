@@ -58,6 +58,9 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      - name: format-check
+        run: pnpm format:check
+
   tests:
     name: Tests
     runs-on: ubuntu-latest
