@@ -100,3 +100,4 @@ $RECYCLE.BIN/
 *.tmp
 *.bak
 .claude/settings.local.json
+apps/web/src/models/api/schema.d.ts

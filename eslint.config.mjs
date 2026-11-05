@@ -7,7 +7,12 @@ import tseslint from 'typescript-eslint';
 import prettierConfig from 'eslint-config-prettier/flat';
 
 export default defineConfig([
-  globalIgnores(['**/dist/**', '**/.turbo/**', '**/coverage/**']),
+  globalIgnores([
+    '**/dist/**',
+    '**/.turbo/**',
+    '**/coverage/**',
+    'apps/web/src/models/api/schema.d.ts',
+  ]),
   {
     files: ['apps/web/**/*.{ts,tsx}'],
     extends: [reactHooks.configs.flat.recommended, reactRefresh.configs.vite],
