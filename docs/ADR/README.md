@@ -16,5 +16,6 @@ Pour en ajouter une : copier `0000-modele.md`, prendre le numéro suivant, l'ouv
 | [0008](0008-contrat-api.md)             | Contrat d'API écrit en premier                                | Proposé |
 | [0009](0009-unites-srd.md)              | Unités métriques, conversion et attribution du SRD            | Proposé |
 | [0010](0010-evenements-temps-reel.md)   | Événements temps réel (WebSocket)                             | Proposé |
+| [0011](0011-routeur-web.md)             | React Router pour le routing de l'application web             | Proposé |
 
 Ce journal couvre les décisions qui concernent tout le projet, y compris le mobile. Les décisions propres à l'application Flutter sont consignées dans `docs/adr/` du repo EpiQuest-Mobile.
