@@ -18,13 +18,13 @@ Points repérés pendant P1-03, P1-04 et l'issue des fichiers du dépôt. Chaque
 - [x] Le lien d'évitement peut être masqué visuellement, mais doit **apparaître quand il reçoit le focus**.
 - [x] Retirer le `<main>` de `CampaignListView` (et adapter son test) : une page ne doit avoir qu'un seul repère principal, fourni par la mise en page.
 - [x] `/vue-joueurs` n'utilise **pas** cette mise en page (pas de navigation ni de liens sur l'écran partagé) : prévoir une mise en page à part, minimale.
-- [ ] 🔍 Montrer la mise en page.
+- [x] 🔍 Montrer la mise en page.
 
 **3. Les routes de départ** (`feat(web): add initial routes`)
 
-- [ ] Définir les routes dans `apps/web/src/app/routes.tsx`.
-- [ ] Une View vide par route dans `apps/web/src/views/`, chacune avec un vrai `h1` : `LoginView` (`/connexion`), `RegisterView` (`/inscription`), `CampaignListView` (`/campagnes`, existe déjà), `GameMasterView` (`/campagnes/:campaignId`), `JoinCampaignView` (`/rejoindre`), `PlayerDisplayView` (`/vue-joueurs`), `NotFoundView` (toute autre adresse). Ne pas nommer la vue MJ `CampaignGmView` : ce nom est déjà un type du contrat.
-- [ ] `/` redirige vers `/campagnes`.
+- [x] Définir les routes dans `apps/web/src/app/routes.tsx`.
+- [x] Une View vide par route dans `apps/web/src/views/`, chacune avec un vrai `h1` : `LoginView` (`/connexion`), `RegisterView` (`/inscription`), `CampaignListView` (`/campagnes`, existe déjà), `GameMasterView` (`/campagnes/:campaignId`), `JoinCampaignView` (`/rejoindre`), `PlayerDisplayView` (`/vue-joueurs`), `NotFoundView` (toute autre adresse). Ne pas nommer la vue MJ `CampaignGmView` : ce nom est déjà un type du contrat.
+- [x] `/` redirige vers `/campagnes`.
 
 **4. Titre de page** (`feat(web): set page title on navigation`)
 

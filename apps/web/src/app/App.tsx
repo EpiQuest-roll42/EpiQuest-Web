@@ -1,5 +1,8 @@
-import { CampaignListView } from '../views/CampaignListView';
+import { RouterProvider, createBrowserRouter } from 'react-router';
+import { appRoutes } from './routes';
+
+const router = createBrowserRouter(appRoutes);
 
 export function App() {
-  return <CampaignListView />;
+  return <RouterProvider router={router} />;
 }
