@@ -28,7 +28,8 @@ En P1, le Model renvoie des **données simulées**. En P2, on passe au client HT
 | `models/repositories/` | Une interface par ressource (`CampaignRepository`), ses implémentations `mock` et `http`, l'erreur typée et l'objet `Repositories`.        |
 | `viewModels/`          | Un hook par écran (`useCampaignList`), qui expose l'état d'écran.                                                                          |
 | `views/`               | Les écrans (`CampaignListView`).                                                                                                           |
-| `components/`          | Les composants de la charte : bouton, champ, pion (à venir, #76).                                                                          |
+| `components/`          | Les composants de la charte : bouton, champ, pion (créés par #76).                                                                         |
+| `theme/`               | Les palettes et variables de la charte (créées par #75).                                                                                   |
 | `tests/`               | Les tests (Vitest et Testing Library).                                                                                                     |
 
 ### Les règles d'import, vérifiées par le lint
@@ -66,6 +67,7 @@ L'implémentation des repositories est choisie **à un seul endroit**, `src/app/
 - En production, une variable absente, ou `mock`, **empêche l'application de démarrer**, avec un message clair : un site en ligne ne doit jamais afficher de données inventées.
 - Les données simulées sont chargées par un `import()` dynamique : elles **ne figurent pas** dans le build de production.
 - Le client HTTP envoie le cookie de session (`credentials: 'include'`, ADR 0008). La future vue joueurs, elle, utilisera `credentials: 'omit'` et son jeton d'affichage (contrat, `displayAuth`).
+- Vite charge le `.env` de la racine du dépôt (`envDir: '../..'` dans `apps/web/vite.config.ts`), cohérent avec l'emplacement indiqué par `.env.example`.
 
 Les implémentations `mock` sont créées par une fonction (`createMockCampaignRepository()`) : chaque appel donne une instance neuve, avec ses propres données. Elles renvoient des **copies**, comme le ferait le réseau.
 
