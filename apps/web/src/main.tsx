@@ -1,7 +1,9 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { App } from './app/App';
 import { createRepositories } from './app/createRepositories';
+import { queryClient } from './app/queryClient';
 import { RepositoriesProvider } from './app/RepositoriesProvider';
 import './index.css';
 
@@ -11,9 +13,11 @@ void createRepositories()
   .then((repositories) => {
     root.render(
       <StrictMode>
-        <RepositoriesProvider repositories={repositories}>
-          <App />
-        </RepositoriesProvider>
+        <QueryClientProvider client={queryClient}>
+          <RepositoriesProvider repositories={repositories}>
+            <App />
+          </RepositoriesProvider>
+        </QueryClientProvider>
       </StrictMode>,
     );
   })

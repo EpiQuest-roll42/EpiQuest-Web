@@ -9,19 +9,26 @@
     "lint": "eslint . --max-warnings 0",
     "preview": "vite preview",
     "typecheck": "tsc -p .",
+    "test": "vitest run",
     "generate:api": "openapi-typescript ../../packages/api-contract/openapi.yaml -o src/models/api/schema.d.ts --root-types --root-types-no-schema-prefix"
   },
   "dependencies": {
     "@lanterne/rules-engine": "workspace:*",
+    "@tanstack/react-query": "^5.107.1",
     "openapi-fetch": "^0.17.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.8",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.2.1",
+    "jsdom": "^31.0.0",
     "openapi-typescript": "7.10.1",
-    "vite": "^8.3.5"
+    "vite": "^8.3.5",
+    "vitest": "^5.1.0"
   }
 }
