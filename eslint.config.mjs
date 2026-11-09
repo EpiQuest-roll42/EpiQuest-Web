@@ -20,6 +20,48 @@ export default defineConfig([
       globals: globals.browser,
     },
   },
+  {
+    files: ['apps/web/src/views/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: [
+                '**/models',
+                '**/models/**',
+                'openapi-fetch',
+                '**/mockCampaignRepository',
+                '**/mockCampaignRepository.*',
+                '**/repositoriesContext',
+                '**/repositoriesContext.*',
+                '**/createRepositories',
+                '**/createRepositories.*',
+              ],
+              message: 'Les Views dépendent uniquement des ViewModels.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['apps/web/src/viewModels/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/views', '**/views/**', '**/components', '**/components/**'],
+              message: 'Les ViewModels ne dépendent pas des composants de View.',
+            },
+          ],
+        },
+      ],
+    },
+  },
 
   {
     files: ['**/*.{js,cjs,mjs,jsx,ts,cts,mts,tsx}'],
