@@ -22,7 +22,7 @@ Deux bibliothèques sont envisagées. L'application utilise déjà TanStack Quer
 
 ## Décision
 
-Nous utilisons **React Router** (paquet `react-router`, version 7), en **mode « data »** : routes déclarées dans le code avec `createBrowserRouter` et affichées par `RouterProvider`.
+Nous utilisons **React Router** (paquet `react-router`, version 8), en **mode « data »** : routes déclarées dans le code avec `createBrowserRouter` et affichées par `RouterProvider`.
 
 - **Pas de mode « framework »** : il impose sa propre structure de fichiers, son plugin Vite et un rendu côté serveur, dont l'application n'a pas besoin.
 - **Les routes ne chargent pas de données.** Les `loader` et `action` de React Router ne sont pas utilisés : les données passent par les ViewModels et TanStack Query (MVVM). Un `loader` appellerait le Model sans passer par un ViewModel.
