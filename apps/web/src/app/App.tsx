@@ -1,7 +1,5 @@
+import { CampaignListView } from '../views/CampaignListView';
+
 export function App() {
-  return (
-    <main>
-      <h1>Lanterne</h1>
-    </main>
-  );
+  return <CampaignListView />;
 }
