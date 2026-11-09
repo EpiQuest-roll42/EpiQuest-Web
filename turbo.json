@@ -1,17 +1,21 @@
 {
   "tasks": {
     "build": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["^build", "generate:api"],
       "outputs": ["dist/**"]
     },
     "typecheck": {
-      "dependsOn": ["^build"]
+      "dependsOn": ["^build", "generate:api"]
     },
     "lint": {
       "dependsOn": ["^build"]
     },
     "test": {
-      "dependsOn": ["^build"]
+      "dependsOn": ["^build", "generate:api"]
+    },
+    "generate:api": {
+      "outputs": ["src/models/api/**"],
+      "inputs": ["$TURBO_ROOT$/packages/api-contract/openapi.yaml", "package.json"]
     }
   }
 }

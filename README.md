@@ -92,7 +92,7 @@ Cette commande démarre PostgreSQL puis Adminer, une fois la base prête.
 | Adminer (base de données) | http://localhost:8080          | Oui                                                                          |
 | API                       | http://localhost:3000          | À venir ([P2-01](https://github.com/EpiQuest-roll42/EpiQuest-Web/issues/19)) |
 | Documentation Swagger     | http://localhost:3000/api/docs | À venir ([P2-01](https://github.com/EpiQuest-roll42/EpiQuest-Web/issues/19)) |
-| Application web           | http://localhost:5173          | À venir ([P1-14](https://github.com/EpiQuest-roll42/EpiQuest-Web/issues/14)) |
+| Application web           | http://localhost:5173          | Oui, avec des données simulées (voir « En développement »)                   |
 
 Les ports de PostgreSQL et d'Adminer se changent dans `.env` (`DB_PORT`, `ADMINER_PORT`) si ceux par défaut sont déjà pris. Les services n'écoutent que sur votre machine (`127.0.0.1`) : ils ne sont pas joignables depuis le réseau.
 
@@ -111,10 +111,10 @@ Les variables `POSTGRES_*` ne sont lues qu'au premier démarrage, quand la base 
 
 ```bash
 docker compose up db    # la base seule
-pnpm dev                # API et web avec rechargement automatique (à venir)
+pnpm --filter @lanterne/web dev   # application web, avec des données simulées
 ```
 
-_`pnpm dev` sera disponible quand l'API et l'application web seront initialisées._
+L'application web fonctionne sans API : en développement, elle utilise des données simulées. Pour la brancher sur l'API réelle, renseignez `VITE_API_MODE=http` et `VITE_API_BASE_URL` dans `.env` (voir [l'architecture du web](docs/technique/architecture-web.md)). Une commande `pnpm dev` qui lance l'API et le web ensemble arrivera avec l'API (P2).
 
 ## Tests
 
@@ -169,14 +169,14 @@ Les issues marquées `good first issue` sont un bon point de départ.
 
 ## Documentation
 
-| Document                                                                   | Contenu                                                                                                                                                                                                                                                                                                        |
-| -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`docs/ADR/`](docs/ADR/)                                                   | Journal des décisions d'architecture                                                                                                                                                                                                                                                                           |
-| [`docs/charte-graphique.pdf`](docs/charte-graphique.pdf)                   | Mini charte graphique (2 pages) : logo, palettes claire et « table de jeu », typographies, couples de contraste autorisés, composants                                                                                                                                                                          |
-| `docs/utilisateur/`                                                        | Guides du MJ et du joueur, aide-mémoire des dés, FAQ (_à venir_)                                                                                                                                                                                                                                               |
-| [`docs/technique/`](docs/technique/)                                       | Documentation technique : [notation des dés](docs/technique/notation-des-des.md) (grammaire, limites, erreurs, probabilités), [format des règles](docs/technique/format-des-regles.md) (actions, effets, vocabulaire du moteur) ; architecture, modèle de données, synchronisation et exploitation (_à venir_) |
-| [`packages/api-contract/openapi.yaml`](packages/api-contract/openapi.yaml) | Contrat de l'API, écrit avant le code ; il fait foi en cas d'écart avec l'implémentation                                                                                                                                                                                                                       |
-| Swagger                                                                    | Documentation de l'API, servie par l'API sur `/api/docs`                                                                                                                                                                                                                                                       |
+| Document                                                                   | Contenu                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [`docs/ADR/`](docs/ADR/)                                                   | Journal des décisions d'architecture                                                                                                                                                                                                                                                                                                                                                                                           |
+| [`docs/charte-graphique.pdf`](docs/charte-graphique.pdf)                   | Mini charte graphique (2 pages) : logo, palettes claire et « table de jeu », typographies, couples de contraste autorisés, composants                                                                                                                                                                                                                                                                                          |
+| `docs/utilisateur/`                                                        | Guides du MJ et du joueur, aide-mémoire des dés, FAQ (_à venir_)                                                                                                                                                                                                                                                                                                                                                               |
+| [`docs/technique/`](docs/technique/)                                       | Documentation technique : [architecture du web](docs/technique/architecture-web.md) (MVVM, dossiers, données simulées, ajouter un écran), [notation des dés](docs/technique/notation-des-des.md) (grammaire, limites, erreurs, probabilités), [format des règles](docs/technique/format-des-regles.md) (actions, effets, vocabulaire du moteur) ; architecture, modèle de données, synchronisation et exploitation (_à venir_) |
+| [`packages/api-contract/openapi.yaml`](packages/api-contract/openapi.yaml) | Contrat de l'API, écrit avant le code ; il fait foi en cas d'écart avec l'implémentation                                                                                                                                                                                                                                                                                                                                       |
+| Swagger                                                                    | Documentation de l'API, servie par l'API sur `/api/docs`                                                                                                                                                                                                                                                                                                                                                                       |
 
 ## Accessibilité
 
