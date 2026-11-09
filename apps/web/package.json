@@ -9,7 +9,7 @@
     "lint": "eslint . --max-warnings 0",
     "preview": "vite preview",
     "typecheck": "tsc -p .",
-    "generate:api": "openapi-typescript ../../packages/api-contract/openapi.yaml -o src/models/api/schema.d.ts"
+    "generate:api": "openapi-typescript ../../packages/api-contract/openapi.yaml -o src/models/api/schema.d.ts --root-types --root-types-no-schema-prefix"
   },
   "dependencies": {
     "@lanterne/rules-engine": "workspace:*",
