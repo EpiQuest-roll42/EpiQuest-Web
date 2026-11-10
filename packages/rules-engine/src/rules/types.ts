@@ -56,3 +56,72 @@ export interface Species {
   languages: RuleRef[];
   choiceGroups: ChoiceGroup[];
 }
+
+export interface ClassProficiencies {
+  armor: RuleRef[];
+  weapons: RuleRef[];
+  tools: RuleRef[];
+}
+
+export interface SpellSlotAllowance {
+  slotLevel: number;
+  count: number;
+}
+
+export interface SpellSlotsAtLevel {
+  level: number;
+  slots: SpellSlotAllowance[];
+}
+
+export interface PactSlotsAtLevel {
+  level: number;
+  count: number;
+  slotLevel: number;
+}
+
+export interface LevelCount {
+  level: number;
+  count: number;
+}
+
+export interface ClassSpellcasting {
+  ability: AbilityCode;
+  preparation: 'prepared' | 'known';
+  slotProgression: 'standard' | 'pact';
+  slotsByLevel?: SpellSlotsAtLevel[];
+  pactSlotsByLevel?: PactSlotsAtLevel[];
+  cantripsKnownByLevel: LevelCount[];
+  spellsKnownByLevel?: LevelCount[];
+}
+
+export interface ClassLevel {
+  level: number;
+  proficiencyBonus: number;
+  features: Feature[];
+  subclassFeature: boolean;
+}
+
+export interface SubclassLevel {
+  level: number;
+  features: Feature[];
+}
+
+export interface Subclass {
+  id: RuleId;
+  name: string;
+  class: RuleRef;
+  levels: SubclassLevel[];
+}
+
+export interface CharacterClass {
+  id: RuleId;
+  name: string;
+  hitDie: 'd6' | 'd8' | 'd10' | 'd12';
+  primaryAbilities: AbilityCode[];
+  savingThrows: AbilityCode[];
+  proficiencies: ClassProficiencies;
+  choiceGroups: ChoiceGroup[];
+  spellcasting: ClassSpellcasting | null;
+  levels: ClassLevel[];
+  subclasses: Subclass[];
+}
