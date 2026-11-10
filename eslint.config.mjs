@@ -38,6 +38,8 @@ export default defineConfig([
                 '**/repositoriesContext.*',
                 '**/createRepositories',
                 '**/createRepositories.*',
+                'react-router',
+                'react-router/**',
               ],
               message: 'Les Views dépendent uniquement des ViewModels.',
             },

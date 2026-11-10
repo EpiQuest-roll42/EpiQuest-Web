@@ -30,5 +30,10 @@ export function createRepositoriesWithList(list: CampaignRepository['list']): Re
         throw new Error('create is not used by the campaign-list ViewModel.');
       },
     },
+    session: {
+      async getCurrentUser() {
+        return null;
+      },
+    },
   };
 }

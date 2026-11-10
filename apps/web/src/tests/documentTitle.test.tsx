@@ -1,12 +1,35 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { isValidElement } from 'react';
+import type { ReactNode } from 'react';
 import { createMemoryRouter, Navigate, RouterProvider, type RouteObject } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
 import { App } from '../app/App';
+import { RepositoriesProvider } from '../app/RepositoriesProvider';
 import { RouteTitleLayout } from '../app/layout/RouteTitleLayout';
 import { isRouteHandle } from '../app/RouteHandle';
 import { appRoutes } from '../app/routes';
+import { createMockCampaignRepository } from '../models/repositories/mockCampaignRepository';
+import { createMockSessionRepository } from '../models/repositories/mockSessionRepository';
+
+function renderWithRepositories(ui: ReactNode) {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <RepositoriesProvider
+        repositories={{
+          campaigns: createMockCampaignRepository(),
+          session: createMockSessionRepository(),
+        }}
+      >
+        {ui}
+      </RepositoriesProvider>
+    </QueryClientProvider>,
+  );
+}
 
 vi.mock('../views/CampaignListView', () => ({
   CampaignListView: () => <h1>Mes campagnes</h1>,
@@ -34,7 +57,7 @@ describe('document title', () => {
   it('follows client-side navigation', async () => {
     const user = userEvent.setup();
     const router = createMemoryRouter(appRoutes, { initialEntries: ['/campagnes'] });
-    render(<RouterProvider router={router} />);
+    renderWithRepositories(<RouterProvider router={router} />);
     await waitFor(() => expect(document.title).toBe('Mes campagnes · Lanterne'));
 
     await user.click(screen.getByRole('link', { name: 'Rejoindre une campagne' }));
@@ -54,7 +77,7 @@ describe('document title', () => {
   });
 
   it('is set when the real application starts', async () => {
-    render(<App />);
+    renderWithRepositories(<App />);
 
     expect(await screen.findByRole('heading', { name: 'Mes campagnes' })).toBeInTheDocument();
     await waitFor(() => expect(document.title).toBe('Mes campagnes · Lanterne'));

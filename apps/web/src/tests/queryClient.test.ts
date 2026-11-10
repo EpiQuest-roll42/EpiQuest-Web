@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { queryClient } from '../app/queryClient';
-import { CampaignRepositoryError } from '../models/repositories/CampaignRepositoryError';
+import { ApiError } from '../models/repositories/ApiError';
 
 describe('queryClient retry policy', () => {
   it('does not retry client errors and retries transient failures twice', () => {
@@ -10,7 +10,7 @@ describe('queryClient retry policy', () => {
       return;
     }
 
-    const clientError = new CampaignRepositoryError({
+    const clientError = new ApiError({
       type: '/problems/not-found',
       title: 'Not Found',
       status: 404,

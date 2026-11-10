@@ -1,3 +1,3 @@
 export function RegisterView() {
-  return <h1>Inscription</h1>;
+  return <h1 tabIndex={-1}>Inscription</h1>;
 }

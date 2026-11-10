@@ -1,19 +1,20 @@
 import { Navigate, type RouteObject } from 'react-router';
+import { RequireAuthentication } from './RequireAuthentication';
 import { AppLayout } from './layout/AppLayout';
 import { PlayerDisplayLayout } from './layout/PlayerDisplayLayout';
+import { RouteHydrateFallback } from './layout/RouteHydrateFallback';
 import { RouteTitleLayout } from './layout/RouteTitleLayout';
 import type { RouteHandle } from './RouteHandle';
 import { CampaignListView } from '../views/CampaignListView';
-import { GameMasterView } from '../views/GameMasterView';
 import { JoinCampaignView } from '../views/JoinCampaignView';
 import { LoginView } from '../views/LoginView';
 import { NotFoundView } from '../views/NotFoundView';
-import { PlayerDisplayView } from '../views/PlayerDisplayView';
 import { RegisterView } from '../views/RegisterView';
 
 export const appRoutes: RouteObject[] = [
   {
     element: <RouteTitleLayout />,
+    HydrateFallback: RouteHydrateFallback,
     children: [
       {
         path: '/',
@@ -35,17 +36,30 @@ export const appRoutes: RouteObject[] = [
           },
           {
             path: 'campagnes',
-            element: <CampaignListView />,
-            handle: { title: 'Mes campagnes' } satisfies RouteHandle,
-          },
-          {
-            path: 'campagnes/:campaignId',
-            element: <GameMasterView />,
-            handle: { title: 'Campagne' } satisfies RouteHandle,
+            element: <RequireAuthentication />,
+            children: [
+              {
+                index: true,
+                element: <CampaignListView />,
+                handle: { title: 'Mes campagnes' } satisfies RouteHandle,
+              },
+              {
+                path: ':campaignId',
+                lazy: async () => {
+                  const { GameMasterView } = await import('../views/GameMasterView');
+                  return { Component: GameMasterView };
+                },
+                handle: { title: 'Campagne' } satisfies RouteHandle,
+              },
+            ],
           },
           {
             path: 'rejoindre',
-            element: <JoinCampaignView />,
+            element: (
+              <RequireAuthentication>
+                <JoinCampaignView />
+              </RequireAuthentication>
+            ),
             handle: { title: 'Rejoindre une campagne' } satisfies RouteHandle,
           },
           {
@@ -61,7 +75,10 @@ export const appRoutes: RouteObject[] = [
         children: [
           {
             index: true,
-            element: <PlayerDisplayView />,
+            lazy: async () => {
+              const { PlayerDisplayView } = await import('../views/PlayerDisplayView');
+              return { Component: PlayerDisplayView };
+            },
             handle: { title: 'Vue joueurs' } satisfies RouteHandle,
           },
         ],

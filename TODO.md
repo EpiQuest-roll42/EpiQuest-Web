@@ -28,41 +28,41 @@ Points repérés pendant P1-03, P1-04 et l'issue des fichiers du dépôt. Chaque
 
 **4. Titre de page** (`feat(web): set page title on navigation`)
 
-- [ ] Chaque route déclare son titre ; il est appliqué à `document.title` sous la forme `Campagnes · Lanterne` (WCAG 2.4.2). Un seul mécanisme pour toutes les routes, pas un `document.title` écrit dans chaque View.
+- [x] Chaque route déclare son titre ; il est appliqué à `document.title` sous la forme `Campagnes · Lanterne` (WCAG 2.4.2). Un seul mécanisme pour toutes les routes, pas un `document.title` écrit dans chaque View.
 
 **5. Focus après navigation** (`feat(web): move focus to the page heading on navigation`)
 
-- [ ] Après chaque navigation (mais **pas** au premier chargement de la page), placer le focus sur le `h1` de la nouvelle page (`tabIndex={-1}`) : le lecteur d'écran lit alors le titre de la page.
-- [ ] Un seul mécanisme dans la mise en page, pas un effet dans chaque View.
-- [ ] 🔍 Montrer le mécanisme.
+- [x] Après chaque navigation (mais **pas** au premier chargement de la page), placer le focus sur le `h1` de la nouvelle page (`tabIndex={-1}`) : le lecteur d'écran lit alors le titre de la page.
+- [x] Un seul mécanisme dans la mise en page, pas un effet dans chaque View.
+- [x] 🔍 Montrer le mécanisme.
 
 **6. Session et routes protégées** (`feat(web): add session view model and protected routes`)
 
-- [ ] Ajouter un repository de session (`SessionRepository`, méthode `getCurrentUser`, route `getCurrentUser` du contrat), avec ses implémentations `mock` et `http`, et l'ajouter à l'objet `Repositories`. Un 401 de l'API signifie « non connecté », pas une erreur.
-- [ ] C'est le deuxième repository : renommer `CampaignRepositoryError` en une erreur commune (par exemple `ApiError`) et partager **un seul** client HTTP entre les repositories (limites notées dans `architecture-web.md`).
-- [ ] ViewModel `useSession` : expose `isAuthenticated`, `isLoading` et l'utilisateur.
-- [ ] Un composant de garde dans `apps/web/src/app/` utilise `useSession` : non connecté → redirection vers `/connexion`, en gardant l'adresse demandée pour y revenir après la connexion. Pendant le chargement de la session, ne rien afficher de la page protégée.
-- [ ] Routes protégées : `/campagnes`, `/campagnes/:campaignId`, `/rejoindre`. Publiques : `/connexion`, `/inscription`, `/vue-joueurs` (elle a son jeton d'affichage), 404.
-- [ ] Le `mock` permet de simuler les deux cas (connecté, non connecté), pour le développement et les tests.
+- [x] Ajouter un repository de session (`SessionRepository`, méthode `getCurrentUser`, route `getCurrentUser` du contrat), avec ses implémentations `mock` et `http`, et l'ajouter à l'objet `Repositories`. Un 401 de l'API signifie « non connecté », pas une erreur.
+- [x] C'est le deuxième repository : renommer `CampaignRepositoryError` en une erreur commune (par exemple `ApiError`) et partager **un seul** client HTTP entre les repositories (limites notées dans `architecture-web.md`).
+- [x] ViewModel `useSession` : expose `isAuthenticated`, `isLoading` et l'utilisateur.
+- [x] Un composant de garde dans `apps/web/src/app/` utilise `useSession` : non connecté → redirection vers `/connexion`, en gardant l'adresse demandée pour y revenir après la connexion. Pendant le chargement de la session, ne rien afficher de la page protégée.
+- [x] Routes protégées : `/campagnes`, `/campagnes/:campaignId`, `/rejoindre`. Publiques : `/connexion`, `/inscription`, `/vue-joueurs` (elle a son jeton d'affichage), 404.
+- [x] Le `mock` permet de simuler les deux cas (connecté, non connecté), pour le développement et les tests.
 
 **7. Les fragments d'URL** (`feat(web): read invitation code and display token from the url fragment`)
 
-- [ ] `/rejoindre#XXXXX-XXXXX` : lire le code dans le fragment (`location.hash`), jamais dans un paramètre `?code=` (le fragment n'est jamais envoyé au serveur ni écrit dans ses logs). Le garder pendant une redirection vers `/connexion`, pour le retrouver après.
-- [ ] `/vue-joueurs#<jeton>` : lire le jeton, l'effacer **aussitôt** de l'adresse avec `history.replaceState`, et le garder **en mémoire uniquement** (ni `localStorage`, ni `sessionStorage`, ni console). Sans jeton, afficher un message qui explique d'ouvrir la vue depuis l'écran du MJ.
-- [ ] 🔍 Montrer la lecture du jeton.
+- [x] `/rejoindre#XXXXX-XXXXX` : lire le code dans le fragment (`location.hash`), jamais dans un paramètre `?code=` (le fragment n'est jamais envoyé au serveur ni écrit dans ses logs). Le garder pendant une redirection vers `/connexion`, pour le retrouver après.
+- [x] `/vue-joueurs#<jeton>` : lire le jeton, l'effacer **aussitôt** de l'adresse avec `history.replaceState`, et le garder **en mémoire uniquement** (ni `localStorage`, ni `sessionStorage`, ni console). Sans jeton, afficher un message qui explique d'ouvrir la vue depuis l'écran du MJ.
+- [x] 🔍 Montrer la lecture du jeton.
 
 **8. Chargement différé** (`feat(web): lazy load heavy screens`)
 
-- [ ] `GameMasterView` et `PlayerDisplayView` chargées à la demande (`React.lazy` ou l'équivalent de la bibliothèque), avec un état de chargement annoncé dans une région `role="status"` toujours présente.
+- [x] `GameMasterView` et `PlayerDisplayView` chargées à la demande (`React.lazy` ou l'équivalent de la bibliothèque), avec un état de chargement annoncé dans une région `role="status"` toujours présente.
 
 **9. Tests** (`test(web): cover routing, focus and protected routes`)
 
-- [ ] Installer un outil axe pour les tests (`vitest-axe` ou `jest-axe`) et vérifier la mise en page : aucune erreur.
-- [ ] Chaque route rend son titre de page et son `h1`.
-- [ ] Après une navigation par un lien, au clavier, le focus est sur le `h1` de la nouvelle page ; au premier chargement, il ne bouge pas.
-- [ ] Le lien d'évitement est le premier élément focalisable et amène au `main`.
-- [ ] `/vue-joueurs#jeton` : le fragment n'est plus dans l'adresse après le chargement.
-- [ ] Une route protégée redirige vers `/connexion` quand `useSession` dit « non connecté », puis revient à l'adresse demandée après la connexion.
+- [x] Installer un outil axe pour les tests (`vitest-axe` ou `jest-axe`) et vérifier la mise en page : aucune erreur.
+- [x] Chaque route rend son titre de page et son `h1`.
+- [x] Après une navigation par un lien, au clavier, le focus est sur le `h1` de la nouvelle page ; au premier chargement, il ne bouge pas.
+- [x] Le lien d'évitement est le premier élément focalisable et amène au `main`.
+- [x] `/vue-joueurs#jeton` : le fragment n'est plus dans l'adresse après le chargement.
+- [x] Une route protégée redirige vers `/connexion` quand `useSession` dit « non connecté », puis revient à l'adresse demandée après la connexion.
 
 **10. Documentation** (rédigée par Claude sur demande)
 
@@ -70,7 +70,7 @@ Points repérés pendant P1-03, P1-04 et l'issue des fichiers du dépôt. Chaque
 
 **11. PR**
 
-- [ ] `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` à la racine.
+- [x] `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` à la racine.
 - [ ] PR vers `feat/14-squelette-react-mvvm-et-composants-accessibles` : « Closes #74 ».
 - [ ] « vérifie » avec Claude avant de la proposer à l'équipe.
 

@@ -1,18 +1,12 @@
-import createClient from 'openapi-fetch';
-import type { paths, Problem } from '../api/schema';
-import { CampaignRepositoryError } from './CampaignRepositoryError';
+import type { Problem } from '../api/schema';
+import { ApiError } from './ApiError';
+import type { ApiClient } from './apiClient';
 import type { CampaignRepository } from './CampaignRepository';
 
-export function createHttpCampaignRepository(baseUrl: string): CampaignRepository {
-  // Campaign API calls use the web session cookie. Display-view requests must use credentials: 'omit'.
-  const client = createClient<paths>({
-    baseUrl,
-    credentials: 'include',
-  });
-
+export function createHttpCampaignRepository(client: ApiClient): CampaignRepository {
   function unwrap<T>(result: { data?: T; error?: Problem; response: Response }): T {
     if (result.error !== undefined) {
-      throw new CampaignRepositoryError(result.error);
+      throw new ApiError(result.error);
     }
     if (result.data === undefined) {
       throw new Error(`L'API n'a renvoyé aucune donnée (HTTP ${result.response.status}).`);

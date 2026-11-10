@@ -1,3 +1,18 @@
+import { useJoinCampaign } from '../viewModels/useJoinCampaign';
+
 export function JoinCampaignView() {
-  return <h1>Rejoindre une campagne</h1>;
+  const { invitationCode } = useJoinCampaign();
+
+  return (
+    <>
+      <h1 tabIndex={-1}>Rejoindre une campagne</h1>
+      {invitationCode === '' ? (
+        <p>Aucun code d’invitation fourni.</p>
+      ) : (
+        <p>
+          Code d’invitation : <code>{invitationCode}</code>
+        </p>
+      )}
+    </>
+  );
 }

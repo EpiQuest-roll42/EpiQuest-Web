@@ -13,7 +13,7 @@ affiche l'état     calcule l'état d'écran  données simulées (P1)
                    et expose les commandes ou client HTTP (P2)
 ```
 
-- Une **View** n'appelle jamais l'API ni un repository : elle affiche l'état que lui donne son ViewModel et déclenche ses commandes.
+- Une **View** n'appelle jamais l'API ni un repository et ne lit pas l'adresse : elle affiche l'état que lui donne son ViewModel et déclenche ses commandes.
 - Un **ViewModel** ne connaît pas l'affichage : il expose un état d'écran (`campaigns`, `isLoading`, `error`…) et des commandes (`refresh`…).
 - Le **Model** ne connaît pas React : ce sont des interfaces TypeScript et leurs implémentations.
 
@@ -34,9 +34,9 @@ En P1, le Model renvoie des **données simulées**. En P2, on passe au client HT
 
 ### Les règles d'import, vérifiées par le lint
 
-| Une View peut importer         | Une View ne peut pas importer                                                                         |
-| ------------------------------ | ----------------------------------------------------------------------------------------------------- |
-| les ViewModels, les composants | `models/`, `openapi-fetch`, `app/repositoriesContext`, `app/createRepositories`, les données simulées |
+| Une View peut importer         | Une View ne peut pas importer                                                                                         |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| les ViewModels, les composants | `models/`, `openapi-fetch`, `react-router`, `app/repositoriesContext`, `app/createRepositories`, les données simulées |
 
 | Un ViewModel peut importer                        | Un ViewModel ne peut pas importer |
 | ------------------------------------------------- | --------------------------------- |
@@ -87,9 +87,12 @@ Les implémentations `mock` sont créées par une fonction (`createMockCampaignR
 
 ## Accessibilité : les conventions en place
 
-- Une région `role="status"` **toujours présente** dans l'écran annonce le chargement et le résultat : les lecteurs d'écran n'annoncent pas toujours une région ajoutée avec son texte.
+- Une région `role="status"` **toujours présente dans le `main`** annonce les chargements de route et de session. Le layout la garde dans le DOM et les ViewModels de navigation alimentent son contenu ; les lecteurs d'écran n'annoncent pas toujours une région ajoutée avec son texte.
 - Une erreur est affichée dans un `role="alert"`.
 - Le bouton « Réessayer » reste focalisable pendant la tentative (`aria-disabled` plutôt que `disabled`) ; après une tentative réussie, le focus va sur le titre de la page.
+- Après une navigation, le layout attend l'apparition du `h1` (notamment après le chargement de session) avant de déplacer le focus ; une nouvelle navigation annule la demande précédente.
+
+Les fragments d'invitation et de jeton d'affichage sont lus dans leurs ViewModels. Le jeton joueurs est gardé en mémoire uniquement, puis retiré de l'adresse avec une navigation React Router en remplacement d'historique.
 
 Ces conventions sont vérifiées par les tests de la View.
 
