@@ -125,3 +125,27 @@ export interface CharacterClass {
   levels: ClassLevel[];
   subclasses: Subclass[];
 }
+
+export type ProficiencyKind = 'skill' | 'savingThrow' | 'armor' | 'weapon' | 'tool' | 'language';
+
+export interface ProficiencyEffect {
+  type: 'proficiency';
+  kind: ProficiencyKind;
+  ref: RuleId;
+  expertise?: boolean;
+}
+
+export interface ItemQuantity {
+  item: RuleRef;
+  quantity: number;
+}
+
+export interface Background {
+  id: RuleId;
+  name: string;
+  proficiencies: ProficiencyEffect[];
+  choiceGroups: ChoiceGroup[];
+  equipment: ItemQuantity[];
+  feature: Feature;
+  description: SrdDescription;
+}

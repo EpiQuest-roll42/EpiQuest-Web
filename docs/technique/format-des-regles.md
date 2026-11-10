@@ -296,6 +296,21 @@ Une entrée de `levels` contient `level` (1 à 20), `proficiencyBonus` (2 à 6),
 
 `ClassSpellcasting` contient la caractéristique d'incantation, la méthode de préparation (`prepared` ou `known`), la progression d'emplacements (`standard` ou `pact`) et le nombre de sorts mineurs connus par niveau. `slotsByLevel` décrit la progression standard (`level`, puis `slots` de `{ slotLevel, count }`) ; `pactSlotsByLevel` décrit la magie de pacte (`level`, `count`, `slotLevel`). Seule la progression correspondante est renseignée. `spellsKnownByLevel` décrit le nombre de sorts connus lorsque `preparation` vaut `known`.
 
+## Historiques
+
+Un `Background` décrit les aptitudes acquises avant l'aventure. Le SRD 5.1 ne fournit que l'Acolyte (ADR 0005). Tous les champs sont requis :
+
+| Champ           | Format et rôle                                                                                                                                                                                                                    |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`, `name`    | Identifiant `RuleId` unique parmi les historiques et nom traduit à l'import (120 caractères au plus).                                                                                                                             |
+| `proficiencies` | Liste d'effets `proficiency` accordant une maîtrise : `kind` vaut `skill`, `savingThrow`, `armor`, `weapon`, `tool` ou `language`, et `ref` est le `RuleId` correspondant. `expertise` est facultatif et vaut `false` par défaut. |
+| `choiceGroups`  | Choix de création décrits par `ChoiceGroup`, par exemple les langues à choisir.                                                                                                                                                   |
+| `equipment`     | Liste de `{ item: RuleRef, quantity: entier positif }` pour l'équipement de départ.                                                                                                                                               |
+| `feature`       | `Feature` décrivant la capacité accordée par l'historique, avec sa description, ses actions, ses effets passifs et son niveau d'automatisation.                                                                                   |
+| `description`   | `SrdDescription` en paragraphes de texte brut.                                                                                                                                                                                    |
+
+Les maîtrises, les choix et l'équipement sont des données. La définition d'un historique ne calcule pas de statistiques dérivées et n'ajoute pas de logique spécifique à son identifiant.
+
 ## Exemples
 
 _Boule de feu_ :
