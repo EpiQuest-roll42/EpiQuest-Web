@@ -28,7 +28,11 @@ En cas d'écart entre cette page et le code, c'est cette page qui fait foi : on 
 
 ## Identifiants et vocabulaire
 
-- Chaque élément a un `RuleId` : minuscules, chiffres et tirets (`fighter`, `chain-mail`, `high-elf`), repris des index de la D&D 5e API. Un identifiant est unique **pour un type donné** : le type est porté par le champ ou par le chemin (`/srd/items/longsword`).
+- Chaque élément a un `RuleId` : au plus 64 caractères, minuscules, chiffres et tirets, sans tiret au début, à la fin ou en double (`fighter`, `chain-mail`, `high-elf`), repris des index de la D&D 5e API. Un identifiant est unique **pour un type donné** : le type est porté par le champ ou par le chemin (`/srd/items/longsword`).
+- Une `RuleRef` identifie une donnée liée avec son `id` et son `name` traduit à l'import. Les références ne recopient pas le contenu détaillé de l'élément.
+- Les noms de données SRD sont traduits à l'import et restent distincts des libellés d'interface.
+- Une `SrdDescription` est une liste de paragraphes en texte brut ; chaque paragraphe fait au plus 10 000 caractères. Elle n'est présente que sur les entités qui en ont besoin, pas systématiquement sur toutes les données.
+- `AbilityCode` est le vocabulaire partagé des caractéristiques : `str`, `dex`, `con`, `int`, `wis`, `cha`.
 - Les mots du **vocabulaire du moteur** sont aussi des `RuleId`. Ce ne sont pas des entités avec leur propre route : le front les traduit lui-même, comme les codes d'erreur.
 
 | Vocabulaire                         | Valeurs (SRD 5.1)                                                                                                                          |
@@ -251,6 +255,46 @@ Le bonus d'attaque ajoute `@prof` si le personnage maîtrise l'arme. Jamais de t
 Les listes `listSpecies` et `listClasses` renvoient des résumés (`SpeciesSummary`, `ClassSummary`) suffisants pour les cartes de l'assistant, sans appeler le détail de chaque élément ; les historiques et les états renvoient des `RuleRef`.
 
 Les choix de création (`ChoiceGroup`) donnent soit un élément (`kind: ref`), soit un bonus de caractéristique (`kind: abilityBonus`). Le demi-elfe a ainsi un groupe `choose: 2` parmi cinq options à `+1`, toutes les caractéristiques sauf le CHA, qui a déjà son bonus fixe.
+
+## Espèces
+
+Une `Species` est aplatie : ses traits contiennent déjà les caractéristiques de sa famille. `family` sert uniquement au regroupement à l'écran et ne représente pas une espèce parente à hériter.
+
+Tous les champs suivants sont requis :
+
+| Champ            | Format et rôle                                                                                                                                                                                                                               |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`             | `RuleId` unique parmi les espèces.                                                                                                                                                                                                           |
+| `name`           | Nom traduit à l'import, au plus 120 caractères.                                                                                                                                                                                              |
+| `family`         | `RuleId` de regroupement, sans héritage de règles.                                                                                                                                                                                           |
+| `size`           | `tiny`, `small`, `medium`, `large`, `huge` ou `gargantuan`.                                                                                                                                                                                  |
+| `speedMeters`    | Vitesse de déplacement en mètres, nombre positif ou nul ; convertie à l'import selon l'ADR 0009.                                                                                                                                             |
+| `abilityBonuses` | Liste de `{ ability: AbilityCode, value: entier }`. Le bonus est une donnée ; il n'est pas appliqué ni cumulé dans la définition de l'espèce.                                                                                                |
+| `traits`         | Liste de `Feature` : identifiant, nom, description en paragraphes, actions, effets passifs et niveau d'automatisation.                                                                                                                       |
+| `languages`      | Liste de `RuleRef` pour les langues accordées.                                                                                                                                                                                               |
+| `choiceGroups`   | Choix de création décrits en données : `choose` est un entier positif ; les options ont un identifiant local au groupe (64 caractères au plus) et des avantages (`grants`). `chosen` est vide tant que le personnage n'a pas fait son choix. |
+
+Une option peut accorder une référence (`kind: ref`, quantité entière positive) ou un bonus (`kind: abilityBonus`, valeur entière de 1 à 2). Aucun effet ne dépend du nom ou de l'identifiant particulier d'une espèce : le moteur interprète ses données génériques.
+
+## Classes
+
+Une `CharacterClass` décrit la classe de niveau 1 à 20, sa progression et ses sous-classes. Tous ses champs sont requis ; `spellcasting` vaut `null` pour une classe sans magie.
+
+| Champ              | Format et rôle                                                                                                          |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------- |
+| `id`, `name`       | Identifiant `RuleId` unique parmi les classes et nom traduit à l'import (120 caractères au plus).                       |
+| `hitDie`           | Dé de vie : `d6`, `d8`, `d10` ou `d12`.                                                                                 |
+| `primaryAbilities` | Caractéristiques principales (`AbilityCode`).                                                                           |
+| `savingThrows`     | Caractéristiques pour lesquelles la classe accorde la maîtrise des jets de sauvegarde.                                  |
+| `proficiencies`    | `armor`, `weapons` et `tools`, chacun une liste de `RuleRef`.                                                           |
+| `choiceGroups`     | Choix de création, notamment compétences et équipement de départ, décrits avec `ChoiceGroup`.                           |
+| `spellcasting`     | `null` ou les données d'incantation ci-dessous.                                                                         |
+| `levels`           | Progression par niveau, jusqu'au niveau 20, avec bonus de maîtrise, capacités et indicateur de capacité de sous-classe. |
+| `subclasses`       | Sous-classes rattachées à cette classe, avec capacités par niveau.                                                      |
+
+Une entrée de `levels` contient `level` (1 à 20), `proficiencyBonus` (2 à 6), `features` (`Feature[]`) et `subclassFeature` (booléen). Une sous-classe contient son `id`, son nom, sa référence de classe et ses niveaux ; chaque niveau porte `level` et `features`. La progression est stockée comme donnée, sans logique codée par nom de classe.
+
+`ClassSpellcasting` contient la caractéristique d'incantation, la méthode de préparation (`prepared` ou `known`), la progression d'emplacements (`standard` ou `pact`) et le nombre de sorts mineurs connus par niveau. `slotsByLevel` décrit la progression standard (`level`, puis `slots` de `{ slotLevel, count }`) ; `pactSlotsByLevel` décrit la magie de pacte (`level`, `count`, `slotLevel`). Seule la progression correspondante est renseignée. `spellsKnownByLevel` décrit le nombre de sorts connus lorsque `preparation` vaut `known`.
 
 ## Exemples
 
