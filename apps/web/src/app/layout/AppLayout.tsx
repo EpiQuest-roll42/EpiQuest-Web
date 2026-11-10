@@ -1,4 +1,24 @@
 import { Outlet, NavLink, Link } from 'react-router';
+import { useEffect } from 'react';
+import { useMatches } from 'react-router';
+import { isRouteHandle } from '../RouteHandle';
+
+export function DocumentTitleManager() {
+  const matches = useMatches();
+
+  useEffect(() => {
+    const currentMatch = matches[matches.length - 1];
+    const routeTitle = isRouteHandle(currentMatch?.handle) ? currentMatch.handle.title : undefined;
+
+    if (routeTitle) {
+      document.title = `${routeTitle} · Lanterne`;
+    } else {
+      document.title = 'Lanterne';
+    }
+  }, [matches]);
+
+  return null;
+}
 
 export function AppLayout() {
   return (

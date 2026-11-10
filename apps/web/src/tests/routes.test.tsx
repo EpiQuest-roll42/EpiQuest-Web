@@ -22,6 +22,7 @@ describe('appRoutes', () => {
     render(<RouterProvider router={router} />);
 
     expect(await screen.findByRole('heading', { name: heading })).toBeInTheDocument();
+    await waitFor(() => expect(document.title).toBe(`${heading} · Lanterne`));
   });
 
   it('renders the not-found page inside the standard layout', async () => {
