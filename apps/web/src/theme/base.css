@@ -1,0 +1,91 @@
+/*
+ * Styles globaux tirés de la charte. Chaque couple texte / fond est un couple « Texte »
+ * du tableau des couples autorisés (docs/technique/theme.md).
+ */
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-body);
+  line-height: var(--line-height-body);
+  color: var(--text-primary); /* text/primary sur bg/app */
+  background: var(--bg-app);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1,
+h2 {
+  font-family: var(--font-heading);
+  line-height: 1.25;
+}
+
+h1 {
+  font-size: var(--font-size-h1);
+  font-weight: var(--font-weight-h1);
+}
+
+h2 {
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-h2);
+}
+
+a {
+  color: var(--accent-default); /* accent/default sur bg/app */
+}
+
+/* Focus visible partout : espace couleur bg/app, puis anneau focus/ring (charte). */
+:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring);
+  outline-offset: var(--focus-gap);
+  box-shadow: 0 0 0 var(--focus-gap) var(--bg-app);
+}
+
+/* Un titre ou le main reçoivent le focus par le code (tabIndex -1) : pas d'anneau à la souris. */
+[tabindex='-1']:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Lien d'évitement : masqué, visible dès qu'il reçoit le focus (WCAG 2.4.1). */
+.skip-link {
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  left: 0;
+  padding: var(--space-3) var(--space-4);
+  transform: translateY(-150%);
+  color: var(--text-on-accent); /* text/on-accent sur accent/default */
+  background: var(--accent-default);
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+/* Page en cours dans la navigation : repérée par le soulignement et la graisse, pas par la couleur seule (WCAG 1.4.1). */
+nav a[aria-current='page'] {
+  font-weight: 600;
+  text-decoration-thickness: 0.2em;
+  text-underline-offset: 0.25em;
+}
+
+nav a:not([aria-current='page']) {
+  text-decoration: none;
+}
+
+/* Animations réduites à la demande de l'utilisateur, y compris celles des bibliothèques. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0s !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,0 +1,9 @@
+/*
+ * Polices de la charte, hébergées par l'application (paquets @fontsource-variable) :
+ * aucune requête vers Google Fonts (RGPD), et l'application fonctionne hors ligne.
+ * Le navigateur ne télécharge que les fichiers dont il a besoin (unicode-range) :
+ * pour du français, le sous-ensemble latin.
+ * Licence SIL Open Font License 1.1 : voir THIRD_PARTY_NOTICES.md.
+ */
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/lora';
