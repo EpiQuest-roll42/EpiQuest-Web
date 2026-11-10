@@ -384,6 +384,13 @@ Après chaque import, le script publie le nombre d'éléments `full`, `partial` 
 
 ## Tests attendus
 
+**Formats** (`packages/rules-engine/tests/rules`)
+
+- Les exemples typés Haut-elfe et Demi-elfe couvrent les bonus fixes, les traits, les langues, les références de choix et les bonus de caractéristiques au choix.
+- Les exemples Guerrier, Magicien et Occultiste couvrent une classe sans incantation, la progression standard préparée, la magie de pacte avec sorts connus, les maîtrises, les choix et les sous-classes.
+- L'exemple Acolyte couvre les maîtrises, choix de langues, équipement et capacité d'historique.
+- Le typecheck vérifie que ces exemples respectent les champs et unions du format ; les tests vérifient explicitement leurs données représentatives et leurs progressions.
+
 **Import** (P2-02)
 
 - Rejoué deux fois, l'import donne le même contenu et la même `rulesetVersion`.
