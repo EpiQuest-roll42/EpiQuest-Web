@@ -26,8 +26,9 @@ Nous utilisons **React Router** (paquet `react-router`, version 8), en **mode «
 
 - **Pas de mode « framework »** : il impose sa propre structure de fichiers, son plugin Vite et un rendu côté serveur, dont l'application n'a pas besoin.
 - **Les routes ne chargent pas de données.** Les `loader` et `action` de React Router ne sont pas utilisés : les données passent par les ViewModels et TanStack Query (MVVM). Un `loader` appellerait le Model sans passer par un ViewModel.
-- **Le titre de chaque page** est déclaré dans la route (champ `handle`) et appliqué par la mise en page commune : un seul mécanisme pour toutes les pages.
-- **Le focus après navigation** est géré une seule fois, dans la mise en page commune : il va sur le `h1` de la nouvelle page, mais ne bouge pas au premier chargement.
+- **Le titre de chaque page** est déclaré dans la route (champ `handle`) et appliqué par une route racine sans chemin, commune à toutes les mises en page (y compris celle de la vue joueurs) : un seul mécanisme pour toutes les pages.
+- **Le focus après navigation** est géré une seule fois, dans cette même route racine : il va sur le `h1` de la nouvelle page, mais ne bouge pas au premier chargement.
+- **Seuls les ViewModels lisent l'adresse.** Les Views n'importent pas `react-router` (règle de lint) : la lecture des paramètres et des fragments, les redirections et le retour après connexion sont dans des ViewModels, testables seuls.
 - **Les écrans lourds** (vue MJ, vue joueurs) sont chargés à la demande (`lazy` des routes de React Router).
 - **Les paramètres d'URL sont validés** au moment où ils sont lus (par exemple, `campaignId` doit être un UUID), pour compenser le typage partiel.
 
