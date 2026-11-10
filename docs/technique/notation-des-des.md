@@ -162,6 +162,7 @@ Exemple pour `4d6kh7` :
 - Le nombre de totaux possibles (`max − min + 1`) est **connu dès l'analyse**, avant tout calcul. Au-delà de 2 000, la réponse est `too_complex_for_probabilities`, sans rien calculer.
 - Les termes avec `kh`, `kl`, `!` ou `r` sont limités à 20 dés au total, pour la même raison.
 - Le calcul se fait par convolution des distributions de chaque terme, sans énumérer toutes les combinaisons de dés.
+- La somme des probabilités vaut 1, à 10⁻⁹ près. Chaque total entier entre `min` et `max` est renvoyé dans l'ordre croissant.
 - Le web calcule les probabilités localement avec le moteur de règles ; la route sert surtout au mobile, qui attend 300 ms sans frappe avant de l'appeler.
 
 ## Visibilité
