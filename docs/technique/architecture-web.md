@@ -29,7 +29,7 @@ En P1, le Model renvoie des **données simulées**. En P2, on passe au client HT
 | `viewModels/`          | Un hook par écran (`useCampaignList`, `useLogin`, `useJoinCampaign`, `usePlayerDisplay`) et le hook partagé `useSession`.                                                                                      |
 | `views/`               | Les écrans, un par route (`CampaignListView`, `LoginView`…).                                                                                                                                                   |
 | `components/`          | Les composants de la charte : bouton, champ, pion (créés par #76).                                                                                                                                             |
-| `theme/`               | Les palettes et variables de la charte (créées par #75).                                                                                                                                                       |
+| `theme/`               | Les variables de la charte (palettes, typographie, échelles, focus, animations) et les styles globaux, décrits dans [theme.md](theme.md).                                                                      |
 | `tests/`               | Les tests (Vitest, Testing Library et axe).                                                                                                                                                                    |
 
 ### Les règles d'import, vérifiées par le lint
