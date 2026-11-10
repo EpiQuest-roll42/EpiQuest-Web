@@ -68,6 +68,22 @@ variable = "@" identifiant ;
 - **Les monstres utilisent des valeurs fixes** (`6`, `13`) : leur bloc de statistiques donne les nombres déjà calculés. Seuls leurs sorts utilisent `@spellDc` et `@spellAttack`, remplacés par les valeurs du monstre (voir [Monstres](#monstres)).
 - La grammaire n'a **ni multiplication, ni division** : les quantités qui en auraient besoin passent par `Quantity`.
 
+### Scores, modificateurs et bonus de maîtrise
+
+Chaque personnage possède six caractéristiques. À la création, chaque score (`AbilityScoreValues`) est un entier de 1 à 30 ; dans les données de fiche (`AbilityScores`), chaque `AbilityScore` contient le `score` et son `modifier` calculé. Le modificateur est `floor((score - 10) / 2)` : par exemple, 8 donne −1, 10 donne 0, 15 donne +2 et 20 donne +5. `AbilityModifiers` contient ces six valeurs ; elles remplacent les variables `@str`, `@dex`, `@con`, `@int`, `@wis` et `@cha` dans une formule.
+
+Le bonus de maîtrise est une donnée de progression, pas une valeur recalculée par classe : `ClassLevel.proficiencyBonus` porte le bonus applicable au niveau concerné. Les paliers SRD sont :
+
+| Niveau de personnage | Bonus de maîtrise |
+| -------------------- | ----------------- |
+| 1–4                  | +2                |
+| 5–8                  | +3                |
+| 9–12                 | +4                |
+| 13–16                | +5                |
+| 17–20                | +6                |
+
+`getProficiencyBonus` lit la valeur de la progression de classe au niveau demandé et échoue si ce niveau n'est pas défini ; il ne devine jamais une valeur manquante. La variable `@prof` reçoit ce bonus lors de l'interprétation d'une formule. La combinaison des modificateurs et maîtrises pour calculer les jets de sauvegarde, compétences et autres statistiques de la fiche appartient à la phase de calcul des statistiques dérivées.
+
 ### `Quantity`
 
 Un `oneOf` de trois formes :

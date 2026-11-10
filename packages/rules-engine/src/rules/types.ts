@@ -8,6 +8,27 @@ export interface RuleRef {
 export type SrdDescription = string[];
 
 export type AbilityCode = 'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha';
+export type AbilityScore = number;
+
+export interface AbilityScoreValue {
+  score: AbilityScore;
+  modifier: number;
+}
+
+export interface AbilityScores {
+  str: AbilityScoreValue;
+  dex: AbilityScoreValue;
+  con: AbilityScoreValue;
+  int: AbilityScoreValue;
+  wis: AbilityScoreValue;
+  cha: AbilityScoreValue;
+}
+
+export type AbilityScoreValues = Record<AbilityCode, AbilityScore>;
+
+export type AbilityModifiers = Record<AbilityCode, number>;
+
+export type ProficiencyBonus = 2 | 3 | 4 | 5 | 6;
 
 export type Size = 'tiny' | 'small' | 'medium' | 'large' | 'huge' | 'gargantuan';
 
@@ -96,7 +117,7 @@ export interface ClassSpellcasting {
 
 export interface ClassLevel {
   level: number;
-  proficiencyBonus: number;
+  proficiencyBonus: ProficiencyBonus;
   features: Feature[];
   subclassFeature: boolean;
 }
