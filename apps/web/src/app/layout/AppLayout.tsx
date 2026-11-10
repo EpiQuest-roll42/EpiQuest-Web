@@ -1,7 +1,11 @@
 import { Outlet, NavLink, Link } from 'react-router';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
+import type { MouseEvent } from 'react';
 import { useMatches } from 'react-router';
+import { Suspense } from 'react';
 import { isRouteHandle } from '../RouteHandle';
+import { RouteStatusRegion } from './RouteStatusRegion';
+import { RouteLoadingFallback } from './RouteLoadingFallback';
 
 export function DocumentTitleManager() {
   const matches = useMatches();
@@ -21,9 +25,16 @@ export function DocumentTitleManager() {
 }
 
 export function AppLayout() {
+  const mainRef = useRef<HTMLElement>(null);
+
+  function focusMain(event: MouseEvent<HTMLAnchorElement>) {
+    event.preventDefault();
+    mainRef.current?.focus();
+  }
+
   return (
     <>
-      <a href="#contenu-principal" className="skip-link">
+      <a href="#contenu-principal" className="skip-link" onClick={focusMain}>
         Aller au contenu
       </a>
 
@@ -42,8 +53,11 @@ export function AppLayout() {
         </ul>
       </nav>
 
-      <main id="contenu-principal" tabIndex={-1}>
-        <Outlet />
+      <main id="contenu-principal" ref={mainRef} tabIndex={-1}>
+        <RouteStatusRegion />
+        <Suspense fallback={<RouteLoadingFallback />}>
+          <Outlet />
+        </Suspense>
       </main>
     </>
   );
