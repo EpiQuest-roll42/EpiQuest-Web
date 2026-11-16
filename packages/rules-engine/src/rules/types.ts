@@ -89,6 +89,26 @@ export interface HitPoints {
   temporary: number;
 }
 
+export type HitDie = 'd6' | 'd8' | 'd10' | 'd12';
+
+export type HitPointMethod = 'average' | 'roll';
+
+export interface HitPointMaximumEffect {
+  type: 'hitPointMaximum';
+  perLevel: number;
+}
+
+interface HitPointCalculationBase {
+  level: number;
+  hitDie: HitDie;
+  constitutionModifier: number;
+  hitPointMaximumEffects: HitPointMaximumEffect[];
+}
+
+export type HitPointCalculationInput =
+  | (HitPointCalculationBase & { method: 'average'; rolls?: never })
+  | (HitPointCalculationBase & { method: 'roll'; rolls: number[] });
+
 export type Size = 'tiny' | 'small' | 'medium' | 'large' | 'huge' | 'gargantuan';
 
 export interface AbilityBonus {
@@ -196,7 +216,7 @@ export interface Subclass {
 export interface CharacterClass {
   id: RuleId;
   name: string;
-  hitDie: 'd6' | 'd8' | 'd10' | 'd12';
+  hitDie: HitDie;
   primaryAbilities: AbilityCode[];
   savingThrows: AbilityCode[];
   proficiencies: ClassProficiencies;

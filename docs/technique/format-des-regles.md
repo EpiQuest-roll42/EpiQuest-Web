@@ -92,6 +92,8 @@ Les valeurs numériques accompagnées d'un détail de calcul utilisent `ValueBre
 
 `calculateArmorClass` utilise l'armure équipée (`baseArmorClass`, limite de DEX), le bouclier et éventuellement une formule de défense sans armure. Sans armure, la base est `10 + @dex`. Une armure à limite `null` ne plafonne pas la DEX ; `0` signifie que son modificateur n'est pas appliqué ; une autre limite plafonne le bonus sans supprimer un modificateur négatif. Une formule de défense sans armure remplace la base standard ; elle doit être une somme ou différence de constantes et de variables `@str`, `@dex`, `@con`, `@int`, `@wis`, `@cha`. Les dés et les autres variables y sont refusés explicitement. Le bouclier s'ajoute à une armure ou à une formule qui l'autorise ; si une formule l'interdit, le calcul revient à la défense sans armure standard.
 
+`calculateMaxHitPoints` renvoie le maximum de PV, sans modifier les PV actuels ou temporaires. Au niveau 1, le personnage reçoit le maximum de son dé de vie ; à chaque niveau suivant, il reçoit soit la moyenne arrondie au supérieur (`floor(dé / 2) + 1`), soit le résultat du dé fourni par l'appelant. Le modificateur de CON s'ajoute à chaque niveau, avec un gain minimum de 1 PV par niveau. Les effets `hitPointMaximum` ajoutent leur `perLevel` multiplié par le niveau actuel. En mode `roll`, le moteur ne génère pas d'aléatoire : il exige un résultat valide de dé pour chaque niveau après le premier. Un maximum réduit par des effets ne descend pas sous 0.
+
 ### `Quantity`
 
 Un `oneOf` de trois formes :
