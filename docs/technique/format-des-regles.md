@@ -90,6 +90,8 @@ Les fonctions de statistiques dérivées reçoivent un `CharacterStatContext` co
 
 Les valeurs numériques accompagnées d'un détail de calcul utilisent `ValueBreakdown` (`value` et `parts`). Chaque partie contient sa valeur et une source typée (`base`, `ability`, `item`, `feature`, `proficiency` ou `species`) identifiée par un `RuleId`. Les jets de sauvegarde sont renvoyés par caractéristique comme `SavingThrowModifier` (`ability`, `modifier`, `proficient`). Les PV suivent la forme `HitPoints` du contrat API (`current`, `max`, `temporary`). Ces formats correspondent aux schémas `ValueBreakdown`, `SavingThrowModifier` et `HitPoints` de `CharacterSheet` ; ils ne changent pas le contrat.
 
+`calculateArmorClass` utilise l'armure équipée (`baseArmorClass`, limite de DEX), le bouclier et éventuellement une formule de défense sans armure. Sans armure, la base est `10 + @dex`. Une armure à limite `null` ne plafonne pas la DEX ; `0` signifie que son modificateur n'est pas appliqué ; une autre limite plafonne le bonus sans supprimer un modificateur négatif. Une formule de défense sans armure remplace la base standard ; elle doit être une somme ou différence de constantes et de variables `@str`, `@dex`, `@con`, `@int`, `@wis`, `@cha`. Les dés et les autres variables y sont refusés explicitement. Le bouclier s'ajoute à une armure ou à une formule qui l'autorise ; si une formule l'interdit, le calcul revient à la défense sans armure standard.
+
 ### `Quantity`
 
 Un `oneOf` de trois formes :

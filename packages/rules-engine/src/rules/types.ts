@@ -36,6 +36,30 @@ export interface CharacterStatContext {
   proficiencyBonus: ProficiencyBonus;
 }
 
+export interface ArmorClassArmor {
+  id: RuleId;
+  baseArmorClass: number;
+  dexterityCap: number | null;
+}
+
+export interface ArmorClassShield {
+  id: RuleId;
+  bonus: number;
+}
+
+export interface UnarmoredDefense {
+  id: RuleId;
+  formula: string;
+  allowsShield: boolean;
+}
+
+export interface ArmorClassInput {
+  abilities: AbilityScores;
+  armor: ArmorClassArmor | null;
+  shield: ArmorClassShield | null;
+  unarmoredDefense: UnarmoredDefense | null;
+}
+
 export type ValueSourceKind = 'base' | 'ability' | 'item' | 'feature' | 'proficiency' | 'species';
 
 export interface ValueSource {
