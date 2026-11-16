@@ -83,6 +83,10 @@ export interface SavingThrowModifier {
   proficient: boolean;
 }
 
+export type SavingThrowInput = Pick<CharacterStatContext, 'abilities' | 'proficiencyBonus'> & {
+  proficientAbilities: AbilityCode[];
+};
+
 export interface HitPoints {
   current: number;
   max: number;

@@ -94,6 +94,8 @@ Les valeurs numériques accompagnées d'un détail de calcul utilisent `ValueBre
 
 `calculateMaxHitPoints` renvoie le maximum de PV, sans modifier les PV actuels ou temporaires. Au niveau 1, le personnage reçoit le maximum de son dé de vie ; à chaque niveau suivant, il reçoit soit la moyenne arrondie au supérieur (`floor(dé / 2) + 1`), soit le résultat du dé fourni par l'appelant. Le modificateur de CON s'ajoute à chaque niveau, avec un gain minimum de 1 PV par niveau. Les effets `hitPointMaximum` ajoutent leur `perLevel` multiplié par le niveau actuel. En mode `roll`, le moteur ne génère pas d'aléatoire : il exige un résultat valide de dé pour chaque niveau après le premier. Un maximum réduit par des effets ne descend pas sous 0.
 
+`calculateSavingThrows` renvoie les six caractéristiques dans l'ordre `str`, `dex`, `con`, `int`, `wis`, `cha`, sous la forme `SavingThrowModifier` du contrat API. Le modificateur est celui de la caractéristique, augmenté du bonus de maîtrise si la caractéristique figure dans `proficientAbilities`. L'appelant fournit l'union des maîtrises de sauvegarde de la classe et des effets applicables ; les doublons ne cumulent pas le bonus. Aucun jet aléatoire n'est effectué.
+
 ### `Quantity`
 
 Un `oneOf` de trois formes :
