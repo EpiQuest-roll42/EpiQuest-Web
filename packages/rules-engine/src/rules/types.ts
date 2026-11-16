@@ -87,6 +87,15 @@ export type SavingThrowInput = Pick<CharacterStatContext, 'abilities' | 'profici
   proficientAbilities: AbilityCode[];
 };
 
+export type SkillProficiency = 'none' | 'proficient' | 'expertise';
+
+export type PassivePerceptionInput = Pick<
+  CharacterStatContext,
+  'abilities' | 'proficiencyBonus'
+> & {
+  proficiency: SkillProficiency;
+};
+
 export interface HitPoints {
   current: number;
   max: number;

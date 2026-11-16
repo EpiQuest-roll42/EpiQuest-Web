@@ -96,6 +96,8 @@ Les valeurs numériques accompagnées d'un détail de calcul utilisent `ValueBre
 
 `calculateSavingThrows` renvoie les six caractéristiques dans l'ordre `str`, `dex`, `con`, `int`, `wis`, `cha`, sous la forme `SavingThrowModifier` du contrat API. Le modificateur est celui de la caractéristique, augmenté du bonus de maîtrise si la caractéristique figure dans `proficientAbilities`. L'appelant fournit l'union des maîtrises de sauvegarde de la classe et des effets applicables ; les doublons ne cumulent pas le bonus. Aucun jet aléatoire n'est effectué.
 
+`calculatePassivePerception` calcule le score passif selon `10 + modificateur de SAG + maîtrise`. La maîtrise vaut zéro pour `none`, une fois le bonus de maîtrise pour `proficient`, et deux fois pour `expertise`. Le résultat est un `ValueBreakdown`, comme le champ `passivePerception` de `CharacterSheet`. Le calcul porte sur la compétence Perception ; les éventuels avantages ou désavantages situationnels restent gérés par les effets de jet au moment du test.
+
 ### `Quantity`
 
 Un `oneOf` de trois formes :
