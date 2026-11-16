@@ -84,6 +84,12 @@ Le bonus de maîtrise est une donnée de progression, pas une valeur recalculée
 
 `getProficiencyBonus` lit la valeur de la progression de classe au niveau demandé et échoue si ce niveau n'est pas défini ; il ne devine jamais une valeur manquante. La variable `@prof` reçoit ce bonus lors de l'interprétation d'une formule. La combinaison des modificateurs et maîtrises pour calculer les jets de sauvegarde, compétences et autres statistiques de la fiche appartient à la phase de calcul des statistiques dérivées.
 
+### Contexte et résultats des statistiques dérivées
+
+Les fonctions de statistiques dérivées reçoivent un `CharacterStatContext` commun : niveau, scores et modificateurs de caractéristiques, et bonus de maîtrise déjà déterminé par la progression de classe. Chaque calcul reçoit en plus uniquement les données propres à sa règle (par exemple l'armure équipée pour la CA ou les maîtrises pour les sauvegardes).
+
+Les valeurs numériques accompagnées d'un détail de calcul utilisent `ValueBreakdown` (`value` et `parts`). Chaque partie contient sa valeur et une source typée (`base`, `ability`, `item`, `feature`, `proficiency` ou `species`) identifiée par un `RuleId`. Les jets de sauvegarde sont renvoyés par caractéristique comme `SavingThrowModifier` (`ability`, `modifier`, `proficient`). Les PV suivent la forme `HitPoints` du contrat API (`current`, `max`, `temporary`). Ces formats correspondent aux schémas `ValueBreakdown`, `SavingThrowModifier` et `HitPoints` de `CharacterSheet` ; ils ne changent pas le contrat.
+
 ### `Quantity`
 
 Un `oneOf` de trois formes :

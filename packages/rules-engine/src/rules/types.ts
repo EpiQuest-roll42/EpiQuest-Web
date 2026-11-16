@@ -30,6 +30,41 @@ export type AbilityModifiers = Record<AbilityCode, number>;
 
 export type ProficiencyBonus = 2 | 3 | 4 | 5 | 6;
 
+export interface CharacterStatContext {
+  level: number;
+  abilities: AbilityScores;
+  proficiencyBonus: ProficiencyBonus;
+}
+
+export type ValueSourceKind = 'base' | 'ability' | 'item' | 'feature' | 'proficiency' | 'species';
+
+export interface ValueSource {
+  kind: ValueSourceKind;
+  ref: RuleId;
+}
+
+export interface ValueBreakdownPart {
+  source: ValueSource;
+  value: number;
+}
+
+export interface ValueBreakdown {
+  value: number;
+  parts: ValueBreakdownPart[];
+}
+
+export interface SavingThrowModifier {
+  ability: AbilityCode;
+  modifier: number;
+  proficient: boolean;
+}
+
+export interface HitPoints {
+  current: number;
+  max: number;
+  temporary: number;
+}
+
 export type Size = 'tiny' | 'small' | 'medium' | 'large' | 'huge' | 'gargantuan';
 
 export interface AbilityBonus {
