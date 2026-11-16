@@ -98,6 +98,8 @@ Les valeurs numériques accompagnées d'un détail de calcul utilisent `ValueBre
 
 `calculatePassivePerception` calcule le score passif selon `10 + modificateur de SAG + maîtrise`. La maîtrise vaut zéro pour `none`, une fois le bonus de maîtrise pour `proficient`, et deux fois pour `expertise`. Le résultat est un `ValueBreakdown`, comme le champ `passivePerception` de `CharacterSheet`. Le calcul porte sur la compétence Perception ; les éventuels avantages ou désavantages situationnels restent gérés par les effets de jet au moment du test.
 
+`calculateInitiative` renvoie un `ValueBreakdown` dont la valeur est le modificateur de DEX. Le jet d'initiative lui-même et ses éventuels avantages ou désavantages restent effectués ou appliqués par le système de jets ; cette fonction ne génère pas de résultat aléatoire.
+
 ### `Quantity`
 
 Un `oneOf` de trois formes :

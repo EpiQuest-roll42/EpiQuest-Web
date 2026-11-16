@@ -96,6 +96,8 @@ export type PassivePerceptionInput = Pick<
   proficiency: SkillProficiency;
 };
 
+export type InitiativeInput = Pick<CharacterStatContext, 'abilities'>;
+
 export interface HitPoints {
   current: number;
   max: number;
