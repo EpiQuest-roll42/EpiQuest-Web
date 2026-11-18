@@ -83,6 +83,21 @@ describe('calculateMaxHitPoints', () => {
     ).toBe(21);
   });
 
+  it('stacks multiple per-level maximum hit point effects', () => {
+    expect(
+      calculateMaxHitPoints({
+        level: 3,
+        hitDie: 'd8',
+        constitutionModifier: 0,
+        method: 'average',
+        hitPointMaximumEffects: [
+          { type: 'hitPointMaximum', perLevel: 1 },
+          { type: 'hitPointMaximum', perLevel: 2 },
+        ],
+      }),
+    ).toBe(27);
+  });
+
   it('clamps a reduced maximum to zero', () => {
     expect(
       calculateMaxHitPoints({

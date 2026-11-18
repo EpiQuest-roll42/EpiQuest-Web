@@ -100,6 +100,17 @@ Les valeurs numériques accompagnées d'un détail de calcul utilisent `ValueBre
 
 `calculateInitiative` renvoie un `ValueBreakdown` dont la valeur est le modificateur de DEX. Le jet d'initiative lui-même et ses éventuels avantages ou désavantages restent effectués ou appliqués par le système de jets ; cette fonction ne génère pas de résultat aléatoire.
 
+### Personnages de référence pour les statistiques dérivées
+
+Les personnages ci-dessous sont assemblés à partir d'options du SRD 5.1, et non des personnages pré-générés publiés. Leurs caractéristiques partent du tableau standard (`15, 14, 13, 12, 10, 8`) puis reçoivent les bonus d'espèce. Les valeurs attendues sont établies indépendamment des fonctions testées :
+
+| Personnage (niveau 3)                   | Valeurs après bonus d'espèce                                                | CA attendue                                         | PV max attendus                                                                              | Initiative | Jets de sauvegarde (FOR, DEX, CON, INT, SAG, CHA)       | Perception passive                           |
+| --------------------------------------- | --------------------------------------------------------------------------- | --------------------------------------------------- | -------------------------------------------------------------------------------------------- | ---------- | ------------------------------------------------------- | -------------------------------------------- |
+| Aveline, Haut-elfe rôdeuse, Acolyte     | FOR 10 (+0), DEX 17 (+3), CON 13 (+1), INT 9 (-1), SAG 14 (+2), CHA 12 (+1) | 15 : armure cloutée 12 + DEX 3                      | 25 : niveau 1, 10 + CON 1 ; niveaux 2 et 3, chacun 6 + CON 1                                 | +3         | +2, +5, +1, -1, +2, +1 ; maîtrises de classe FOR et DEX | 14 : 10 + SAG 2 + maîtrise de Perception 2   |
+| Doran, Nain des collines clerc, Acolyte | FOR 13 (+1), DEX 8 (-1), CON 16 (+3), INT 12 (+1), SAG 16 (+3), CHA 10 (+0) | 18 : cotte de mailles 16 (DEX ignorée) + bouclier 2 | 30 : niveau 1, 8 + CON 3 ; niveaux 2 et 3, chacun 5 + CON 3 ; robustesse naine +1 par niveau | -1         | +1, -1, +3, +1, +5, +2 ; maîtrises de classe SAG et CHA | 13 : 10 + SAG 3, sans maîtrise de Perception |
+
+Les bonus d'espèce utilisés sont ceux du Haut-elfe (+2 DEX, +1 INT) et du Nain des collines (+2 CON, +1 SAG). Aveline maîtrise Perception parmi ses compétences de rôdeuse ; Doran ne la choisit pas parmi ses compétences de clerc et l'historique Acolyte ne l'accorde pas. Tous deux ont un bonus de maîtrise de +2 au niveau 3. Les sources de règles sont le SRD 5.1 (espèces, classes, historiques, armures et calculs de caractéristiques) ; ces résultats formeront la référence pour les tests du moteur.
+
 ### `Quantity`
 
 Un `oneOf` de trois formes :
