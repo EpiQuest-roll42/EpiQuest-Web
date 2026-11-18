@@ -30,6 +30,100 @@ export type AbilityModifiers = Record<AbilityCode, number>;
 
 export type ProficiencyBonus = 2 | 3 | 4 | 5 | 6;
 
+export interface CharacterStatContext {
+  level: number;
+  abilities: AbilityScores;
+  proficiencyBonus: ProficiencyBonus;
+}
+
+export interface ArmorClassArmor {
+  id: RuleId;
+  baseArmorClass: number;
+  dexterityCap: number | null;
+}
+
+export interface ArmorClassShield {
+  id: RuleId;
+  bonus: number;
+}
+
+export interface UnarmoredDefense {
+  id: RuleId;
+  formula: string;
+  allowsShield: boolean;
+}
+
+export interface ArmorClassInput {
+  abilities: AbilityScores;
+  armor: ArmorClassArmor | null;
+  shield: ArmorClassShield | null;
+  unarmoredDefense: UnarmoredDefense | null;
+}
+
+export type ValueSourceKind = 'base' | 'ability' | 'item' | 'feature' | 'proficiency' | 'species';
+
+export interface ValueSource {
+  kind: ValueSourceKind;
+  ref: RuleId;
+}
+
+export interface ValueBreakdownPart {
+  source: ValueSource;
+  value: number;
+}
+
+export interface ValueBreakdown {
+  value: number;
+  parts: ValueBreakdownPart[];
+}
+
+export interface SavingThrowModifier {
+  ability: AbilityCode;
+  modifier: number;
+  proficient: boolean;
+}
+
+export type SavingThrowInput = Pick<CharacterStatContext, 'abilities' | 'proficiencyBonus'> & {
+  proficientAbilities: AbilityCode[];
+};
+
+export type SkillProficiency = 'none' | 'proficient' | 'expertise';
+
+export type PassivePerceptionInput = Pick<
+  CharacterStatContext,
+  'abilities' | 'proficiencyBonus'
+> & {
+  proficiency: SkillProficiency;
+};
+
+export type InitiativeInput = Pick<CharacterStatContext, 'abilities'>;
+
+export interface HitPoints {
+  current: number;
+  max: number;
+  temporary: number;
+}
+
+export type HitDie = 'd6' | 'd8' | 'd10' | 'd12';
+
+export type HitPointMethod = 'average' | 'roll';
+
+export interface HitPointMaximumEffect {
+  type: 'hitPointMaximum';
+  perLevel: number;
+}
+
+interface HitPointCalculationBase {
+  level: number;
+  hitDie: HitDie;
+  constitutionModifier: number;
+  hitPointMaximumEffects: HitPointMaximumEffect[];
+}
+
+export type HitPointCalculationInput =
+  | (HitPointCalculationBase & { method: 'average'; rolls?: never })
+  | (HitPointCalculationBase & { method: 'roll'; rolls: number[] });
+
 export type Size = 'tiny' | 'small' | 'medium' | 'large' | 'huge' | 'gargantuan';
 
 export interface AbilityBonus {
@@ -137,7 +231,7 @@ export interface Subclass {
 export interface CharacterClass {
   id: RuleId;
   name: string;
-  hitDie: 'd6' | 'd8' | 'd10' | 'd12';
+  hitDie: HitDie;
   primaryAbilities: AbilityCode[];
   savingThrows: AbilityCode[];
   proficiencies: ClassProficiencies;

@@ -84,6 +84,22 @@ Le bonus de maîtrise est une donnée de progression, pas une valeur recalculée
 
 `getProficiencyBonus` lit la valeur de la progression de classe au niveau demandé et échoue si ce niveau n'est pas défini ; il ne devine jamais une valeur manquante. La variable `@prof` reçoit ce bonus lors de l'interprétation d'une formule. La combinaison des modificateurs et maîtrises pour calculer les jets de sauvegarde, compétences et autres statistiques de la fiche appartient à la phase de calcul des statistiques dérivées.
 
+### Contexte et résultats des statistiques dérivées
+
+Les fonctions de statistiques dérivées reçoivent un `CharacterStatContext` commun : niveau, scores et modificateurs de caractéristiques, et bonus de maîtrise déjà déterminé par la progression de classe. Chaque calcul reçoit en plus uniquement les données propres à sa règle (par exemple l'armure équipée pour la CA ou les maîtrises pour les sauvegardes).
+
+Les valeurs numériques accompagnées d'un détail de calcul utilisent `ValueBreakdown` (`value` et `parts`). Chaque partie contient sa valeur et une source typée (`base`, `ability`, `item`, `feature`, `proficiency` ou `species`) identifiée par un `RuleId`. Les jets de sauvegarde sont renvoyés par caractéristique comme `SavingThrowModifier` (`ability`, `modifier`, `proficient`). Les PV suivent la forme `HitPoints` du contrat API (`current`, `max`, `temporary`). Ces formats correspondent aux schémas `ValueBreakdown`, `SavingThrowModifier` et `HitPoints` de `CharacterSheet` ; ils ne changent pas le contrat.
+
+`calculateArmorClass` utilise l'armure équipée (`baseArmorClass`, limite de DEX), le bouclier et éventuellement une formule de défense sans armure. Sans armure, la base est `10 + @dex`. Une armure à limite `null` ne plafonne pas la DEX ; `0` signifie que son modificateur n'est pas appliqué ; une autre limite plafonne le bonus sans supprimer un modificateur négatif. Une formule de défense sans armure remplace la base standard ; elle doit être une somme ou différence de constantes et de variables `@str`, `@dex`, `@con`, `@int`, `@wis`, `@cha`. Les dés et les autres variables y sont refusés explicitement. Le bouclier s'ajoute à une armure ou à une formule qui l'autorise ; si une formule l'interdit, le calcul revient à la défense sans armure standard.
+
+`calculateMaxHitPoints` renvoie le maximum de PV, sans modifier les PV actuels ou temporaires. Au niveau 1, le personnage reçoit le maximum de son dé de vie ; à chaque niveau suivant, il reçoit soit la moyenne arrondie au supérieur (`floor(dé / 2) + 1`), soit le résultat du dé fourni par l'appelant. Le modificateur de CON s'ajoute à chaque niveau, avec un gain minimum de 1 PV par niveau. Les effets `hitPointMaximum` ajoutent leur `perLevel` multiplié par le niveau actuel. En mode `roll`, le moteur ne génère pas d'aléatoire : il exige un résultat valide de dé pour chaque niveau après le premier. Un maximum réduit par des effets ne descend pas sous 0.
+
+`calculateSavingThrows` renvoie les six caractéristiques dans l'ordre `str`, `dex`, `con`, `int`, `wis`, `cha`, sous la forme `SavingThrowModifier` du contrat API. Le modificateur est celui de la caractéristique, augmenté du bonus de maîtrise si la caractéristique figure dans `proficientAbilities`. L'appelant fournit l'union des maîtrises de sauvegarde de la classe et des effets applicables ; les doublons ne cumulent pas le bonus. Aucun jet aléatoire n'est effectué.
+
+`calculatePassivePerception` calcule le score passif selon `10 + modificateur de SAG + maîtrise`. La maîtrise vaut zéro pour `none`, une fois le bonus de maîtrise pour `proficient`, et deux fois pour `expertise`. Le résultat est un `ValueBreakdown`, comme le champ `passivePerception` de `CharacterSheet`. Le calcul porte sur la compétence Perception ; les éventuels avantages ou désavantages situationnels restent gérés par les effets de jet au moment du test.
+
+`calculateInitiative` renvoie un `ValueBreakdown` dont la valeur est le modificateur de DEX. Le jet d'initiative lui-même et ses éventuels avantages ou désavantages restent effectués ou appliqués par le système de jets ; cette fonction ne génère pas de résultat aléatoire.
+
 ### `Quantity`
 
 Un `oneOf` de trois formes :
