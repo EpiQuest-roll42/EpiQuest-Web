@@ -4,7 +4,6 @@ import { describe, expect, it } from 'vitest';
 import { expectNoAxeViolationsInBothPalettes } from './axeHelpers';
 import { renderRoute } from './renderRoute';
 
-/** Every route of #74, with the heading that tells the page is displayed. */
 const ROUTES = [
   { path: '/connexion', heading: 'Connexion' },
   { path: '/inscription', heading: 'Inscription' },
@@ -24,7 +23,6 @@ const FOCUSABLE = [
   '[tabindex]:not([tabindex="-1"])',
 ].join(', ');
 
-/** Shows the page, then waits until no loading message is left. */
 async function showPage(path: string, heading: string) {
   const rendered = renderRoute(path);
   await screen.findByRole('heading', { level: 1, name: heading });
@@ -32,7 +30,6 @@ async function showPage(path: string, heading: string) {
   return rendered;
 }
 
-/** The elements Tab should reach, in the order of the page. */
 function focusableElements(): HTMLElement[] {
   return [...document.body.querySelectorAll<HTMLElement>(FOCUSABLE)];
 }

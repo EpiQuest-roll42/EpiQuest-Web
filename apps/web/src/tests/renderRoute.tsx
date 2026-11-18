@@ -10,7 +10,6 @@ import { createMockSessionRepository } from '../models/repositories/mockSessionR
 import type { Repositories } from '../models/repositories/Repositories';
 import { createMemoryStorage } from './storageFixtures';
 
-/** Renders the real application routes at `path`, on simulated data, as main.tsx would. */
 export function renderRoute(path: string, { session }: { session?: Repositories['session'] } = {}) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const router = createMemoryRouter(appRoutes, { initialEntries: [path] });
