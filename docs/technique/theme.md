@@ -17,15 +17,31 @@ Les variables portent le nom de la charte, la barre oblique devenant un tiret : 
 
 ## Les deux palettes
 
-| Palette          | Usage                                | Activation                                                                                                           |
-| ---------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
-| **Claire**       | Préparation, sur le web et le mobile | Par défaut                                                                                                           |
-| **Table de jeu** | Partie, vue joueurs sur télé         | `data-theme="table"` sur `<html>`, ou au premier lancement si le système est en mode sombre (`prefers-color-scheme`) |
+| Palette          | Usage                                | Activation                                                                                                                                                          |
+| ---------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Claire**       | Préparation, sur le web et le mobile | Par défaut                                                                                                                                                          |
+| **Table de jeu** | Partie, vue joueurs sur télé         | Bouton « Palette table de jeu » de l'en-tête (`data-theme="table"` sur `<html>`), ou au premier lancement si le système est en mode sombre (`prefers-color-scheme`) |
 
 - `data-theme="clair"` force la palette claire, même si le système est en mode sombre : c'est le choix de l'utilisateur qui l'emporte sur celui du système.
 - La palette « table de jeu » apparaît deux fois dans `tokens.css` (dans le `@media` et sous `[data-theme='table']`), parce que le CSS ne permet pas de réunir les deux conditions. Le test vérifie que les deux blocs restent identiques.
-- La palette du premier lancement est appliquée **par le CSS seul** : la page ne s'affiche jamais en clair avant de basculer en sombre.
+- Sans choix enregistré, le CSS suit la préférence système dès le premier affichage. Avec un choix enregistré, `main.tsx` pose `data-theme` avant le rendu React et avant l'initialisation asynchrone des repositories.
 - Les deux palettes ont les **mêmes noms de variables** : un composant écrit `var(--text-primary)` et s'affiche correctement dans les deux.
+
+### Le choix de l'utilisateur
+
+**Priorité** : le choix enregistré l'emporte sur le système. Sans choix, la palette suit le système, y compris s'il change pendant que l'application est ouverte.
+
+| Couche    | Fichier                                        | Rôle                                                                                                                                                           |
+| --------- | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Model     | `models/preferences/themePreferenceStorage.ts` | Lit et écrit le choix dans `localStorage`, sous la clé `lanterne.theme`. Une valeur inconnue vaut « pas de choix » ; une erreur du stockage ne remonte jamais. |
+| Model     | `models/preferences/systemColorScheme.ts`      | Lit `prefers-color-scheme: dark` et prévient quand il change.                                                                                                  |
+| ViewModel | `viewModels/useThemePreference.ts`             | Expose la palette affichée (`palette`), le choix enregistré (`chosenPalette`, `null` sans choix) et la commande `choosePalette`.                               |
+| app/      | `main.tsx` et `app/themePreferenceDom.ts`      | Lit le choix et pose `data-theme` **avant** le premier rendu : pas d'éclair de la mauvaise palette au chargement.                                              |
+| app/      | `app/layout/AppLayout.tsx`                     | Seul appel du hook. Met `data-theme` à jour après chaque choix et affiche le bouton.                                                                           |
+
+- `data-theme` n'est posé **que si l'utilisateur a choisi** : sans choix, aucun attribut, et le CSS suit le système.
+- Le hook n'est appelé qu'à **un seul endroit** (`AppLayout`). Deux appels donneraient deux états séparés : un clic sur le bouton ne mettrait pas à jour `data-theme`.
+- Le bouton a un libellé fixe, « Palette table de jeu », et porte son état dans `aria-pressed` (WCAG 4.1.2). Au repos, il utilise le style secondaire (`--bg-raised`, `--border-default`) ; pressé, l'accent (`--accent-default`, `--text-on-accent`) et une coche, pour que l'état ne soit pas porté par la seule couleur (WCAG 1.4.1). Sa hauteur minimale est `--target-min-size`.
 
 ### Les couleurs
 
@@ -153,8 +169,8 @@ Un titre ou le `main` qui reçoivent le focus par le code (`tabIndex={-1}`, apr�
 
 ## Limites connues
 
-- **Le choix de palette** (stockage du choix, bouton) n'est pas encore branché : `data-theme` n'est posé par aucun code. Aujourd'hui, seule la préférence du système s'applique.
-- **La vue joueurs** n'utilise pas encore `data-theme="table"` ni `data-text-scale="table"`.
+- **La vue joueurs** n'utilise pas encore `data-theme="table"` ni `data-text-scale="table"`. Elle est en dehors de l'`AppLayout` : quand on y arrive, l'attribut posé par le choix de l'utilisateur est retiré, et elle suit le système.
+- **Le style du bouton de palette** (`.button-toggle` dans `base.css`) est provisoire : il sera remplacé par le composant Bouton de la charte (#76).
 - **Les contrastes réels à l'écran** (texte sur image, carte, pions) ne sont pas vérifiés par ce test, qui ne lit que les variables : ils se vérifient dans un navigateur (#77).
 
 ## Références

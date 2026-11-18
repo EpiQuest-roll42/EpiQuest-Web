@@ -39,6 +39,28 @@ a {
   color: var(--accent-default); /* accent/default sur bg/app */
 }
 
+.button-toggle {
+  min-height: var(--target-min-size);
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-small);
+  color: var(--text-primary);
+  background: var(--bg-raised);
+  font: inherit;
+  cursor: pointer;
+}
+
+.button-toggle[aria-pressed='true'] {
+  border-color: var(--accent-default);
+  color: var(--text-on-accent);
+  background: var(--accent-default);
+}
+
+.button-toggle__icon {
+  margin-inline-end: var(--space-1);
+  vertical-align: -0.2em;
+}
+
 /* Focus visible partout : espace couleur bg/app, puis anneau focus/ring (charte). */
 :focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring);

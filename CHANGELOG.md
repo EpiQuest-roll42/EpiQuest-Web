@@ -19,6 +19,7 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), et le p
 - Repository de session (`getCurrentUser`) et variable `VITE_MOCK_SESSION` pour simuler un visiteur connecté ou non (#74).
 - Thème de l'application web (#75) : variables CSS de la charte graphique (palettes claire et « table de jeu », typographie en `rem`, échelle × 1,5 de l'écran partagé, espacements, focus, durée d'animation nulle avec `prefers-reduced-motion`), polices Inter et Lora hébergées par l'application, test qui recalcule les contrastes de la charte à partir des variables ; documenté dans `docs/technique/theme.md`. ADR 0012 sur les icônes Lucide.
 - Guide « Par où commencer » (`docs/par-ou-commencer.md`) pour prendre le dépôt en main : parcours de lecture, ADR par thème, recherche dans le contrat d'API, pièges fréquents, vocabulaire.
+- Choix de la palette par l'utilisateur (#75) : bouton « Palette table de jeu » dans l'en-tête, état porté par `aria-pressed` et une coche, choix enregistré dans le navigateur et appliqué avant le premier rendu ; sans choix, la palette suit le système, y compris quand il change.
 - Vérification du formatage (Prettier) dans la CI.
 - Spécification du format des règles (`docs/technique/format-des-regles.md`) et mentions des ressources tierces (`THIRD_PARTY_NOTICES.md`).
 - Spécification de la notation des dés (`docs/technique/notation-des-des.md`) : grammaire, limites contre le déni de service, erreurs avec position, probabilités.

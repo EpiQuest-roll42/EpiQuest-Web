@@ -31,7 +31,7 @@ const css = stripComments(tokensCss);
 function value(declarations: Declarations, name: string): string {
   const declared = declarations[name];
   if (declared === undefined) {
-    throw new Error(`Variable absente : --${name}`);
+    throw new Error(`Déclaration absente : ${name}`);
   }
   return declared;
 }
@@ -52,6 +52,20 @@ function readBlock(source: string, selector: string, occurrence = 0): Declaratio
   const body = source.slice(source.indexOf('{', start) + 1, source.indexOf('}', start));
   return Object.fromEntries(
     [...body.matchAll(/--([\w-]+)\s*:\s*([^;]+);/g)].map(([, name, declared]) => [
+      name,
+      declared?.trim(),
+    ]),
+  );
+}
+
+function readCssDeclarations(source: string, selector: string): Declarations {
+  const start = source.indexOf(`${selector} {`);
+  if (start === -1) {
+    throw new Error(`Bloc introuvable : ${selector}`);
+  }
+  const body = source.slice(source.indexOf('{', start) + 1, source.indexOf('}', start));
+  return Object.fromEntries(
+    [...body.matchAll(/([\w-]+)\s*:\s*([^;]+);/g)].map(([, name, declared]) => [
       name,
       declared?.trim(),
     ]),
@@ -399,6 +413,26 @@ describe('charter scales', () => {
     }
     expect(toPixels(value(tableScale, 'font-size-name'))).toBe(24);
     expect(toPixels(value(tableScale, 'font-size-roll-result'))).toBe(64);
+  });
+});
+
+describe('charter controls', () => {
+  it('styles the palette toggle with secondary and pressed accent states', () => {
+    const toggleButton = readCssDeclarations(baseCss, '.button-toggle');
+    const pressedButton = readCssDeclarations(baseCss, ".button-toggle[aria-pressed='true']");
+
+    expect(toggleButton).toMatchObject({
+      'min-height': 'var(--target-min-size)',
+      border: '1px solid var(--border-default)',
+      color: 'var(--text-primary)',
+      background: 'var(--bg-raised)',
+    });
+    expect(pressedButton).toMatchObject({
+      'border-color': 'var(--accent-default)',
+      color: 'var(--text-on-accent)',
+      background: 'var(--accent-default)',
+    });
+    expect(value(readBlock(css, ':root', 1), 'target-min-size')).toBe('2.75rem');
   });
 });
 
