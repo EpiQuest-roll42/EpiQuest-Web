@@ -306,8 +306,8 @@ const CHARTER_PAIRS: Record<
 };
 
 const MINIMUM_RATIO: Record<Exclude<Use, 'non'>, number> = {
-  texte: 4.5, // WCAG 1.4.3
-  graphique: 3, // WCAG 1.4.11
+  texte: 4.5,
+  graphique: 3,
 };
 
 const pairCases = (Object.keys(CHARTER_PAIRS) as PaletteName[]).flatMap((palette) =>
