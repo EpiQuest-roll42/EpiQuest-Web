@@ -77,6 +77,7 @@ Une ADR se lit en cinq minutes : lisez **Contexte** et **Décision**, les **Opti
 | Comment un sort ou un monstre est décrit         | [Format des règles](technique/format-des-regles.md)                                                 |
 | Ce que `4d6kh3` ou `1d20!` veut dire             | [Notation des dés](technique/notation-des-des.md)                                                   |
 | Un bouton, un champ, un pion                     | [Composants](technique/composants.md) et `apps/web/src/components/`                                 |
+| Comment vérifier l'accessibilité d'un écran      | [Accessibilité](accessibilite/README.md) : tests automatiques et protocole manuel                   |
 | Une couleur, une taille de police, un espacement | [Thème](technique/theme.md) et `apps/web/src/theme/tokens.css`                                      |
 | Où mettre un nouvel écran                        | [Architecture du web](technique/architecture-web.md#ajouter-un-écran)                               |
 | Pourquoi on a choisi tel outil                   | [Journal des ADR](ADR/README.md)                                                                    |

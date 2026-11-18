@@ -466,6 +466,39 @@ describe('charter components', () => {
   });
 });
 
+describe('focus', () => {
+  const styleSources = { 'base.css': baseCss, 'components.css': componentsCss };
+
+  it('draws the charter ring on every focused element: a 2 px gap, then a 3 px ring', () => {
+    expect(readCssDeclarations(baseCss, ':focus-visible')).toMatchObject({
+      outline: 'var(--focus-ring-width) solid var(--focus-ring)',
+      'outline-offset': 'var(--focus-gap)',
+      'box-shadow': '0 0 0 var(--focus-gap) var(--bg-app)',
+    });
+    const scales = readBlock(css, ':root', 1);
+    expect(value(scales, 'focus-gap')).toBe('2px');
+    expect(value(scales, 'focus-ring-width')).toBe('3px');
+  });
+
+  it('only removes the ring from an element focused by code and clicked with the mouse', () => {
+    for (const [file, source] of Object.entries(styleSources)) {
+      const rules = [...stripComments(source).matchAll(/([^{}]+)\{([^}]*)\}/g)];
+      const hidingRules = rules
+        .filter(([, , body]) => /outline\s*:\s*(none|0)\b/.test(body ?? ''))
+        .map(([, selector]) => selector?.trim());
+      expect(hidingRules, file).toEqual(
+        file === 'base.css' ? ["[tabindex='-1']:focus:not(:focus-visible)"] : [],
+      );
+    }
+  });
+
+  it('has no sticky or fixed element that could hide the focused one (WCAG 2.4.11)', () => {
+    for (const [file, source] of Object.entries(styleSources)) {
+      expect(stripComments(source), file).not.toMatch(/position\s*:\s*(sticky|fixed)/);
+    }
+  });
+});
+
 describe('reduced motion', () => {
   it('animates by default and sets the animation duration to 0 on prefers-reduced-motion', () => {
     const scales = readBlock(css, ':root', 1);

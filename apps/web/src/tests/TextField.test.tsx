@@ -124,7 +124,7 @@ describe('TextField', () => {
       label: 'Pseudo',
       value: '',
       onChange: () => {},
-      // @ts-expect-error
+      // @ts-expect-error A hint goes in `help`, always visible, never in a placeholder.
       placeholder: 'Pseudo',
     };
 

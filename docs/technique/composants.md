@@ -128,7 +128,7 @@ L'API ne renvoie jamais de phrase, seulement un code et ses paramètres (`FieldE
 | `src/tests/fieldErrorMessages.test.ts` | Chaque code, ses paramètres, et un code inconnu qui ne montre rien de l'API.                                                                                                          |
 | `src/tests/themeTokens.test.ts`        | Les styles : taille minimale, variantes, champ en erreur, forme des pions, aucune couleur en dur.                                                                                     |
 
-- Chaque composant passe **axe dans chaque variante et chaque état, dans les deux palettes** (`src/tests/axeHelpers.ts`). jsdom ne calcule aucun rendu : axe y vérifie la structure et les noms, pas les contrastes, qui sont vérifiés depuis les variables et dans un navigateur (#77).
+- Chaque composant passe **axe dans chaque variante et chaque état, dans les deux palettes** (`src/tests/axeHelpers.ts`). jsdom ne calcule aucun rendu : axe y vérifie la structure et les noms, pas les contrastes, qui sont vérifiés depuis les variables et à la main dans un navigateur ([protocole](../accessibilite/README.md#2-vérifications-manuelles)).
 - Les règles de typage (bouton icône sans `label`, champ avec placeholder, créature avec des PV) sont vérifiées par des `@ts-expect-error` : si une règle saute, `pnpm typecheck` échoue.
 
 ## Limites connues

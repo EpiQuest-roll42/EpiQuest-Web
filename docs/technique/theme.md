@@ -181,7 +181,7 @@ Un titre ou le `main` qui reçoivent le focus par le code (`tabIndex={-1}`, apr�
 
 ## Limites connues
 
-- **Les contrastes réels à l'écran** (texte sur image, carte, pions) ne sont pas vérifiés par ce test, qui ne lit que les variables : ils se vérifient dans un navigateur (#77).
+- **Les contrastes réels à l'écran** (texte sur image, carte, pions) ne sont pas vérifiés par ce test, qui ne lit que les variables : ils se vérifient dans un navigateur ([protocole](../accessibilite/README.md#2-vérifications-manuelles)).
 
 ## Références
 

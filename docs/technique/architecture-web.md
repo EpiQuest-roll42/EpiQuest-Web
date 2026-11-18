@@ -172,7 +172,7 @@ Les `loader` et `action` de React Router ne sont **pas** utilisés : les donnée
 - Une erreur est affichée dans un `role="alert"`.
 - Le bouton « Réessayer » reste focalisable pendant la tentative (`aria-disabled` plutôt que `disabled`) ; après une tentative réussie, le focus va sur le titre de la page.
 
-Ces conventions sont vérifiées par les tests des Views et des routes (`routes.test.tsx`, `documentTitle.test.tsx`), dont un passage d'axe sur la mise en page principale.
+Ces conventions sont vérifiées par les tests des Views et des routes (`routes.test.tsx`, `documentTitle.test.tsx`). `accessibility.test.tsx` passe axe sur **chaque route**, dans les deux palettes, et vérifie l'ordre de tabulation : une nouvelle route s'ajoute à sa liste `ROUTES`. Les résultats et les vérifications manuelles sont dans [docs/accessibilite/](../accessibilite/README.md).
 
 ## Lancer et tester
 
@@ -189,7 +189,7 @@ Pour voir la redirection vers `/connexion`, mettre `VITE_MOCK_SESSION=anonymous`
 - **La règle de l'ADR 0007** (le web n'importe jamais le point d'entrée des jets du moteur de règles) sera ajoutée au lint quand le moteur aura ses deux points d'entrée.
 - **`vite.config.ts`** n'est pas vérifié par `tsc` (seulement par ESLint) : choix assumé pour un fichier de configuration de quelques lignes.
 - **Focus en attente** : si l'utilisateur déplace lui-même le focus pendant que la page se charge, il le perd à l'apparition du `h1`. C'est invisible avec les données simulées, mais à corriger avant la P2, où le réseau allonge l'attente : annuler l'attente au premier déplacement du focus par l'utilisateur.
-- **axe dans les tests** tourne dans jsdom, qui ne calcule aucun rendu : le **contraste n'y est pas vérifié**. Il se vérifie dans un navigateur (#77).
+- **axe dans les tests** tourne dans jsdom, qui ne calcule aucun rendu : le **contraste n'y est pas vérifié**. Il l'est à partir des variables de la charte, et à la main dans un navigateur ([protocole](../accessibilite/README.md#2-vérifications-manuelles)).
 - **`campaignId`** n'est pas encore lu par `GameMasterView`. Dès qu'il le sera, son ViewModel devra vérifier que c'est un UUID, et afficher la page introuvable sinon (ADR 0011).
 - **Vue joueurs** : le jeton est capturé, mais pas encore envoyé. Il le sera par un repository dédié, avec `credentials: 'omit'` et le schéma d'authentification du contrat (`displayAuth`).
 - **Connexion et inscription** : les écrans n'ont encore que leur titre. La connexion devra invalider la requête de session (`currentUserQueryKey`) pour débloquer les routes protégées.
