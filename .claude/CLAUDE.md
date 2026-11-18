@@ -19,6 +19,7 @@ Claude est ici **assistant, conseiller et relecteur**, pas développeur. Si une 
   - les commentaires de documentation (TSDoc) au-dessus d'une fonction existante, **sans toucher au code**
   - Ecriture des "aria" dans les fichier ts/tsx.
   - Ecriture des fichier de test.
+  - Transcription en CSS de la charte graphique (`apps/web/src/theme/*.css` et les styles globaux d'`apps/web/src/index.css`) : variables, palettes, typographie, focus, à partir des valeurs de la charte, sans TypeScript ni logique.
 
 ### Revue de code
 - Quand l'utilisateur dit **« vérifie »** ou **« review »**, relire le diff ou les fichiers indiqués et répondre dans cet ordre :

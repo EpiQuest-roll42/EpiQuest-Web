@@ -3,12 +3,16 @@ import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { axe } from 'vitest-axe';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createMockCampaignRepository } from '../models/repositories/mockCampaignRepository';
 import { createMockSessionRepository } from '../models/repositories/mockSessionRepository';
+import { createThemePreferenceStorage } from '../models/preferences/themePreferenceStorage';
+import type { ThemePreference } from '../models/preferences/themePreferenceStorage';
 import type { CurrentUser } from '../models/api/schema';
 import type { Repositories } from '../models/repositories/Repositories';
 import { RepositoriesProvider } from '../app/RepositoriesProvider';
+import { initializeThemePreference } from '../app/themePreferenceDom';
+import { ThemePreferenceStorageProvider } from '../app/ThemePreferenceStorageProvider';
 import { currentUserQueryKey } from '../viewModels/useSession';
 import { appRoutes } from '../app/routes';
 
@@ -23,6 +27,11 @@ const authenticatedUser: CurrentUser = {
   createdAt: '2026-11-02T18:15:00Z',
 };
 
+afterEach(() => {
+  window.localStorage.removeItem('lanterne.theme');
+  document.documentElement.removeAttribute('data-theme');
+});
+
 function createRepositories(session = createMockSessionRepository()): Repositories {
   return {
     campaigns: createMockCampaignRepository(),
@@ -30,19 +39,37 @@ function createRepositories(session = createMockSessionRepository()): Repositori
   };
 }
 
-function renderRoutes(path: string, options: { session?: Repositories['session'] } = {}) {
+function renderRoutes(
+  path: string,
+  options: {
+    session?: Repositories['session'];
+    themePreferenceStorage?: ReturnType<typeof createThemePreferenceStorage>;
+    initialThemePreference?: ThemePreference | null;
+  } = {},
+) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
   const router = createMemoryRouter(appRoutes, { initialEntries: [path] });
-  render(
+  const themePreferenceStorage =
+    options.themePreferenceStorage ?? createThemePreferenceStorage(() => window.localStorage);
+  const initialPreference =
+    options.initialThemePreference === undefined
+      ? themePreferenceStorage.read()
+      : options.initialThemePreference;
+  const rendered = render(
     <QueryClientProvider client={queryClient}>
-      <RepositoriesProvider repositories={createRepositories(options.session)}>
-        <RouterProvider router={router} />
-      </RepositoriesProvider>
+      <ThemePreferenceStorageProvider
+        storage={themePreferenceStorage}
+        initialPreference={initialPreference}
+      >
+        <RepositoriesProvider repositories={createRepositories(options.session)}>
+          <RouterProvider router={router} />
+        </RepositoriesProvider>
+      </ThemePreferenceStorageProvider>
     </QueryClientProvider>,
   );
-  return { router, queryClient };
+  return { router, queryClient, unmount: rendered.unmount };
 }
 
 describe('appRoutes', () => {
@@ -87,6 +114,53 @@ describe('appRoutes', () => {
     router.dispose();
   });
 
+  it('lets the user toggle the palette and exposes the state accessibly', async () => {
+    const user = userEvent.setup();
+    const { router } = renderRoutes('/connexion', {
+      session: createMockSessionRepository(null),
+    });
+
+    const button = await screen.findByRole('button', { name: 'Palette table de jeu' });
+    expect(button).toHaveAttribute('aria-pressed', 'false');
+    expect(document.documentElement).not.toHaveAttribute('data-theme');
+
+    await user.click(button);
+    expect(button).toHaveAttribute('aria-pressed', 'true');
+    expect(button.querySelector('svg')).toBeInTheDocument();
+    expect(document.documentElement).toHaveAttribute('data-theme', 'table');
+    expect(window.localStorage.getItem('lanterne.theme')).toBe('table');
+
+    await user.click(button);
+    expect(button).toHaveAttribute('aria-pressed', 'false');
+    expect(button.querySelector('svg')).not.toBeInTheDocument();
+    expect(document.documentElement).toHaveAttribute('data-theme', 'clair');
+
+    router.dispose();
+  });
+
+  it('applies a saved palette before rendering the application', async () => {
+    const storage = createThemePreferenceStorage(() => window.localStorage);
+    const readPreference = vi.spyOn(storage, 'read');
+    storage.write('table');
+
+    const initialPreference = initializeThemePreference(storage, document.documentElement);
+    expect(document.documentElement).toHaveAttribute('data-theme', 'table');
+
+    const { router } = renderRoutes('/connexion', {
+      session: createMockSessionRepository(null),
+      themePreferenceStorage: storage,
+      initialThemePreference: initialPreference,
+    });
+
+    expect(await screen.findByRole('button', { name: 'Palette table de jeu' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(document.documentElement).toHaveAttribute('data-theme', 'table');
+    expect(readPreference).toHaveBeenCalledTimes(1);
+    router.dispose();
+  });
+
   it('redirects the root path to the campaign list', async () => {
     const { router } = renderRoutes('/');
 
@@ -98,12 +172,22 @@ describe('appRoutes', () => {
   });
 
   it('renders the player display without application navigation and with one main landmark', async () => {
-    const { router } = renderRoutes('/vue-joueurs');
+    const storage = createThemePreferenceStorage(() => window.localStorage);
+    storage.write('clair');
+    initializeThemePreference(storage, document.documentElement);
+    expect(document.documentElement).toHaveAttribute('data-theme', 'clair');
+
+    const { router, unmount } = renderRoutes('/vue-joueurs');
 
     expect(await screen.findByRole('heading', { name: 'Vue joueurs' })).toBeInTheDocument();
     expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
+    expect(document.documentElement).toHaveAttribute('data-theme', 'table');
+    expect(document.documentElement).toHaveAttribute('data-text-scale', 'table');
     expect(screen.getAllByRole('main')).toHaveLength(1);
     router.dispose();
+    unmount();
+    expect(document.documentElement).not.toHaveAttribute('data-theme');
+    expect(document.documentElement).not.toHaveAttribute('data-text-scale');
   });
 
   it('does not render a protected page while the session is loading', async () => {
@@ -203,6 +287,7 @@ describe('appRoutes', () => {
     await user.tab();
     await user.tab();
     await user.tab();
+    await user.tab();
     expect(document.activeElement).toBe(
       screen.getByRole('link', { name: 'Rejoindre une campagne' }),
     );
@@ -233,9 +318,16 @@ describe('appRoutes', () => {
 
     render(
       <QueryClientProvider client={queryClient}>
-        <RepositoriesProvider repositories={createRepositories(createMockSessionRepository(null))}>
-          <RouterProvider router={router} />
-        </RepositoriesProvider>
+        <ThemePreferenceStorageProvider
+          storage={createThemePreferenceStorage(() => window.localStorage)}
+          initialPreference={null}
+        >
+          <RepositoriesProvider
+            repositories={createRepositories(createMockSessionRepository(null))}
+          >
+            <RouterProvider router={router} />
+          </RepositoriesProvider>
+        </ThemePreferenceStorageProvider>
       </QueryClientProvider>,
     );
 
@@ -256,9 +348,14 @@ describe('appRoutes', () => {
 
     render(
       <QueryClientProvider client={queryClient}>
-        <RepositoriesProvider repositories={createRepositories()}>
-          <RouterProvider router={router} />
-        </RepositoriesProvider>
+        <ThemePreferenceStorageProvider
+          storage={createThemePreferenceStorage(() => window.localStorage)}
+          initialPreference={null}
+        >
+          <RepositoriesProvider repositories={createRepositories()}>
+            <RouterProvider router={router} />
+          </RepositoriesProvider>
+        </ThemePreferenceStorageProvider>
       </QueryClientProvider>,
     );
 

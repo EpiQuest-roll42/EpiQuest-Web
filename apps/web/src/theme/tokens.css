@@ -1,0 +1,140 @@
+/*
+ * Variables de la charte graphique (docs/charte-graphique.pdf et Figma).
+ * Même nom que dans Figma, la barre oblique devenant un tiret : bg/app → --bg-app.
+ * Ne jamais ajouter de couleur ici sans l'ajouter d'abord à la charte : les contrastes
+ * sont vérifiés par src/tests/themeTokens.test.ts, à partir de ce fichier.
+ */
+
+/* Palette claire (parchemin) : par défaut, préparation sur le web et le mobile. */
+:root {
+  color-scheme: light;
+
+  --bg-app: #f4ecdd;
+  --bg-surface: #fbf7ee;
+  --bg-raised: #eadfc9;
+  --bg-fog: #3b3228;
+  --border-default: #8e7b5a;
+  --text-primary: #2b1d14;
+  --text-muted: #6b5a48;
+  --text-on-accent: #ffffff;
+  --accent-default: #9b1c1c;
+  --focus-ring: #1d5fbf;
+  --state-success: #256b42;
+  --state-warning: #875800;
+  --state-danger: #b3261e;
+  --team-ally: #2b63a5;
+  --team-enemy: var(--state-danger);
+  --brand-flame: #d9922e;
+}
+
+/*
+ * Palette « table de jeu » (sombre) : vue joueurs sur télé, ou choix de l'utilisateur.
+ * Les deux blocs suivants doivent rester identiques (vérifié par le test) :
+ * - le premier s'applique au premier lancement si le système est en mode sombre,
+ *   tant que l'utilisateur n'a pas choisi la palette claire ;
+ * - le second s'applique quand la palette « table de jeu » est choisie.
+ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='clair']) {
+    color-scheme: dark;
+
+    --bg-app: #1c1611;
+    --bg-surface: #2a221b;
+    --bg-raised: #3a3027;
+    --bg-fog: #3b3228;
+    --border-default: #9c8a6a;
+    --text-primary: #f4ecdd;
+    --text-muted: #cdbfa6;
+    --text-on-accent: #1c1611;
+    --accent-default: #f2938a;
+    --focus-ring: #a9cbff;
+    --state-success: #7fd1a0;
+    --state-warning: #f0be5e;
+    --state-danger: #f2938a;
+    --team-ally: #8db8f2;
+    --team-enemy: var(--state-danger);
+    --brand-flame: #d9922e;
+  }
+}
+
+:root[data-theme='table'] {
+  color-scheme: dark;
+
+  --bg-app: #1c1611;
+  --bg-surface: #2a221b;
+  --bg-raised: #3a3027;
+  --bg-fog: #3b3228;
+  --border-default: #9c8a6a;
+  --text-primary: #f4ecdd;
+  --text-muted: #cdbfa6;
+  --text-on-accent: #1c1611;
+  --accent-default: #f2938a;
+  --focus-ring: #a9cbff;
+  --state-success: #7fd1a0;
+  --state-warning: #f0be5e;
+  --state-danger: #f2938a;
+  --team-ally: #8db8f2;
+  --team-enemy: var(--state-danger);
+  --brand-flame: #d9922e;
+}
+
+/* Typographie, tailles, espacements, focus et animations. */
+:root {
+  /* Lora pour les titres, Inter pour le texte. Cinzel est réservée au logo (fichier SVG). */
+  --font-heading: 'Lora Variable', Georgia, serif;
+  --font-body: 'Inter Variable', system-ui, sans-serif;
+
+  /* Tailles en rem (16 px = 1 rem) : elles suivent le zoom et la taille de texte choisie (WCAG 1.4.4). */
+  --font-size-h1: 2rem; /* Titre 1 · 32 */
+  --font-size-h2: 1.5rem; /* Titre 2 · 24 */
+  --font-size-body: 1rem; /* Corps · 16 */
+  --font-size-caption: 0.8125rem; /* Légende · 13 */
+  --font-size-name: 1rem;
+
+  --font-weight-h1: 700; /* Bold */
+  --font-weight-h2: 600; /* Semi Bold */
+  --font-weight-body: 400; /* Regular */
+  --font-weight-caption: 500; /* Medium */
+  --line-height-body: 1.5;
+
+  /* Échelle d'espacement et rayons : PROPOSITION, absente de la charte, à reporter dans Figma. */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --radius-small: 0.25rem;
+  --radius-medium: 0.5rem;
+  --radius-round: 999px;
+
+  /* Cibles d'au moins 44 px sur le web (charte, règles d'accessibilité). */
+  --target-min-size: 2.75rem;
+
+  /* Focus : espace de 2 px couleur bg/app, puis anneau de 3 px couleur focus/ring (charte). */
+  --focus-gap: 2px;
+  --focus-ring-width: 3px;
+
+  /* Durée des animations (dont les dés) : 0 quand l'utilisateur réduit les animations. */
+  --duration-animation: 200ms;
+}
+
+/*
+ * Échelle « table de jeu » (× 1,5) : texte ≥ 20 px, noms 24 px, résultat du jet 64 px.
+ * À poser sur l'écran partagé (vue joueurs), indépendamment de la palette.
+ */
+[data-text-scale='table'] {
+  --font-size-h1: 3rem;
+  --font-size-h2: 2.25rem;
+  --font-size-body: 1.5rem;
+  --font-size-caption: 1.25rem;
+  --font-size-name: 1.5rem;
+  --font-size-roll-result: 4rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-animation: 0s;
+  }
+}

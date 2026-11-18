@@ -7,11 +7,13 @@ import { createMemoryRouter, Navigate, RouterProvider, type RouteObject } from '
 import { describe, expect, it, vi } from 'vitest';
 import { App } from '../app/App';
 import { RepositoriesProvider } from '../app/RepositoriesProvider';
+import { ThemePreferenceStorageProvider } from '../app/ThemePreferenceStorageProvider';
 import { RouteTitleLayout } from '../app/layout/RouteTitleLayout';
 import { isRouteHandle } from '../app/RouteHandle';
 import { appRoutes } from '../app/routes';
 import { createMockCampaignRepository } from '../models/repositories/mockCampaignRepository';
 import { createMockSessionRepository } from '../models/repositories/mockSessionRepository';
+import { createThemePreferenceStorage } from '../models/preferences/themePreferenceStorage';
 
 function renderWithRepositories(ui: ReactNode) {
   const queryClient = new QueryClient({
@@ -25,7 +27,12 @@ function renderWithRepositories(ui: ReactNode) {
           session: createMockSessionRepository(),
         }}
       >
-        {ui}
+        <ThemePreferenceStorageProvider
+          storage={createThemePreferenceStorage(() => window.localStorage)}
+          initialPreference={null}
+        >
+          {ui}
+        </ThemePreferenceStorageProvider>
       </RepositoriesProvider>
     </QueryClientProvider>,
   );

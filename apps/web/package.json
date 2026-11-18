@@ -13,8 +13,11 @@
     "generate:api": "openapi-typescript ../../packages/api-contract/openapi.yaml -o src/models/api/schema.d.ts --root-types --root-types-no-schema-prefix"
   },
   "dependencies": {
+    "@fontsource-variable/inter": "^5.3.0",
+    "@fontsource-variable/lora": "^5.3.0",
     "@lanterne/rules-engine": "workspace:*",
     "@tanstack/react-query": "^5.107.1",
+    "lucide-react": "^1.70.0",
     "openapi-fetch": "^0.17.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
