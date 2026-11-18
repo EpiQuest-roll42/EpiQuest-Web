@@ -22,7 +22,7 @@ Points repérés pendant P1-03, P1-04 et l'issue des fichiers du dépôt. Chaque
 
 **3. Le choix de palette** (`feat(web): let users choose the color palette`)
 
-- [ ] **Model** : `models/preferences/themePreferenceStorage.ts`, lit et écrit `'clair' | 'table' | null` dans `localStorage`, chaque accès dans un `try/catch` (`localStorage` peut lever une erreur en navigation privée). Pas de React dans ce fichier.
+- [x] **Model** : `models/preferences/themePreferenceStorage.ts`, lit et écrit `'clair' | 'table' | null` dans `localStorage`, chaque accès dans un `try/catch` (`localStorage` peut lever une erreur en navigation privée). Pas de React dans ce fichier.
 - [ ] **ViewModel** : `viewModels/useThemePreference.ts`, expose la palette affichée (le choix enregistré, sinon celle du système via `matchMedia('(prefers-color-scheme: dark)')`) et une commande pour en changer.
 - [ ] **app/** : poser `data-theme` sur `<html>` (`document.documentElement`) **seulement** quand l'utilisateur a choisi ; sans choix, ne rien poser, le CSS suit le système.
 - [ ] **View** : un bouton dans l'en-tête d'`AppLayout`, libellé fixe « Palette table de jeu », état porté par `aria-pressed` (WCAG 4.1.2).
