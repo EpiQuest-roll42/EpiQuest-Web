@@ -57,7 +57,7 @@ function renderRoutes(
     options.initialThemePreference === undefined
       ? themePreferenceStorage.read()
       : options.initialThemePreference;
-  render(
+  const rendered = render(
     <QueryClientProvider client={queryClient}>
       <ThemePreferenceStorageProvider
         storage={themePreferenceStorage}
@@ -69,7 +69,7 @@ function renderRoutes(
       </ThemePreferenceStorageProvider>
     </QueryClientProvider>,
   );
-  return { router, queryClient };
+  return { router, queryClient, unmount: rendered.unmount };
 }
 
 describe('appRoutes', () => {
@@ -172,12 +172,22 @@ describe('appRoutes', () => {
   });
 
   it('renders the player display without application navigation and with one main landmark', async () => {
-    const { router } = renderRoutes('/vue-joueurs');
+    const storage = createThemePreferenceStorage(() => window.localStorage);
+    storage.write('clair');
+    initializeThemePreference(storage, document.documentElement);
+    expect(document.documentElement).toHaveAttribute('data-theme', 'clair');
+
+    const { router, unmount } = renderRoutes('/vue-joueurs');
 
     expect(await screen.findByRole('heading', { name: 'Vue joueurs' })).toBeInTheDocument();
     expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
+    expect(document.documentElement).toHaveAttribute('data-theme', 'table');
+    expect(document.documentElement).toHaveAttribute('data-text-scale', 'table');
     expect(screen.getAllByRole('main')).toHaveLength(1);
     router.dispose();
+    unmount();
+    expect(document.documentElement).not.toHaveAttribute('data-theme');
+    expect(document.documentElement).not.toHaveAttribute('data-text-scale');
   });
 
   it('does not render a protected page while the session is loading', async () => {

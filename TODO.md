@@ -31,8 +31,8 @@ Points repérés pendant P1-03, P1-04 et l'issue des fichiers du dépôt. Chaque
 
 **4. La vue joueurs** (`feat(web): use the game table palette on the player display`)
 
-- [ ] `PlayerDisplayLayout` pose `data-theme="table"` et `data-text-scale="table"` : l'écran partagé est toujours en « table de jeu », texte agrandi, quel que soit le choix sur l'ordinateur du MJ.
-- [ ] Test : sur `/vue-joueurs`, ces deux attributs sont présents.
+- [x] `PlayerDisplayLayout` pose `data-theme="table"` et `data-text-scale="table"` : l'écran partagé est toujours en « table de jeu », texte agrandi, quel que soit le choix sur l'ordinateur du MJ.
+- [x] Test : sur `/vue-joueurs`, ces deux attributs sont présents.
 
 **5. À décider en équipe**
 

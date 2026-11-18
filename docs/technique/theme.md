@@ -17,10 +17,10 @@ Les variables portent le nom de la charte, la barre oblique devenant un tiret : 
 
 ## Les deux palettes
 
-| Palette          | Usage                                | Activation                                                                                                                                                          |
-| ---------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Claire**       | Préparation, sur le web et le mobile | Par défaut                                                                                                                                                          |
-| **Table de jeu** | Partie, vue joueurs sur télé         | Bouton « Palette table de jeu » de l'en-tête (`data-theme="table"` sur `<html>`), ou au premier lancement si le système est en mode sombre (`prefers-color-scheme`) |
+| Palette          | Usage                                                                                                                                                                                                                                    | Activation |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| **Claire**       | Préparation, sur le web et le mobile                                                                                                                                                                                                     | Par défaut |
+| **Table de jeu** | Partie, vue joueurs sur télé Toujours sur la vue joueurs ; ailleurs, bouton « Palette table de jeu » de l'en-tête (`data-theme="table"` sur `<html>`), ou au premier lancement si le système est en mode sombre (`prefers-color-scheme`) |
 
 - `data-theme="clair"` force la palette claire, même si le système est en mode sombre : c'est le choix de l'utilisateur qui l'emporte sur celui du système.
 - La palette « table de jeu » apparaît deux fois dans `tokens.css` (dans le `@media` et sous `[data-theme='table']`), parce que le CSS ne permet pas de réunir les deux conditions. Le test vérifie que les deux blocs restent identiques.
@@ -123,9 +123,20 @@ En palette claire, **rien ne s'écrit sur `--bg-fog`** : le brouillard ne porte 
 - **Les tailles sont en `rem`** : elles suivent la taille de texte choisie dans le navigateur, et le zoom à 200 % fonctionne sans perte (WCAG 1.4.4). Le test refuse une taille de texte ou un espacement en `px`.
 - **Les polices sont hébergées par l'application** (paquets `@fontsource-variable/inter` et `@fontsource-variable/lora`), jamais chargées depuis Google Fonts : aucune requête vers un tiers (RGPD), et l'application fonctionne hors ligne. Le test refuse toute adresse `http` dans les fichiers du thème. Licence SIL Open Font License 1.1 : voir `THIRD_PARTY_NOTICES.md`.
 
+### La vue joueurs
+
+La vue joueurs (`/vue-joueurs`) est affichée sur l'écran partagé, souvent une télévision, dans une pièce peu éclairée. Elle est donc **toujours** en palette « table de jeu » et en texte agrandi, quel que soit le choix enregistré sur l'ordinateur du MJ.
+
+- `PlayerDisplayLayout` pose `data-theme="table"` et `data-text-scale="table"` sur `<html>` (`document.documentElement`) à son affichage, et les retire quand on la quitte.
+- Il **écrase** le choix posé au démarrage par `main.tsx` : la vue joueurs s'ouvre dans une seconde fenêtre (#18), où le choix de l'utilisateur, par exemple `'clair'`, est déjà appliqué avant le premier rendu.
+- Elle n'a pas de bouton de palette : le choix de l'utilisateur ne la concerne pas.
+- Test attendu : avec un choix `'clair'` appliqué comme au démarrage, `/vue-joueurs` donne `data-theme="table"` et `data-text-scale="table"` sur `<html>`.
+
 ### L'échelle « table de jeu »
 
-Sur l'écran partagé, la charte multiplie la typographie par 1,5 : texte d'au moins 20 px, noms à 24 px, résultat d'un jet à 64 px. Elle s'active avec `data-text-scale="table"` sur l'élément qui contient la vue, **indépendamment de la palette** : un MJ qui prépare sa partie en palette sombre sur son ordinateur n'a pas besoin de texte agrandi.
+Sur l'écran partagé, la charte multiplie la typographie par 1,5 : texte d'au moins 20 px, noms à 24 px, résultat d'un jet à 64 px. Elle s'active avec `data-text-scale="table"` sur `<html>`, **indépendamment de la palette** : un MJ qui prépare sa partie en palette sombre sur son ordinateur n'a pas besoin de texte agrandi.
+
+**Pourquoi sur `<html>` et pas sur le `main`** : la taille du texte courant est calculée une seule fois, sur `body`, à partir des variables de `<html>`. Posé plus bas, l'attribut ne change que les éléments qui relisent eux-mêmes une variable (les titres) : le texte courant resterait à 16 px. De même, la palette n'est définie que pour `:root[data-theme='table']` : sur un autre élément, `data-theme` n'a aucun effet.
 
 | Variable                  | Normal      | Table de jeu |
 | ------------------------- | ----------- | ------------ |
@@ -169,7 +180,6 @@ Un titre ou le `main` qui reçoivent le focus par le code (`tabIndex={-1}`, apr�
 
 ## Limites connues
 
-- **La vue joueurs** n'utilise pas encore `data-theme="table"` ni `data-text-scale="table"`. Elle est en dehors de l'`AppLayout` : quand on y arrive, l'attribut posé par le choix de l'utilisateur est retiré, et elle suit le système.
 - **Le style du bouton de palette** (`.button-toggle` dans `base.css`) est provisoire : il sera remplacé par le composant Bouton de la charte (#76).
 - **Les contrastes réels à l'écran** (texte sur image, carte, pions) ne sont pas vérifiés par ce test, qui ne lit que les variables : ils se vérifient dans un navigateur (#77).
 

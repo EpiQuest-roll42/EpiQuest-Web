@@ -101,7 +101,7 @@ RouteTitleLayout         route racine sans path : titre, focus, région de statu
 ```
 
 - **`AppLayout`** affiche, dans cet ordre, le lien d'évitement « Aller au contenu » (WCAG 2.4.1), l'en-tête, la navigation (`aria-label="Navigation principale"`, avec des `NavLink` qui posent `aria-current="page"`) et le `main`. Le lien d'évitement déplace le focus sur le `main` sans modifier le fragment de l'adresse, qui porte le code d'invitation de `/rejoindre`.
-- **`PlayerDisplayLayout`** ne garde que le `main` : la vue joueurs est affichée sur l'écran partagé, sans lien vers les écrans du MJ.
+- **`PlayerDisplayLayout`** ne garde que le `main` : la vue joueurs est affichée sur l'écran partagé, sans lien vers les écrans du MJ. Il impose la palette « table de jeu » et le texte agrandi, sur `<html>` (voir [theme.md](theme.md#la-vue-joueurs)).
 - Chaque page n'a donc qu'**un seul** `main`, fourni par sa mise en page. Une View ne crée jamais de `main`.
 
 ### Le titre de page
