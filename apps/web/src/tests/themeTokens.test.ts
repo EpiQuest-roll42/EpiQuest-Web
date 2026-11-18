@@ -4,11 +4,6 @@ type Declarations = Record<string, string>;
 type PaletteName = 'clair' | 'table';
 type Use = 'texte' | 'graphique' | 'non';
 
-/*
- * Vitest returns an empty string for CSS imports, even with `?raw`: the files are read from disk.
- * The web package has no Node types (browser code), so `node:fs` is reached through
- * `process.getBuiltinModule` (Node ≥ 22.3) with the one signature the test needs.
- */
 interface NodeFileSystem {
   readFileSync(path: URL, encoding: 'utf8'): string;
 }

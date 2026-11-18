@@ -1,11 +1,3 @@
-/*
- * Composants de la charte (bouton, champ, pion) : voir docs/technique/composants.md.
- * Chaque couple texte / fond est un couple « Texte » du tableau des couples autorisés
- * (docs/technique/theme.md) ; chaque bordure ou forme, un couple « Graphique » au moins.
- */
-
-/* --- Bouton --- */
-
 .button {
   display: inline-flex;
   align-items: center;
@@ -21,21 +13,18 @@
   cursor: pointer;
 }
 
-/* Action principale : text/on-accent sur accent/default. */
 .button--primary {
   border-color: var(--accent-default);
   color: var(--text-on-accent);
   background: var(--accent-default);
 }
 
-/* Action secondaire : text/primary sur bg/raised, bordure border/default. */
 .button--secondary {
   border-color: var(--border-default);
   color: var(--text-primary);
   background: var(--bg-raised);
 }
 
-/* Bouton bascule pressé : l'accent, et une coche pour un bouton avec texte (pas la couleur seule). */
 .button[aria-pressed='true'] {
   border-color: var(--accent-default);
   color: var(--text-on-accent);
@@ -51,7 +40,6 @@
   cursor: not-allowed;
 }
 
-/* Un bouton désactivé n'est pas soumis aux exigences de contraste (WCAG 1.4.3). */
 .button:disabled {
   opacity: 0.6;
 }
@@ -70,8 +58,6 @@
   }
 }
 
-/* --- Champ --- */
-
 .field {
   display: flex;
   flex-direction: column;
@@ -84,10 +70,9 @@
 
 .field__required {
   font-weight: var(--font-weight-body);
-  color: var(--text-muted); /* text/muted sur bg/app */
+  color: var(--text-muted);
 }
 
-/* text/primary sur bg/surface, bordure border/default (Graphique). */
 .field__input {
   min-height: var(--target-min-size);
   padding: var(--space-2) var(--space-3);
@@ -107,10 +92,9 @@
   margin: 0;
   font-size: var(--font-size-caption);
   font-weight: var(--font-weight-caption);
-  color: var(--text-muted); /* text/muted sur bg/app */
+  color: var(--text-muted);
 }
 
-/* L'erreur est portée par l'icône et le texte, pas par la couleur seule (WCAG 1.4.1). */
 .field__error {
   margin: 0;
   font-size: var(--font-size-caption);
@@ -118,16 +102,13 @@
   display: flex;
   align-items: center;
   gap: var(--space-1);
-  color: var(--state-danger); /* state/danger sur bg/app */
+  color: var(--state-danger);
 }
 
 .field__error-icon {
   flex-shrink: 0;
 }
 
-/* --- Pion --- */
-
-/* text/on-accent sur team/ally ou team/enemy ; forme contre bg/app : couple Graphique. */
 .token {
   position: relative;
   display: inline-grid;
@@ -143,7 +124,6 @@
   line-height: 1;
 }
 
-/* Le camp se lit à la forme : rond pour un allié, carré pour un ennemi (charte, WCAG 1.4.1). */
 .token--ally {
   border-radius: var(--radius-round);
   background: var(--team-ally);
@@ -158,7 +138,6 @@ button.token {
   cursor: pointer;
 }
 
-/* Sélectionné : un second anneau, en text/primary, au-delà de l'anneau de focus. */
 .token--selected::after {
   content: '';
   position: absolute;
