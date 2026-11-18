@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CampaignRepositoryError } from '../models/repositories/CampaignRepositoryError';
+import { ApiError } from '../models/repositories/ApiError';
 import { createMockCampaignRepository } from '../models/repositories/mockCampaignRepository';
 
 describe('createMockCampaignRepository', () => {
@@ -34,7 +34,7 @@ describe('createMockCampaignRepository', () => {
   it('returns contract-shaped errors for invalid pagination', async () => {
     const repository = createMockCampaignRepository();
 
-    await expect(repository.list({ limit: 101 })).rejects.toBeInstanceOf(CampaignRepositoryError);
+    await expect(repository.list({ limit: 101 })).rejects.toBeInstanceOf(ApiError);
     await expect(repository.list({ limit: 101 })).rejects.toMatchObject({
       problem: {
         type: '/problems/validation-error',

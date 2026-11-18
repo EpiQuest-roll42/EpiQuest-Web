@@ -7,7 +7,7 @@ import type {
   Problem,
   UserPublic,
 } from '../api/schema';
-import { CampaignRepositoryError } from './CampaignRepositoryError';
+import { ApiError } from './ApiError';
 import type { CampaignRepository } from './CampaignRepository';
 
 const MOCK_DELAY_MS = 150;
@@ -114,7 +114,7 @@ export function createMockCampaignRepository(): CampaignRepository {
         limit < 1 ||
         limit > 100
       ) {
-        throw new CampaignRepositoryError(
+        throw new ApiError(
           createProblem(
             400,
             '/problems/validation-error',
@@ -138,7 +138,7 @@ export function createMockCampaignRepository(): CampaignRepository {
 
       const campaign = campaigns.get(campaignId);
       if (campaign === undefined) {
-        throw new CampaignRepositoryError(
+        throw new ApiError(
           createProblem(
             404,
             '/problems/not-found',
