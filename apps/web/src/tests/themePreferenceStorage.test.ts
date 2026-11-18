@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { createThemePreferenceStorage } from '../models/preferences/themePreferenceStorage';
 import { createFailingStorage, createMemoryStorage } from './storageFixtures';
 
-/** Saves a choice, then returns the single key the storage wrote it under. */
 function keyUsedBy(storage: Storage): string {
   createThemePreferenceStorage(() => storage).write('table');
   expect(storage.length).toBe(1);

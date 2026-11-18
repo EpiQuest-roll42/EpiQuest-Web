@@ -3,13 +3,13 @@ import { useEffect, useRef } from 'react';
 import type { MouseEvent } from 'react';
 import { useMatches } from 'react-router';
 import { Suspense } from 'react';
-import { Check } from 'lucide-react';
 import { isRouteHandle } from '../RouteHandle';
 import { RouteStatusRegion } from './RouteStatusRegion';
 import { RouteLoadingFallback } from './RouteLoadingFallback';
 import { useThemePreferenceStorage } from '../useThemePreferenceStorage';
 import { useThemePreference } from '../../viewModels/useThemePreference';
 import { applyThemePreference } from '../themePreferenceDom';
+import { Button } from '../../components/Button';
 
 export function DocumentTitleManager() {
   const matches = useMatches();
@@ -54,17 +54,13 @@ export function AppLayout() {
 
       <header>
         <Link to="/campagnes">Lanterne</Link>
-        <button
-          className="button-toggle"
-          type="button"
-          aria-pressed={palette === 'table'}
+        <Button
+          variant="secondary"
+          pressed={palette === 'table'}
           onClick={() => choosePalette(palette === 'table' ? 'clair' : 'table')}
         >
-          {palette === 'table' && (
-            <Check className="button-toggle__icon" aria-hidden="true" size="1em" />
-          )}
           Palette table de jeu
-        </button>
+        </Button>
       </header>
 
       <nav aria-label="Navigation principale">

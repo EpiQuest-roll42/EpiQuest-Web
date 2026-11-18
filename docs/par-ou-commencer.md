@@ -47,12 +47,12 @@ Le détail est dans la section « Règles du projet à respecter » de [`CONTRIB
 
 ### Ensuite, selon la partie sur laquelle vous travaillez
 
-| Vous travaillez sur…           | À lire                                                                                                                                                                                                                                 | Le code                      |
-| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
-| Le moteur de règles et les dés | [Notation des dés](technique/notation-des-des.md), [Format des règles](technique/format-des-regles.md), [ADR 0005](ADR/0005-source-srd.md) (source du SRD), [ADR 0009](ADR/0009-unites-srd.md) (unités)                                | `packages/rules-engine/src/` |
-| L'application web              | [Architecture du web](technique/architecture-web.md) (surtout « Ajouter un écran »), [Thème](technique/theme.md), [charte graphique](charte-graphique.pdf), [ADR 0011](ADR/0011-routeur-web.md), [ADR 0012](ADR/0012-icones-lucide.md) | `apps/web/src/`              |
-| L'API (P2)                     | [ADR 0002](ADR/0002-orm-typeorm.md) (TypeORM), [ADR 0010](ADR/0010-evenements-temps-reel.md) (WebSocket), le contrat d'API (section 5 ci-dessous)                                                                                      | `apps/api/`                  |
-| Le déploiement                 | [ADR 0004](ADR/0004-hebergement-ovh.md), `compose.yaml`, `.github/workflows/ci.yml`                                                                                                                                                    | `compose.yaml`, `.github/`   |
+| Vous travaillez sur…           | À lire                                                                                                                                                                                                                                                                        | Le code                      |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
+| Le moteur de règles et les dés | [Notation des dés](technique/notation-des-des.md), [Format des règles](technique/format-des-regles.md), [ADR 0005](ADR/0005-source-srd.md) (source du SRD), [ADR 0009](ADR/0009-unites-srd.md) (unités)                                                                       | `packages/rules-engine/src/` |
+| L'application web              | [Architecture du web](technique/architecture-web.md) (surtout « Ajouter un écran »), [Composants](technique/composants.md), [Thème](technique/theme.md), [charte graphique](charte-graphique.pdf), [ADR 0011](ADR/0011-routeur-web.md), [ADR 0012](ADR/0012-icones-lucide.md) | `apps/web/src/`              |
+| L'API (P2)                     | [ADR 0002](ADR/0002-orm-typeorm.md) (TypeORM), [ADR 0010](ADR/0010-evenements-temps-reel.md) (WebSocket), le contrat d'API (section 5 ci-dessous)                                                                                                                             | `apps/api/`                  |
+| Le déploiement                 | [ADR 0004](ADR/0004-hebergement-ovh.md), `compose.yaml`, `.github/workflows/ci.yml`                                                                                                                                                                                           | `compose.yaml`, `.github/`   |
 
 ### Les ADR, rangées par thème
 
@@ -76,6 +76,7 @@ Une ADR se lit en cinq minutes : lisez **Contexte** et **Décision**, les **Opti
 | Une route de l'API, un type échangé              | `packages/api-contract/openapi.yaml` (section 5)                                                    |
 | Comment un sort ou un monstre est décrit         | [Format des règles](technique/format-des-regles.md)                                                 |
 | Ce que `4d6kh3` ou `1d20!` veut dire             | [Notation des dés](technique/notation-des-des.md)                                                   |
+| Un bouton, un champ, un pion                     | [Composants](technique/composants.md) et `apps/web/src/components/`                                 |
 | Une couleur, une taille de police, un espacement | [Thème](technique/theme.md) et `apps/web/src/theme/tokens.css`                                      |
 | Où mettre un nouvel écran                        | [Architecture du web](technique/architecture-web.md#ajouter-un-écran)                               |
 | Pourquoi on a choisi tel outil                   | [Journal des ADR](ADR/README.md)                                                                    |

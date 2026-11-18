@@ -1,4 +1,3 @@
-/** A Storage kept in memory, standing in for the browser localStorage. */
 export function createMemoryStorage(): Storage {
   const items = new Map<string, string>();
   return {
@@ -17,7 +16,6 @@ export function createMemoryStorage(): Storage {
   };
 }
 
-/** A Storage whose every access fails, as when storage is full or blocked. */
 export function createFailingStorage(): Storage {
   const fail = (): never => {
     throw new DOMException('The quota has been exceeded.', 'QuotaExceededError');

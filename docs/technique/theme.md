@@ -6,12 +6,13 @@ Cette page explique comment l'application web reprend la charte graphique (`docs
 
 ## Les fichiers
 
-| Fichier                         | Contenu                                                                                    |
-| ------------------------------- | ------------------------------------------------------------------------------------------ |
-| `apps/web/src/theme/tokens.css` | Les variables : les deux palettes, la typographie, les espacements, le focus, l'animation. |
-| `apps/web/src/theme/fonts.css`  | Les polices, hébergées par l'application.                                                  |
-| `apps/web/src/theme/base.css`   | Les styles globaux : texte, titres, liens, focus, lien d'évitement, navigation.            |
-| `apps/web/src/index.css`        | Importe les trois fichiers ci-dessus, dans cet ordre.                                      |
+| Fichier                             | Contenu                                                                                    |
+| ----------------------------------- | ------------------------------------------------------------------------------------------ |
+| `apps/web/src/theme/tokens.css`     | Les variables : les deux palettes, la typographie, les espacements, le focus, l'animation. |
+| `apps/web/src/theme/fonts.css`      | Les polices, hébergées par l'application.                                                  |
+| `apps/web/src/theme/base.css`       | Les styles globaux : texte, titres, liens, focus, lien d'évitement, navigation.            |
+| `apps/web/src/theme/components.css` | Les styles du bouton, du champ et du pion, décrits dans [composants.md](composants.md).    |
+| `apps/web/src/index.css`            | Importe les quatre fichiers ci-dessus, dans cet ordre.                                     |
 
 Les variables portent le nom de la charte, la barre oblique devenant un tiret : `bg/app` dans Figma devient `--bg-app` en CSS.
 
@@ -41,7 +42,7 @@ Les variables portent le nom de la charte, la barre oblique devenant un tiret : 
 
 - `data-theme` n'est posé **que si l'utilisateur a choisi** : sans choix, aucun attribut, et le CSS suit le système.
 - Le hook n'est appelé qu'à **un seul endroit** (`AppLayout`). Deux appels donneraient deux états séparés : un clic sur le bouton ne mettrait pas à jour `data-theme`.
-- Le bouton a un libellé fixe, « Palette table de jeu », et porte son état dans `aria-pressed` (WCAG 4.1.2). Au repos, il utilise le style secondaire (`--bg-raised`, `--border-default`) ; pressé, l'accent (`--accent-default`, `--text-on-accent`) et une coche, pour que l'état ne soit pas porté par la seule couleur (WCAG 1.4.1). Sa hauteur minimale est `--target-min-size`.
+- Le bouton est le composant `Button` en variante secondaire, utilisé comme bascule (`pressed`) : libellé fixe, « Palette table de jeu », et état dans `aria-pressed` (WCAG 4.1.2). Pressé, il passe à l'accent et affiche une coche, pour que l'état ne soit pas porté par la seule couleur (WCAG 1.4.1). Voir [composants.md](composants.md#le-bouton).
 
 ### Les couleurs
 
@@ -180,7 +181,6 @@ Un titre ou le `main` qui reçoivent le focus par le code (`tabIndex={-1}`, apr�
 
 ## Limites connues
 
-- **Le style du bouton de palette** (`.button-toggle` dans `base.css`) est provisoire : il sera remplacé par le composant Bouton de la charte (#76).
 - **Les contrastes réels à l'écran** (texte sur image, carte, pions) ne sont pas vérifiés par ce test, qui ne lit que les variables : ils se vérifient dans un navigateur (#77).
 
 ## Références

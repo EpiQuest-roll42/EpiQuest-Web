@@ -20,7 +20,6 @@ function createSystemColorScheme({ dark }: { dark: boolean }) {
   return {
     system,
     listenerCount: () => listeners.size,
-    /** Simulates the user switching their operating system to dark or light mode. */
     setDark(next: boolean) {
       isDark = next;
       listeners.forEach((listener) => listener());

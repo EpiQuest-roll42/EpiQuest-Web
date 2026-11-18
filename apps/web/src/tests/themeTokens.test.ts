@@ -24,6 +24,7 @@ function readSource(relativePath: string): string {
 
 const tokensCss = readSource('../theme/tokens.css');
 const baseCss = readSource('../theme/base.css');
+const componentsCss = readSource('../theme/components.css');
 const fontsCss = readSource('../theme/fonts.css');
 const indexCss = readSource('../index.css');
 const css = stripComments(tokensCss);
@@ -40,7 +41,6 @@ function stripComments(source: string): string {
   return source.replace(/\/\*[\s\S]*?\*\//g, '');
 }
 
-/** Declarations of the `occurrence`-th block opened by `selector {`. */
 function readBlock(source: string, selector: string, occurrence = 0): Declarations {
   let start = -1;
   for (let index = 0; index <= occurrence; index += 1) {
@@ -86,7 +86,6 @@ function resolve(declarations: Declarations, name: string): string {
   return alias?.[1] === undefined ? declared : resolve(declarations, alias[1]);
 }
 
-/** WCAG 2.2 relative luminance of a `#rrggbb` color. */
 function relativeLuminance(hex: string): number {
   const linear = (offset: number) => {
     const channel = parseInt(hex.slice(offset, offset + 2), 16) / 255;
@@ -126,10 +125,6 @@ const CHARTER_COLORS = [
 
 const BACKGROUNDS = ['bg-app', 'bg-surface', 'bg-raised', 'bg-fog'] as const;
 
-/**
- * « Couples autorisés (texte sur fond) » de la charte, page 2, dans l'ordre des fonds
- * bg/app, bg/surface, bg/raised, bg/fog. `onFill` : text/on-accent posé sur la couleur.
- */
 const CHARTER_PAIRS: Record<
   PaletteName,
   Record<string, { onBackgrounds: [Use, number][]; onFill?: number }>
@@ -416,23 +411,58 @@ describe('charter scales', () => {
   });
 });
 
-describe('charter controls', () => {
-  it('styles the palette toggle with secondary and pressed accent states', () => {
-    const toggleButton = readCssDeclarations(baseCss, '.button-toggle');
-    const pressedButton = readCssDeclarations(baseCss, ".button-toggle[aria-pressed='true']");
-
-    expect(toggleButton).toMatchObject({
+describe('charter components', () => {
+  it('gives every button the minimum target size, and the charter variants', () => {
+    expect(readCssDeclarations(componentsCss, '.button')).toMatchObject({
+      'min-width': 'var(--target-min-size)',
       'min-height': 'var(--target-min-size)',
-      border: '1px solid var(--border-default)',
+    });
+    expect(readCssDeclarations(componentsCss, '.button--primary')).toMatchObject({
+      color: 'var(--text-on-accent)',
+      background: 'var(--accent-default)',
+    });
+    expect(readCssDeclarations(componentsCss, '.button--secondary')).toMatchObject({
+      'border-color': 'var(--border-default)',
       color: 'var(--text-primary)',
       background: 'var(--bg-raised)',
     });
-    expect(pressedButton).toMatchObject({
-      'border-color': 'var(--accent-default)',
+    expect(readCssDeclarations(componentsCss, ".button[aria-pressed='true']")).toMatchObject({
       color: 'var(--text-on-accent)',
       background: 'var(--accent-default)',
     });
     expect(value(readBlock(css, ':root', 1), 'target-min-size')).toBe('2.75rem');
+  });
+
+  it('draws a field with a visible border, thicker and in danger color when invalid', () => {
+    expect(readCssDeclarations(componentsCss, '.field__input')).toMatchObject({
+      'min-height': 'var(--target-min-size)',
+      border: '1px solid var(--border-default)',
+      color: 'var(--text-primary)',
+      background: 'var(--bg-surface)',
+    });
+    expect(readCssDeclarations(componentsCss, '.field--invalid .field__input')).toMatchObject({
+      'border-color': 'var(--state-danger)',
+      'border-width': '2px',
+    });
+    expect(readCssDeclarations(componentsCss, '.field__error')).toMatchObject({
+      color: 'var(--state-danger)',
+    });
+  });
+
+  it('shows the side of a token by its shape, not only its color (WCAG 1.4.1)', () => {
+    expect(readCssDeclarations(componentsCss, '.token')).toMatchObject({
+      width: 'var(--target-min-size)',
+      height: 'var(--target-min-size)',
+      color: 'var(--text-on-accent)',
+    });
+    expect(readCssDeclarations(componentsCss, '.token--ally')).toMatchObject({
+      'border-radius': 'var(--radius-round)',
+      background: 'var(--team-ally)',
+    });
+    expect(readCssDeclarations(componentsCss, '.token--enemy')).toMatchObject({
+      'border-radius': 'var(--radius-small)',
+      background: 'var(--team-enemy)',
+    });
   });
 });
 
@@ -448,13 +478,13 @@ describe('reduced motion', () => {
 
 describe('global styles', () => {
   it('takes every color from the charter variables', () => {
-    for (const source of [baseCss, indexCss, fontsCss]) {
+    for (const source of [baseCss, componentsCss, indexCss, fontsCss]) {
       expect(stripComments(source)).not.toMatch(/#[0-9a-f]{3,8}\b|rgba?\(|hsla?\(/i);
     }
   });
 
   it('loads fonts from the application, never from a third party', () => {
-    for (const source of [fontsCss, indexCss, baseCss, tokensCss]) {
+    for (const source of [fontsCss, indexCss, baseCss, componentsCss, tokensCss]) {
       expect(stripComments(source)).not.toMatch(/https?:|fonts\.googleapis|fonts\.gstatic/);
     }
   });
