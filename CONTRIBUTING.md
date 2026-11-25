@@ -6,6 +6,8 @@ En participant au projet, vous acceptez de respecter le [code de conduite](CODE_
 
 ## Avant de commencer
 
+Si vous découvrez le dépôt, lisez d'abord [Par où commencer](docs/par-ou-commencer.md) : ordre de lecture des documents, où trouver quoi et pièges fréquents.
+
 Suivre la section [Installation](README.md#installation) du README. `pnpm install` installe aussi les hooks Git (husky) : les vérifications décrites plus bas s'appliquent automatiquement.
 
 ## 1. Prendre une issue

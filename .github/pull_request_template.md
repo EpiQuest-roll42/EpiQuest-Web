@@ -18,4 +18,5 @@ Closes #
 - [ ] Tests ajoutés ou mis à jour, CI verte
 - [ ] Swagger / README / doc technique à jour si concerné
 - [ ] Focus clavier et libellés vérifiés (si UI)
+- [ ] Accessibilité (si UI) : nouvelle route ajoutée à `accessibility.test.tsx`, composants de `components/` utilisés, parcours au clavier et zoom à 200 % vérifiés à la main (protocole dans `docs/accessibilite/README.md`)
 - [ ] Aucun secret ni `.env` commité

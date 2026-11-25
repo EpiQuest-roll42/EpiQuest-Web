@@ -37,7 +37,7 @@ export function CampaignListView() {
   }
 
   return (
-    <main>
+    <>
       <h1 ref={headingRef} tabIndex={-1}>
         Mes campagnes
       </h1>
@@ -70,6 +70,6 @@ export function CampaignListView() {
           ))}
         </ul>
       ) : null}
-    </main>
+    </>
   );
 }
