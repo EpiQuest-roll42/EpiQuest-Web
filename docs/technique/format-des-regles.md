@@ -28,7 +28,11 @@ En cas d'écart entre cette page et le code, c'est cette page qui fait foi : on 
 
 ## Identifiants et vocabulaire
 
-- Chaque élément a un `RuleId` : minuscules, chiffres et tirets (`fighter`, `chain-mail`, `high-elf`), repris des index de la D&D 5e API. Un identifiant est unique **pour un type donné** : le type est porté par le champ ou par le chemin (`/srd/items/longsword`).
+- Chaque élément a un `RuleId` : au plus 64 caractères, minuscules, chiffres et tirets, sans tiret au début, à la fin ou en double (`fighter`, `chain-mail`, `high-elf`), repris des index de la D&D 5e API. Un identifiant est unique **pour un type donné** : le type est porté par le champ ou par le chemin (`/srd/items/longsword`).
+- Une `RuleRef` identifie une donnée liée avec son `id` et son `name` traduit à l'import. Les références ne recopient pas le contenu détaillé de l'élément.
+- Les noms de données SRD sont traduits à l'import et restent distincts des libellés d'interface.
+- Une `SrdDescription` est une liste de paragraphes en texte brut ; chaque paragraphe fait au plus 10 000 caractères. Elle n'est présente que sur les entités qui en ont besoin, pas systématiquement sur toutes les données.
+- `AbilityCode` est le vocabulaire partagé des caractéristiques : `str`, `dex`, `con`, `int`, `wis`, `cha`.
 - Les mots du **vocabulaire du moteur** sont aussi des `RuleId`. Ce ne sont pas des entités avec leur propre route : le front les traduit lui-même, comme les codes d'erreur.
 
 | Vocabulaire                         | Valeurs (SRD 5.1)                                                                                                                          |
@@ -63,6 +67,49 @@ variable = "@" identifiant ;
 - **Une variable inconnue fait échouer l'import**, avec le nom de l'élément en cause, jamais l'exécution en pleine partie.
 - **Les monstres utilisent des valeurs fixes** (`6`, `13`) : leur bloc de statistiques donne les nombres déjà calculés. Seuls leurs sorts utilisent `@spellDc` et `@spellAttack`, remplacés par les valeurs du monstre (voir [Monstres](#monstres)).
 - La grammaire n'a **ni multiplication, ni division** : les quantités qui en auraient besoin passent par `Quantity`.
+
+### Scores, modificateurs et bonus de maîtrise
+
+Chaque personnage possède six caractéristiques. À la création, chaque score (`AbilityScoreValues`) est un entier de 1 à 30 ; dans les données de fiche (`AbilityScores`), chaque `AbilityScore` contient le `score` et son `modifier` calculé. Le modificateur est `floor((score - 10) / 2)` : par exemple, 8 donne −1, 10 donne 0, 15 donne +2 et 20 donne +5. `AbilityModifiers` contient ces six valeurs ; elles remplacent les variables `@str`, `@dex`, `@con`, `@int`, `@wis` et `@cha` dans une formule.
+
+Le bonus de maîtrise est une donnée de progression, pas une valeur recalculée par classe : `ClassLevel.proficiencyBonus` porte le bonus applicable au niveau concerné. Les paliers SRD sont :
+
+| Niveau de personnage | Bonus de maîtrise |
+| -------------------- | ----------------- |
+| 1–4                  | +2                |
+| 5–8                  | +3                |
+| 9–12                 | +4                |
+| 13–16                | +5                |
+| 17–20                | +6                |
+
+`getProficiencyBonus` lit la valeur de la progression de classe au niveau demandé et échoue si ce niveau n'est pas défini ; il ne devine jamais une valeur manquante. La variable `@prof` reçoit ce bonus lors de l'interprétation d'une formule. La combinaison des modificateurs et maîtrises pour calculer les jets de sauvegarde, compétences et autres statistiques de la fiche appartient à la phase de calcul des statistiques dérivées.
+
+### Contexte et résultats des statistiques dérivées
+
+Les fonctions de statistiques dérivées reçoivent un `CharacterStatContext` commun : niveau, scores et modificateurs de caractéristiques, et bonus de maîtrise déjà déterminé par la progression de classe. Chaque calcul reçoit en plus uniquement les données propres à sa règle (par exemple l'armure équipée pour la CA ou les maîtrises pour les sauvegardes).
+
+Les valeurs numériques accompagnées d'un détail de calcul utilisent `ValueBreakdown` (`value` et `parts`). Chaque partie contient sa valeur et une source typée (`base`, `ability`, `item`, `feature`, `proficiency` ou `species`) identifiée par un `RuleId`. Les jets de sauvegarde sont renvoyés par caractéristique comme `SavingThrowModifier` (`ability`, `modifier`, `proficient`). Les PV suivent la forme `HitPoints` du contrat API (`current`, `max`, `temporary`). Ces formats correspondent aux schémas `ValueBreakdown`, `SavingThrowModifier` et `HitPoints` de `CharacterSheet` ; ils ne changent pas le contrat.
+
+`calculateArmorClass` utilise l'armure équipée (`baseArmorClass`, limite de DEX), le bouclier et éventuellement une formule de défense sans armure. Sans armure, la base est `10 + @dex`. Une armure à limite `null` ne plafonne pas la DEX ; `0` signifie que son modificateur n'est pas appliqué ; une autre limite plafonne le bonus sans supprimer un modificateur négatif. Une formule de défense sans armure remplace la base standard ; elle doit être une somme ou différence de constantes et de variables `@str`, `@dex`, `@con`, `@int`, `@wis`, `@cha`. Les dés et les autres variables y sont refusés explicitement. Le bouclier s'ajoute à une armure ou à une formule qui l'autorise ; si une formule l'interdit, le calcul revient à la défense sans armure standard.
+
+`calculateMaxHitPoints` renvoie le maximum de PV, sans modifier les PV actuels ou temporaires. Au niveau 1, le personnage reçoit le maximum de son dé de vie ; à chaque niveau suivant, il reçoit soit la moyenne arrondie au supérieur (`floor(dé / 2) + 1`), soit le résultat du dé fourni par l'appelant. Le modificateur de CON s'ajoute à chaque niveau, avec un gain minimum de 1 PV par niveau. Les effets `hitPointMaximum` ajoutent leur `perLevel` multiplié par le niveau actuel. En mode `roll`, le moteur ne génère pas d'aléatoire : il exige un résultat valide de dé pour chaque niveau après le premier. Un maximum réduit par des effets ne descend pas sous 0.
+
+`calculateSavingThrows` renvoie les six caractéristiques dans l'ordre `str`, `dex`, `con`, `int`, `wis`, `cha`, sous la forme `SavingThrowModifier` du contrat API. Le modificateur est celui de la caractéristique, augmenté du bonus de maîtrise si la caractéristique figure dans `proficientAbilities`. L'appelant fournit l'union des maîtrises de sauvegarde de la classe et des effets applicables ; les doublons ne cumulent pas le bonus. Aucun jet aléatoire n'est effectué.
+
+`calculatePassivePerception` calcule le score passif selon `10 + modificateur de SAG + maîtrise`. La maîtrise vaut zéro pour `none`, une fois le bonus de maîtrise pour `proficient`, et deux fois pour `expertise`. Le résultat est un `ValueBreakdown`, comme le champ `passivePerception` de `CharacterSheet`. Le calcul porte sur la compétence Perception ; les éventuels avantages ou désavantages situationnels restent gérés par les effets de jet au moment du test.
+
+`calculateInitiative` renvoie un `ValueBreakdown` dont la valeur est le modificateur de DEX. Le jet d'initiative lui-même et ses éventuels avantages ou désavantages restent effectués ou appliqués par le système de jets ; cette fonction ne génère pas de résultat aléatoire.
+
+### Personnages de référence pour les statistiques dérivées
+
+Les personnages ci-dessous sont assemblés à partir d'options du SRD 5.1, et non des personnages pré-générés publiés. Leurs caractéristiques partent du tableau standard (`15, 14, 13, 12, 10, 8`) puis reçoivent les bonus d'espèce. Les valeurs attendues sont établies indépendamment des fonctions testées :
+
+| Personnage (niveau 3)                   | Valeurs après bonus d'espèce                                                | CA attendue                                         | PV max attendus                                                                              | Initiative | Jets de sauvegarde (FOR, DEX, CON, INT, SAG, CHA)       | Perception passive                           |
+| --------------------------------------- | --------------------------------------------------------------------------- | --------------------------------------------------- | -------------------------------------------------------------------------------------------- | ---------- | ------------------------------------------------------- | -------------------------------------------- |
+| Aveline, Haut-elfe rôdeuse, Acolyte     | FOR 10 (+0), DEX 17 (+3), CON 13 (+1), INT 9 (-1), SAG 14 (+2), CHA 12 (+1) | 15 : armure cloutée 12 + DEX 3                      | 25 : niveau 1, 10 + CON 1 ; niveaux 2 et 3, chacun 6 + CON 1                                 | +3         | +2, +5, +1, -1, +2, +1 ; maîtrises de classe FOR et DEX | 14 : 10 + SAG 2 + maîtrise de Perception 2   |
+| Doran, Nain des collines clerc, Acolyte | FOR 13 (+1), DEX 8 (-1), CON 16 (+3), INT 12 (+1), SAG 16 (+3), CHA 10 (+0) | 18 : cotte de mailles 16 (DEX ignorée) + bouclier 2 | 30 : niveau 1, 8 + CON 3 ; niveaux 2 et 3, chacun 5 + CON 3 ; robustesse naine +1 par niveau | -1         | +1, -1, +3, +1, +5, +2 ; maîtrises de classe SAG et CHA | 13 : 10 + SAG 3, sans maîtrise de Perception |
+
+Les bonus d'espèce utilisés sont ceux du Haut-elfe (+2 DEX, +1 INT) et du Nain des collines (+2 CON, +1 SAG). Aveline maîtrise Perception parmi ses compétences de rôdeuse ; Doran ne la choisit pas parmi ses compétences de clerc et l'historique Acolyte ne l'accorde pas. Tous deux ont un bonus de maîtrise de +2 au niveau 3. Les sources de règles sont le SRD 5.1 (espèces, classes, historiques, armures et calculs de caractéristiques) ; ces résultats formeront la référence pour les tests du moteur.
 
 ### `Quantity`
 
@@ -252,6 +299,61 @@ Les listes `listSpecies` et `listClasses` renvoient des résumés (`SpeciesSumma
 
 Les choix de création (`ChoiceGroup`) donnent soit un élément (`kind: ref`), soit un bonus de caractéristique (`kind: abilityBonus`). Le demi-elfe a ainsi un groupe `choose: 2` parmi cinq options à `+1`, toutes les caractéristiques sauf le CHA, qui a déjà son bonus fixe.
 
+## Espèces
+
+Une `Species` est aplatie : ses traits contiennent déjà les caractéristiques de sa famille. `family` sert uniquement au regroupement à l'écran et ne représente pas une espèce parente à hériter.
+
+Tous les champs suivants sont requis :
+
+| Champ            | Format et rôle                                                                                                                                                                                                                               |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`             | `RuleId` unique parmi les espèces.                                                                                                                                                                                                           |
+| `name`           | Nom traduit à l'import, au plus 120 caractères.                                                                                                                                                                                              |
+| `family`         | `RuleId` de regroupement, sans héritage de règles.                                                                                                                                                                                           |
+| `size`           | `tiny`, `small`, `medium`, `large`, `huge` ou `gargantuan`.                                                                                                                                                                                  |
+| `speedMeters`    | Vitesse de déplacement en mètres, nombre positif ou nul ; convertie à l'import selon l'ADR 0009.                                                                                                                                             |
+| `abilityBonuses` | Liste de `{ ability: AbilityCode, value: entier }`. Le bonus est une donnée ; il n'est pas appliqué ni cumulé dans la définition de l'espèce.                                                                                                |
+| `traits`         | Liste de `Feature` : identifiant, nom, description en paragraphes, actions, effets passifs et niveau d'automatisation.                                                                                                                       |
+| `languages`      | Liste de `RuleRef` pour les langues accordées.                                                                                                                                                                                               |
+| `choiceGroups`   | Choix de création décrits en données : `choose` est un entier positif ; les options ont un identifiant local au groupe (64 caractères au plus) et des avantages (`grants`). `chosen` est vide tant que le personnage n'a pas fait son choix. |
+
+Une option peut accorder une référence (`kind: ref`, quantité entière positive) ou un bonus (`kind: abilityBonus`, valeur entière de 1 à 2). Aucun effet ne dépend du nom ou de l'identifiant particulier d'une espèce : le moteur interprète ses données génériques.
+
+## Classes
+
+Une `CharacterClass` décrit la classe de niveau 1 à 20, sa progression et ses sous-classes. Tous ses champs sont requis ; `spellcasting` vaut `null` pour une classe sans magie.
+
+| Champ              | Format et rôle                                                                                                          |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------- |
+| `id`, `name`       | Identifiant `RuleId` unique parmi les classes et nom traduit à l'import (120 caractères au plus).                       |
+| `hitDie`           | Dé de vie : `d6`, `d8`, `d10` ou `d12`.                                                                                 |
+| `primaryAbilities` | Caractéristiques principales (`AbilityCode`).                                                                           |
+| `savingThrows`     | Caractéristiques pour lesquelles la classe accorde la maîtrise des jets de sauvegarde.                                  |
+| `proficiencies`    | `armor`, `weapons` et `tools`, chacun une liste de `RuleRef`.                                                           |
+| `choiceGroups`     | Choix de création, notamment compétences et équipement de départ, décrits avec `ChoiceGroup`.                           |
+| `spellcasting`     | `null` ou les données d'incantation ci-dessous.                                                                         |
+| `levels`           | Progression par niveau, jusqu'au niveau 20, avec bonus de maîtrise, capacités et indicateur de capacité de sous-classe. |
+| `subclasses`       | Sous-classes rattachées à cette classe, avec capacités par niveau.                                                      |
+
+Une entrée de `levels` contient `level` (1 à 20), `proficiencyBonus` (2 à 6), `features` (`Feature[]`) et `subclassFeature` (booléen). Une sous-classe contient son `id`, son nom, sa référence de classe et ses niveaux ; chaque niveau porte `level` et `features`. La progression est stockée comme donnée, sans logique codée par nom de classe.
+
+`ClassSpellcasting` contient la caractéristique d'incantation, la méthode de préparation (`prepared` ou `known`), la progression d'emplacements (`standard` ou `pact`) et le nombre de sorts mineurs connus par niveau. `slotsByLevel` décrit la progression standard (`level`, puis `slots` de `{ slotLevel, count }`) ; `pactSlotsByLevel` décrit la magie de pacte (`level`, `count`, `slotLevel`). Seule la progression correspondante est renseignée. `spellsKnownByLevel` décrit le nombre de sorts connus lorsque `preparation` vaut `known`.
+
+## Historiques
+
+Un `Background` décrit les aptitudes acquises avant l'aventure. Le SRD 5.1 ne fournit que l'Acolyte (ADR 0005). Tous les champs sont requis :
+
+| Champ           | Format et rôle                                                                                                                                                                                                                    |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`, `name`    | Identifiant `RuleId` unique parmi les historiques et nom traduit à l'import (120 caractères au plus).                                                                                                                             |
+| `proficiencies` | Liste d'effets `proficiency` accordant une maîtrise : `kind` vaut `skill`, `savingThrow`, `armor`, `weapon`, `tool` ou `language`, et `ref` est le `RuleId` correspondant. `expertise` est facultatif et vaut `false` par défaut. |
+| `choiceGroups`  | Choix de création décrits par `ChoiceGroup`, par exemple les langues à choisir.                                                                                                                                                   |
+| `equipment`     | Liste de `{ item: RuleRef, quantity: entier positif }` pour l'équipement de départ.                                                                                                                                               |
+| `feature`       | `Feature` décrivant la capacité accordée par l'historique, avec sa description, ses actions, ses effets passifs et son niveau d'automatisation.                                                                                   |
+| `description`   | `SrdDescription` en paragraphes de texte brut.                                                                                                                                                                                    |
+
+Les maîtrises, les choix et l'équipement sont des données. La définition d'un historique ne calcule pas de statistiques dérivées et n'ajoute pas de logique spécifique à son identifiant.
+
 ## Exemples
 
 _Boule de feu_ :
@@ -308,6 +410,13 @@ Le contenu est celui du SRD 5.1, utilisé sous **CC BY 4.0** (ADR 0005), modifi�
 Après chaque import, le script publie le nombre d'éléments `full`, `partial` et `manual`, par type. Ce décompte sera ajouté ici à la fin de P2-02 : il mesure honnêtement ce que le moteur sait faire.
 
 ## Tests attendus
+
+**Formats** (`packages/rules-engine/tests/rules`)
+
+- Les exemples typés Haut-elfe et Demi-elfe couvrent les bonus fixes, les traits, les langues, les références de choix et les bonus de caractéristiques au choix.
+- Les exemples Guerrier, Magicien et Occultiste couvrent une classe sans incantation, la progression standard préparée, la magie de pacte avec sorts connus, les maîtrises, les choix et les sous-classes.
+- L'exemple Acolyte couvre les maîtrises, choix de langues, équipement et capacité d'historique.
+- Le typecheck vérifie que ces exemples respectent les champs et unions du format ; les tests vérifient explicitement leurs données représentatives et leurs progressions.
 
 **Import** (P2-02)
 

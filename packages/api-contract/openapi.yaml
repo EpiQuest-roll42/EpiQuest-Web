@@ -5617,6 +5617,7 @@ components:
         proficiencyBonus:
           type: integer
           readOnly: true
+          description: 'Bonus de maîtrise déterminé par le niveau du personnage : +2 aux niveaux 1–4, puis +1 tous les 4 niveaux jusqu’à +6 aux niveaux 17–20.'
           example: 2
         armorClass:
           type: object
@@ -9497,6 +9498,7 @@ components:
           type: integer
           minimum: 2
           maximum: 6
+          description: 'Bonus de maîtrise associé à ce niveau : +2 aux niveaux 1–4, +3 aux niveaux 5–8, +4 aux niveaux 9–12, +5 aux niveaux 13–16, +6 aux niveaux 17–20.'
         features:
           type: array
           items:
